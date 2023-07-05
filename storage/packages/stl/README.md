@@ -22,7 +22,7 @@ We'll use the popular `sqlite3` library for node as our database layer.
 Note however that you should be able to use `stl` with any database
 library that accepts parameterized SQL statements. 
 
-NOTE: this demo code is available [here](storage/packages/stl/example).
+NOTE: this demo code is available [here](./example).
 
 ### Install `sqlite3` for node
 ```bash
