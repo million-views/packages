@@ -1,3 +1,6 @@
+# we don't commit lock files!
+*-lock.json
+
 # Logs
 logs
 *.log
