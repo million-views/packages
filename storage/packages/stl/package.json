@@ -1,0 +1,40 @@
+{
+  "name": "@m5nv/stl",
+  "version": "0.9.0",
+  "description": "SQL function tagged template literal library",
+  "type": "module",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/million-views/packages.git",
+    "directory": "storage/packages/stl"
+  },
+  "files": [
+    "src/"
+  ],
+  "bugs": {
+    "url": "https://github.com/million-views/packages/issues"
+  },
+  "homepage": "https://github.com/million-views/packages#readme",
+  "author": {
+    "name": "Million Views, LLC.",
+    "url": "https://m5nv.com"
+  },
+  "license": "MIT",
+  "contributors": [
+    "Vijay Aswadhati (https://github.com/vijay8i)",
+    "Hemalatha Manickam (https://github.com/hmanicka)"
+  ],
+  "keywords": [
+    "database",
+    "sqlite",
+    "stl",
+    "template",
+    "literal",
+    "sql",
+    "ddl",
+    "dml",
+    "db",
+    "query"
+  ]
+}
