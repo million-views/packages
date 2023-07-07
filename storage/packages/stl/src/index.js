@@ -61,7 +61,7 @@ function analyze_inputs(strings, args) {
 }
 
 // main driver function to get things going
-function sql_tagged_literal(strings, args, options) {
+export function sql_tagged_literal(strings, args, options) {
   const [tagged, unsafe, type] = analyze_inputs(strings, args);
 
   return {

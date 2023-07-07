@@ -11,18 +11,45 @@ This library exists so that we can build MVP and prototypes with little
 to no friction when working with databases. It is biased towards 
 `sqlite` being the storage layer of choice.  
 
-## Installation
+## Quick start
+
+### Install `stl`
 ```bash
 $ npm install @m5nv/stl
 ```
 
-## Usage
-You have to bring your own database library for `stl` to be of any use.
-We'll use the popular `sqlite3` library for node as our database layer.
-Note however that you should be able to use `stl` with any database
-library that accepts parameterized SQL statements. 
+### Use it
+For `stl` to work effectively, it requires integration with a database 
+library of your choice. Essentially, `stl` is compatible with any 
+database library that supports parameterized SQL statements. In the
+code snippet below, simply swap out `<your-favorite-database-library>` 
+with the actual database library you're using.
 
-NOTE: this demo code is available [here](./example).
+```js
+import stl from '@m5nv/stl'
+import db from '<your-favorite-database-library>'
+
+const sql = stl({debug: false});
+const name = "Mur", age = 60;
+const query = sql`
+    select
+      name,
+      age
+    from users
+    where
+      name like ${name + "%"}
+      and age > ${age}
+  `;
+
+const result = await db.all(query.string, query.parameters);
+```
+
+## Detailed example
+We'll be using the widely-used `sqlite3` library for Node.js in our
+extended example. Please remember that the `db.js` file we're building
+here is just for illustrative purposes. It's not an integral part
+of stl, and we haven't put it through thorough testing or development
+to ensure robustness or completeness.
 
 ### Install `sqlite3` for node
 ```bash
@@ -36,9 +63,48 @@ straight forward API interface for the application.
 ```js
 // db.js
 import sqlite3 from 'sqlite3';
+import {sql_tagged_literal} from '@m5nv/stl'
+
+export class Query extends Promise {
+  constructor(strings, args, options, db) {
+    let resolve, reject;
+    super((a, b) => { resolve = a; reject = b; });
+
+    this.db = db;
+    this.options = options;
+    this.query = sql_tagged_literal(strings, args, options);
+    this.executed = false;
+    this.callback = (call=undefined) => {
+      return function(error, result) {
+        if (error) return reject(error);
+        if (call === 'run') return resolve([this.lastID]);
+        return resolve(result);
+      }
+    };
+  }
+
+  static get [Symbol.species]() {
+    return Promise;
+  }
+  
+  async handle(op, cb) {
+    if (!this.executed) {
+      this.executed = true;
+      return this.db[op](this.query.string, this.query.parameters, cb);
+    }
+  }
+
+  get() { this.handle('get', this.callback()); return this; }
+  all() { this.handle('all', this.callback()); return this; }
+  run() { this.handle('run', this.callback('run')); return this; }
+}
 
 export default function sqlite(options) {
-  options = { verbose: true, db: ':memory:', ...options };
+  options = { debug: false, verbose: true, db: ':memory:', ...options };
+  if (typeof options.debug !== "function") {
+    options.debug = options.debug === true ? console.log : () => {};
+  }
+
   let db;
   if (options.verbose) {
     db = new (sqlite3.verbose()).Database(options.db);
@@ -50,78 +116,55 @@ export default function sqlite(options) {
   db.serialize(() => {
     db.run(`
       CREATE TABLE IF NOT EXISTS users (
-        id PRIMARY KEY, name TEXT, age INTEGER
+        id INTEGER PRIMARY KEY, name TEXT, age INTEGER
       )
     `);
   });
 
-  function callback(resolve, reject, message=undefined) {
-    return (error, result) => {
-      if (error) return reject(error);
-      if (message) return resolve(message);
-      return resolve(result);
-    }
+  function sqlHelper(strings, ...args) {
+    return new Query(strings, args, options, db);
   }
 
-  function run(sql, params) {
-    return new Promise((resolve, reject) => {
-      db.run(sql, ...params, callback(resolve, reject, "ok!"));
-    });
+  function unsafeHelper(string, args = []) {
+    return new Query([string], args, options, db);
   }
 
-  function get(sql, params) {
-    return new Promise((resolve, reject) => {
-      db.get(sql, ...params, callback(resolve, reject));
-    });
-  }
-
-  function all(sql, params) {
-    return new Promise((resolve, reject) => {
-      db.all(sql, ...params, callback(resolve, reject));
-    });
-  }
-
-  return {
-    run, get, all
-  };
+  sqlHelper.unsafe = unsafeHelper;
+  return sqlHelper;
 }
+
 ```
 
-### Use `stl` to construct safe SQL and pass it to the database API.
 ```js
 // users.js
 import storage from './db.js'
-import stl from '@m5nv/stl'
 
 const options = {
   debug: false,
-  verbose: false,
-  db: ':memory:'
+  verbose: true,
+  db: ':memory:',
 };
 
-const sql = stl(options);
-const db = storage(options);
+const sql = storage(options);
 
 export async function getUsersOver(age) {
-  const query = sql`
+  return sql`
     select name, age
     from users
     where age > ${ age }
-  `;
-  return db.all(query.string, query.parameters);
+  `.all();
 }
 
 export async function insertUser({ name, age }) {
-  const query = sql`
+  return sql`
     insert into users (name, age)
     values (${ name }, ${ age })
     returning name, age
-  `;
-  return db.run(query.string, query.parameters);
+  `.run();
 }
 ```
 
-## Quick notes
+## Notes
 ### identifiers and keywords in SQL:
 - 'keyword' A keyword in single quotes is a `string literal`.
 - "keyword" A keyword in double-quotes is an `identifier`.
@@ -137,6 +180,9 @@ stl can interpolate the following use cases:
 | `${ sql([] or {}, ...) }`  | for helpers                   | ``sql`INSERT INTO users ${sql({ name: 'Peter'})}` ``      |
 | `${ 'somevalue' }`         | for literal values            | ``sql`SELECT * FROM users WHERE age = ${42}` ``           |
 
+## Queries
+Consult [porsager's queries section as a reference](https://github.com/porsager/postgres#queries).
+Please file a bug report if you find any discrepancy with the interpolation.
 
 ## Deviation from `porsager's` postgres library
 ### Remove origin of `Error` reporting from `stl` layer

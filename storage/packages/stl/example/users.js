@@ -1,29 +1,25 @@
 import storage from './db.js'
-import stl from '@m5nv/stl'
 
 const options = {
   debug: false,
-  verbose: false,
-  db: ':memory:'
+  verbose: true,
+  db: ':memory:',
 };
 
-const sql = stl(options);
-const db = storage(options);
+const sql = storage(options);
 
 export async function getUsersOver(age) {
-  const query = sql`
+  return sql`
     select name, age
     from users
     where age > ${ age }
-  `;
-  return db.all(query.string, query.parameters);
+  `.all();
 }
 
 export async function insertUser({ name, age }) {
-  const query = sql`
+  return sql`
     insert into users (name, age)
     values (${ name }, ${ age })
     returning name, age
-  `;
-  return db.run(query.string, query.parameters);
+  `.run();
 }
