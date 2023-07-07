@@ -1,13 +1,11 @@
 {
   "name": "@m5nv/stl-example",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "sample demonstrating the use of STL with node-sqlite3",
-
   "scripts": {
     "start": "node index.js"
   },
-
   "dependencies": {
     "sqlite3": "^5.1.6"
   }

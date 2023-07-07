@@ -2,7 +2,7 @@
 
 `Stl` is a JS library that simplifies the creation of parameterized 
 SQL statements. It shares the interface and a significant portion 
-of logic from `porsarger's postgres.js` for constructing both
+of logic from `porsager's postgres.js` for constructing both
 safe and unsafe SQL. The key distinction with `Stl` is that it doesn't
 handle database connectivity. This gives developers the freedom to
 combine it with their preferred database library.
