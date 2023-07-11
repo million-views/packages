@@ -182,6 +182,7 @@ function fragment(q, parameters, options) {
 
 function stringify_value(string, value, parameters, options) {
   value = value?.[CTX] ?? value;
+  options.debug({fn: 'stringify_value', string, value});
   if (value) {
     const type = value?.type;
     if (type === FUN) {

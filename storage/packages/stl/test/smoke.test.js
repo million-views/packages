@@ -1,115 +1,99 @@
 import { assert, expect, test } from "vitest";
 import stl from "@m5nv/stl";
-const sql = stl({debug: false});
 
 // helper
 const strip_ws = (str) => str.replace(/\s+/g, " ").trim();
 
-// v.a: this belongs in the test set for `sqlite` package which is TBD
-test.skip("as basic as it gets", async () => {
-  let query = await sql`select 1`;
-  // console.log({execute: query});
+/// miscellaneous
+test("debug option", async () => {
+  const my_debugger = function () {
+    // console.log(arguments);
+  };
+  let sql = stl({ debug: my_debugger });
 
-  // TODO:
-  // when we wrap `sqlite` these tests illustrate basic API contract
-  //
-  // result will always be an array
-  expect(Array.isArray(query)).toEqual(true);
+  const query = sql`
+    create table test(int int)
+  `;
 
-  // result will always have a count
-  expect(query.count).toEqual(1);
-
-  // result will display the command that was executed in the database
-  expect(query.command).toEqual("SELECT");
-
-  // the final query string is available for debugging
-  // NOTE: described query is fulfilled and thus not executed ???
-  const parameter = 1;
-  query = await sql`select ${parameter}`;
-  expect(query.string).toEqual("select $1");
-  // expect(query.parameters).to.have.ordered.members([]);
+  expect(strip_ws(query.string)).toEqual("create table test(int int)");
+  expect(query.parameters).to.have.ordered.members([]);
 });
 
 /// primitive tests
 test("null", async () => {
-  const query = await sql`select ${null} as x`;
+  const sql = stl({debug: false});
+
+  const query = sql`select ${null} as x`;
   expect(query.string).toEqual("select $1 as x");
   expect(query.parameters).to.have.ordered.members([null]);
 });
 
 test("integer", async () => {
-  const query = await sql`select ${1} as x`;
+  const sql = stl({debug: false});
+
+  const query = sql`select ${1} as x`;
   expect(query.string).toEqual("select $1 as x");
   expect(query.parameters).to.have.ordered.members([1]);
 });
 
 test("string", async () => {
-  const query = await sql`select ${"hello"} as x`;
+  const sql = stl({debug: false});
+
+  const query = sql`select ${"hello"} as x`;
   expect(query.string).toEqual("select $1 as x");
   expect(query.parameters).to.have.ordered.members(["hello"]);
 });
 
 test("boolean false", async () => {
-  const query = await sql`select ${false} as x`;
+  const sql = stl({debug: false});
+
+  const query = sql`select ${false} as x`;
   expect(query.string).toEqual("select $1 as x");
   expect(query.parameters).to.have.ordered.members([false]);
 });
 
 test("boolean true", async () => {
-  const query = await sql`select ${true} as x`;
+  const sql = stl({debug: false});
+
+  const query = sql`select ${true} as x`;
   expect(query.string).toEqual("select $1 as x");
   expect(query.parameters).to.have.ordered.members([true]);
 });
 
 test("date", async () => {
+  const sql = stl({debug: false});
+
   const now = new Date();
-  const query = await sql`select ${now} as x`;
+  const query = sql`select ${now} as x`;
   expect(query.string).toEqual("select $1 as x");
   expect(now - query.parameters[0]).toEqual(0);
 });
 
-// v.a: 
-// todo add .json method?
 test("json", async () => {
-  const data = { a: "hello", b: 42 };
-  // const query = await sql`
-  //   select ${sql.json(data)} as x
-  // `;
+  const sql = stl({debug: false});
 
-  const query = await sql`
+  const data = { a: "hello", b: 42 };
+  const query = sql`
     select ${data} as x
   `;
-
   expect(strip_ws(query.string)).toEqual("select $1 as x");
   expect(query.parameters).toEqual([data]);
 });
 
-// v.a: 
-// todo add .array method?
 test("empty array", async () => {
-  // const query = await sql`
-  //   select ${sql.array([], 1009)} as x
-  // `;
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${[]} as x
   `;
-
   expect(strip_ws(query.string)).toEqual("select $1 as x");
   expect(query.parameters).toEqual([[]]);
 });
 
-// v.a:
-// todo: remove this test since implicits are not supported in sqlite?
-test("string array", async () => {
-  const query = await sql`
-    select ${"{1, 2, 3}"}::int[] as x
-  `;
-  expect(strip_ws(query.string)).toEqual("select $1::int[] as x");
-  expect(query.parameters).toEqual(["{1, 2, 3}"]);
-});
-
 test("array of integers", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${[1, 2, 3]} as x
   `;
   expect(strip_ws(query.string)).toEqual("select $1 as x");
@@ -117,7 +101,9 @@ test("array of integers", async () => {
 });
 
 test("array of strings", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${["a", "b", "c"]} as x
   `;
   expect(strip_ws(query.string)).toEqual("select $1 as x");
@@ -125,8 +111,10 @@ test("array of strings", async () => {
 });
 
 test("array of dates", async () => {
+  const sql = stl({debug: false});
+
   const now = new Date();
-  const query = await sql`
+  const query = sql`
     select ${[now, now, now]} as x
   `;
   expect(strip_ws(query.string)).toEqual("select $1 as x");
@@ -134,7 +122,9 @@ test("array of dates", async () => {
 });
 
 test("nested array n2", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${[
       [1, 2],
       [3, 4],
@@ -145,7 +135,9 @@ test("nested array n2", async () => {
 });
 
 test("nested array n3", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${[
       [[1, 2]], 
       [[3, 4]], 
@@ -157,7 +149,9 @@ test("nested array n3", async () => {
 });
 
 test("escape in arrays", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${['Hello "you"', "c:\\windows"]} as x
   `;
   expect(strip_ws(query.string)).toEqual("select $1 as x");
@@ -165,7 +159,9 @@ test("escape in arrays", async () => {
 });
 
 test("escapes", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select 1 as ${sql('hej"hej')}
   `;
   expect(strip_ws(query.string)).toEqual('select 1 as "hej""hej"');
@@ -173,7 +169,9 @@ test("escapes", async () => {
 });
 
 test("null for int", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     insert into test values(${null})
   `;
   expect(strip_ws(query.string)).toEqual('insert into test values($1)');
@@ -182,6 +180,8 @@ test("null for int", async () => {
 
 /// error conditions
 test("undefined values throws", async () => {
+  const sql = stl({debug: false});
+
   let error;
   try {
     // access to trigger error
@@ -193,32 +193,23 @@ test("undefined values throws", async () => {
 });
 
 test("null sets to null", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${null} as x
   `;
   expect(strip_ws(query.string)).toEqual('select $1 as x');
   expect(query.parameters).toEqual([null]);
 });
 
-// v.a: syntax errors are the domain of `sqlite` package, skip at this
-// level... 
-test.skip("syntax errors throw", async () => {
-  let error;
-  try {
-    await sql`wat 1`;
-  } catch(x) {
-    error = x.code;
-  } 
-  expect(error).toEqual("42601");
-});
-
 /// unsafe stuff
 test("unsafe insert with parameters", async () => {
-  const query = await sql.unsafe(
+  const sql = stl({debug: false});
+
+  const query = sql.unsafe(
     "insert into test values ($1) returning *", 
     [50]
   );
-    
   expect(strip_ws(query.string)).toEqual(
     'insert into test values ($1) returning *'
   );
@@ -226,14 +217,18 @@ test("unsafe insert with parameters", async () => {
 });
 
 test("unsafe simple", async () => {
-  const query = await sql.unsafe("select 1 as x");
+  const sql = stl({debug: false});
+
+  const query = sql.unsafe("select 1 as x");
   expect(strip_ws(query.string)).toEqual("select 1 as x");
   expect(query.parameters).toEqual([]);
 });
 
 test("unsafe insert", async () => {
+  const sql = stl({debug: false});
+
   const uq = "insert into test values (1)";
-  const query = await sql.unsafe(uq);
+  const query = sql.unsafe(uq);
   expect(strip_ws(query.string)).toEqual(uq);
   expect(query.parameters).toEqual([]);
 });
@@ -243,10 +238,11 @@ test("unsafe insert", async () => {
 // live query works fine. 
 // todo: figure out what sqlite does and then fix test as needed.
 test("simple query using unsafe with multiple statements", async () => {
-  const query = await sql.unsafe(
+  const sql = stl({debug: false});
+
+  const query = sql.unsafe(
     "select 1 as x;select 2 as x"
   );
-
   expect(strip_ws(query.string)).toEqual(
     "select 1 as x;select 2 as x"
   );
@@ -255,12 +251,13 @@ test("simple query using unsafe with multiple statements", async () => {
 
 /// stress tests
 test("big query body", async () => {  
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     insert into test ${sql(
       [...Array(50000).keys()].map((x) => ({ x }))
     )}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'insert into test ("x") values ' +
     [...Array(50000).keys()].map((x, i) => `($${i+1})`)
@@ -268,10 +265,12 @@ test("big query body", async () => {
 });
 
 test("throws if more than 65534 parameters", async () => {
+  const sql = stl({debug: false});
+
   let error;
   try {
     // access to trigger error
-    await sql`
+    sql`
       insert into test ${sql(
         [...Array(65535).keys()].map((x) => ({ x }))
       )}
@@ -285,85 +284,39 @@ test("throws if more than 65534 parameters", async () => {
 // v.a: this test may not be applicable to `sqlite` since
 // it is dynamically typed.
 test("implicit cast of unknown types", async () => {
+  const sql = stl({debug: false});
+
   const date = new Date().toISOString();
-  const query = await sql`
+  const query = sql`
     insert into test values (${date}) returning *
   `;
-
   expect(strip_ws(query.string)).toEqual(
     "insert into test values ($1) returning *"
   );
   expect(query.parameters).toEqual([date]);
 });
 
-// v.a: 42601 in postgres is a syntax error; check if `sqlite` also
-// has issues with it and if so fix code here or at the `sqlite` package
-// level; for now skip it.
-test.skip("only allows one statement", async () => {
-  let error;
-  try {
-    const query = await sql`select 1; select 2`;
-  } catch(e) {
-    error = e.code;
-  }
-  expect(error).toEqual("42601");
-});
+test("sql() throws not tagged error", async () => {
+  const sql = stl({debug: false});
 
-// v.a: `ftl` layer cannot spot this error; it should be spotted
-// at the time the query is being executed by the database layer.
-test("await sql() throws not tagged error", async () => {
   let error;
   try {
     // access to trigger error
-    await sql("select 1").string;
+    sql("select 1").string;
   } catch (e) {
     error = e.cause.code;
   }
   expect(error).toEqual("NOT_TAGGED_CALL");
 });
 
-// v.a: `ftl` layer cannot spot this error; it should be spotted
-// at the time the query is being executed by the database layer.
-test.skip("sql().then throws not tagged error", async () => {
-  let error;
-  try {
-    sql("select 1").then(() => {/* noop */});
-  } catch (e) {
-    error = e.code;
-  }
-  expect(error).toEqual("NOT_TAGGED_CALL");
-});
-
-// v.a: `ftl` layer cannot spot this error; it should be spotted
-// at the time the query is being executed by the database layer.
-test.skip("sql().catch throws not tagged error", async () => {
-  let error;
-  try {
-    await sql("select 1");
-  } catch (e) {
-    error = e.code;
-  }
-  expect(error).toEqual("NOT_TAGGED_CALL");
-});
-
-// v.a: `ftl` layer cannot spot this error; it should be spotted
-// at the time the query is being executed by the database layer.
-test.skip("sql().finally throws not tagged error", async () => {
-  let error;
-  try {
-    sql("select 1").finally(() => {/* noop */});
-  } catch (e) {
-    error = e.code;
-  }
-  expect(error).toEqual("NOT_TAGGED_CALL");
-});
 
 test("little bobby tables", async () => {
+  const sql = stl({debug: false});
+
   const name = "Robert'); DROP TABLE students;--";
-  const query = await sql`
+  const query = sql`
     insert into students (name) values (${name})
   `;
-
   expect(strip_ws(query.string)).toEqual(
     "insert into students (name) values ($1)"
   );
@@ -372,10 +325,11 @@ test("little bobby tables", async () => {
 
 /// dynamic sql
 test("dynamic table name", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select * from ${sql("test")}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select * from "test"'
   );
@@ -383,10 +337,11 @@ test("dynamic table name", async () => {
 });
 
 test("dynamic schema name", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select * from ${sql("public")}.test
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select * from "public".test'
   );
@@ -394,10 +349,11 @@ test("dynamic schema name", async () => {
 });
 
 test("dynamic schema and table name", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select * from ${sql("public.test")}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select * from "public"."test"'
   );
@@ -405,10 +361,11 @@ test("dynamic schema and table name", async () => {
 });
 
 test("dynamic column name", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select 1 as ${sql("!not_valid")}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select 1 as "!not_valid"'
   );
@@ -416,10 +373,11 @@ test("dynamic column name", async () => {
 });
 
 test("dynamic select as", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${sql({ a: 1, b: 2 })}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select $1 as "a", $2 as "b"'
   );
@@ -427,10 +385,11 @@ test("dynamic select as", async () => {
 });
 
 test("dynamic select as pluck", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${sql({ a: 1, b: 2 }, "a")}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select $1 as "a"'
   );
@@ -438,11 +397,12 @@ test("dynamic select as pluck", async () => {
 });
 
 test("dynamic insert", async () => {
+  const sql = stl({debug: false});
+
   const x = { a: 42, b: "the answer" };
-  const query = await sql`
+  const query = sql`
     insert into test ${sql(x)} returning *
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'insert into test ("a", "b") values ($1, $2) returning *'
   );
@@ -450,11 +410,12 @@ test("dynamic insert", async () => {
 });
 
 test("dynamic insert pluck", async () => {
+  const sql = stl({debug: false});
+
   const x = { a: 42, b: "the answer" };
-  const query = await sql`
+  const query = sql`
     insert into test ${sql(x, "a")} returning *
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'insert into test ("a") values ($1) returning *'
   );
@@ -462,7 +423,9 @@ test("dynamic insert pluck", async () => {
 });
 
 test("dynamic in with empty array", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select * from test where null in ${sql([])}
   `;
 
@@ -473,14 +436,15 @@ test("dynamic in with empty array", async () => {
 });
 
 test("dynamic in after insert", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     with x as (
       insert into test values (1, 'hej')
       returning *
     )
     select 1 in ${sql([1, 2, 3])} as x from x
   `;
-
   expect(strip_ws(query.string)).toEqual(
     strip_ws(`
       with x as ( insert into test values (1, 'hej') returning * ) 
@@ -491,10 +455,11 @@ test("dynamic in after insert", async () => {
 });
 
 test("array insert", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     insert into test (a, b) values ${sql([1, 2])} returning *
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'insert into test (a, b) values ($1, $2) returning *'
   );
@@ -502,10 +467,11 @@ test("array insert", async () => {
 });
 
 test("where parameters in()", async () => {  
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select * from test where x in ${sql(["a", "b", "c"])}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     "select * from test where x in ($1, $2, $3)"
   );
@@ -513,13 +479,14 @@ test("where parameters in()", async () => {
 });
 
 test("where parameters in() values before", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     with rows(a) as (
       select * from (values (1), (2), (3), (4)) as x
     )
     select * from rows where a in ${sql([3, 4])}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     strip_ws(`
       with rows(a) as ( 
@@ -532,8 +499,10 @@ test("where parameters in() values before", async () => {
 });
 
 test("dynamic multi row insert", async () => {
+  const sql = stl({debug: false});
+
   const x = { a: 42, b: "the answer" };
-  const query = await sql`
+  const query = sql`
     insert into test ${sql([x, x])} returning *
   `;
   expect(strip_ws(query.string)).toEqual(
@@ -545,8 +514,10 @@ test("dynamic multi row insert", async () => {
 });
 
 test("dynamic update", async () => {
+  const sql = stl({debug: false});
+
   const x = { a: 42, b: "the answer" };
-  const query = await sql`
+  const query = sql`
     update test set ${sql(x)} returning *
   `;
   expect(strip_ws(query.string)).toEqual(
@@ -558,7 +529,9 @@ test("dynamic update", async () => {
 });
 
 test("dynamic update pluck", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     update test set ${sql(
       { a: 42, b: "the answer" },
       "a"
@@ -573,7 +546,9 @@ test("dynamic update pluck", async () => {
 });
 
 test("dynamic select array", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${sql(["a", "b"])} from test
   `;
   expect(strip_ws(query.string)).toEqual(
@@ -583,11 +558,12 @@ test("dynamic select array", async () => {
 });
 
 test("dynamic returning array", async () => {
+  const sql = stl({debug: false});
+
   const cols = ["a", "b"];
-  const query = await sql`
+  const query = sql`
     insert into test (a, b) values(42, 'yay') returning ${sql(cols)}
   `;
-
   expect(strip_ws(query.string)).toEqual(
     `insert into test (a, b) values(42, 'yay') returning "a", "b"`
   );
@@ -595,10 +571,11 @@ test("dynamic returning array", async () => {
 });
 
 test("dynamic select args", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select ${sql("a", "b")} from test
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select "a", "b" from test'
   );
@@ -609,10 +586,11 @@ test("dynamic select args", async () => {
 // in the `as` clause.
 // todo: fix test
 test("dynamic values single row", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select * from (values ${sql(["a", "b", "c"])}) as x(a, b, c)
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select * from (values ($1, $2, $3)) as x(a, b, c)'
   );
@@ -623,13 +601,14 @@ test("dynamic values single row", async () => {
 // in the `as` clause. 
 // todo: fix test
 test("dynamic values multi row", async () => {
-  const query = await sql`
+  const sql = stl({debug: false});
+
+  const query = sql`
     select * from (values ${sql([
       ["a", "b", "c"],
       ["a", "b", "c"]
     ])}) as x(a, b, c)
   `;
-
   expect(strip_ws(query.string)).toEqual(
     'select * from (values ($1, $2, $3),($4, $5, $6)) as x(a, b, c)'
   );
