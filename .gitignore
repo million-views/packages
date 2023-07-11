@@ -1,6 +1,9 @@
 # we don't commit lock files!
 *-lock.json
 
+# Mac crap
+.DS_Store
+
 # Logs
 logs
 *.log
