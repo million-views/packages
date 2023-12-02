@@ -4,6 +4,9 @@
 # Mac crap
 .DS_Store
 
+# temp ignore
+sqlite
+
 # Logs
 logs
 *.log
