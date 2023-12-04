@@ -1,4 +1,4 @@
-# Vite Plugin Hook Task
+# Vite Plugin: Run Task
 A simple plugin to **side run** a `function` during `build` and `serve`
 phases of Vite, by implementing `configResolved` and `handleHotUpdate`
 hooks and delegate follow up to a user defined task.
