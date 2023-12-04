@@ -35,9 +35,9 @@ To understand why we need this plugin, let's setup the stage to provide
 some context. 
 
 We are developing `kis.css` library, and we have decided to use Astro
-to document it and use it to style the documentation. We want to see the
-changes to the content of the documentation and changes to the style as
-we develop `kis.css`, both simultaneously and iteratively.
+to document it and use the `kis.css` itself to style the documentation.
+So, we want to see the changes to the content of the documentation and
+changes to the style as we develop `kis.css`, simultaneously.
 
 This is a classic chicken and egg problem. 
 
