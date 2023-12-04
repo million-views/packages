@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/vite-plugin-run-task",
-  "version": "1.0.0-alpha",
+  "version": "1.0.0",
   "description": "A plugin to run an adjunct user defined task within other frameworks that use vite",
   "type": "module",
   "main": "src/index.js",
@@ -16,10 +16,7 @@
     "url": "https://github.com/million-views/packages/issues"
   },
   "homepage": "https://github.com/million-views/packages/tree/main/utils/packages/vite-plugin-run-task",
-  "author": {
-    "name": "Million Views, LLC.",
-    "url": "https://m5nv.com"
-  },
+  "author": "Million Views, LLC. (https://m5nv.com)",
   "license": "MIT",
   "contributors": [
     "Vijay Aswadhati (https://github.com/vijay8i)",
@@ -39,5 +36,8 @@
   },
   "peerDependencies": {
     "minimatch": "^9.0.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
