@@ -1,11 +1,11 @@
 # Stl - Sql function tagged template literal library
 
-`STL` is a JS library that simplifies the creation of parameterized SQL
-statements. It shares the interface and a significant portion of logic from
-[Porsager's Postgres.js library][1-ppl] for constructing both safe and unsafe
-SQL. The key distinction with _STL_ is that it doesn't handle database
-connectivity. This gives developers the freedom to combine it with their
-preferred database library.
+`STL` is a dependency free JS library that simplifies the creation of
+parameterized SQL statements. It shares the interface and a significant portion
+of logic from [Porsager's Postgres.js library][1-ppl] for constructing both safe
+and unsafe SQL. The key distinction with _STL_ is that it doesn't handle
+database connectivity. This gives developers the freedom to combine it with
+their preferred database library.
 
 This library exists so that we can build MVP and prototypes with little to no
 friction when working with databases. It is biased towards `SQLite` being the
@@ -63,7 +63,7 @@ const result = await db.all(query.string, query.parameters);
 [1-ppl]: https://github.com/porsager/postgres
 [2-ttf]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#Tagged_templates
 
-### identifiers and keywords in SQL:
+### Identifiers and keywords in SQL:
 
 - 'keyword' A keyword in single quotes is a `string literal`.
 - "keyword" A keyword in double-quotes is an `identifier`.
