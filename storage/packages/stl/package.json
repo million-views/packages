@@ -44,8 +44,12 @@
     "test:coverage": "vitest --dir test run --coverage"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.4",
     "@vitest/ui": "latest",
     "vite": "latest",
     "vitest": "latest"
+  },
+  "dependencies": {
+    "@m5nv/stl": "^1.1.1"
   }
 }
