@@ -1,4 +1,4 @@
-import { assert, expect, test } from "vitest";
+import { expect, test } from "vitest";
 import stl from "@m5nv/stl";
 
 // helper
@@ -21,7 +21,7 @@ test("debug option", async () => {
 
 /// primitive tests
 test("null", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`select ${null} as x`;
   expect(query.string).toEqual("select $1 as x");
@@ -29,7 +29,7 @@ test("null", async () => {
 });
 
 test("integer", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`select ${1} as x`;
   expect(query.string).toEqual("select $1 as x");
@@ -37,7 +37,7 @@ test("integer", async () => {
 });
 
 test("string", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`select ${"hello"} as x`;
   expect(query.string).toEqual("select $1 as x");
@@ -45,7 +45,7 @@ test("string", async () => {
 });
 
 test("boolean false", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`select ${false} as x`;
   expect(query.string).toEqual("select $1 as x");
@@ -53,7 +53,7 @@ test("boolean false", async () => {
 });
 
 test("boolean true", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`select ${true} as x`;
   expect(query.string).toEqual("select $1 as x");
@@ -61,7 +61,7 @@ test("boolean true", async () => {
 });
 
 test("date", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const now = new Date();
   const query = sql`select ${now} as x`;
@@ -70,7 +70,7 @@ test("date", async () => {
 });
 
 test("json", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const data = { a: "hello", b: 42 };
   const query = sql`
@@ -81,7 +81,7 @@ test("json", async () => {
 });
 
 test("empty array", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${[]} as x
@@ -91,7 +91,7 @@ test("empty array", async () => {
 });
 
 test("array of integers", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${[1, 2, 3]} as x
@@ -101,7 +101,7 @@ test("array of integers", async () => {
 });
 
 test("array of strings", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${["a", "b", "c"]} as x
@@ -111,7 +111,7 @@ test("array of strings", async () => {
 });
 
 test("array of dates", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const now = new Date();
   const query = sql`
@@ -122,7 +122,7 @@ test("array of dates", async () => {
 });
 
 test("nested array n2", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${[
@@ -131,25 +131,25 @@ test("nested array n2", async () => {
     ]} as x
   `;
   expect(strip_ws(query.string)).toEqual("select $1 as x");
-  expect(query.parameters).toEqual([[[1, 2], [3,4]]]);
+  expect(query.parameters).toEqual([[[1, 2], [3, 4]]]);
 });
 
 test("nested array n3", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${[
-      [[1, 2]], 
-      [[3, 4]], 
+      [[1, 2]],
+      [[3, 4]],
       [[5, 6]]]
     } as x
   `;
   expect(strip_ws(query.string)).toEqual("select $1 as x");
-  expect(query.parameters).toEqual([[[[1, 2]], [[3,4]], [[5,6]]]]);
+  expect(query.parameters).toEqual([[[[1, 2]], [[3, 4]], [[5, 6]]]]);
 });
 
 test("escape in arrays", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${['Hello "you"', "c:\\windows"]} as x
@@ -159,7 +159,7 @@ test("escape in arrays", async () => {
 });
 
 test("escapes", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select 1 as ${sql('hej"hej')}
@@ -169,7 +169,7 @@ test("escapes", async () => {
 });
 
 test("null for int", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     insert into test values(${null})
@@ -180,7 +180,7 @@ test("null for int", async () => {
 
 /// error conditions
 test("undefined values throws", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   let error;
   try {
@@ -193,7 +193,7 @@ test("undefined values throws", async () => {
 });
 
 test("null sets to null", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${null} as x
@@ -204,10 +204,10 @@ test("null sets to null", async () => {
 
 /// unsafe stuff
 test("unsafe insert with parameters", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql.unsafe(
-    "insert into test values ($1) returning *", 
+    "insert into test values ($1) returning *",
     [50]
   );
   expect(strip_ws(query.string)).toEqual(
@@ -217,7 +217,7 @@ test("unsafe insert with parameters", async () => {
 });
 
 test("unsafe simple", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql.unsafe("select 1 as x");
   expect(strip_ws(query.string)).toEqual("select 1 as x");
@@ -225,7 +225,7 @@ test("unsafe simple", async () => {
 });
 
 test("unsafe insert", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const uq = "insert into test values (1)";
   const query = sql.unsafe(uq);
@@ -238,7 +238,7 @@ test("unsafe insert", async () => {
 // live query works fine. 
 // todo: figure out what sqlite does and then fix test as needed.
 test("simple query using unsafe with multiple statements", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql.unsafe(
     "select 1 as x;select 2 as x"
@@ -250,32 +250,32 @@ test("simple query using unsafe with multiple statements", async () => {
 });
 
 /// stress tests
-test("big query body", async () => {  
-  const sql = stl({debug: false});
+test("big query body", async () => {
+  const sql = stl({ debug: false });
 
   const query = sql`
     insert into test ${sql(
-      [...Array(50000).keys()].map((x) => ({ x }))
-    )}
+    [...Array(50000).keys()].map((x) => ({ x }))
+  )}
   `;
   expect(strip_ws(query.string)).toEqual(
     'insert into test ("x") values ' +
-    [...Array(50000).keys()].map((x, i) => `($${i+1})`)
+    [...Array(50000).keys()].map((x, i) => `($${i + 1})`)
   );
 });
 
 test("throws if more than 65534 parameters", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   let error;
   try {
     // access to trigger error
     sql`
       insert into test ${sql(
-        [...Array(65535).keys()].map((x) => ({ x }))
-      )}
+      [...Array(65535).keys()].map((x) => ({ x }))
+    )}
     `.parameters;
-  } catch(e) {
+  } catch (e) {
     error = e.cause.code;
   }
   expect(error).toEqual("MAX_PARAMETERS_EXCEEDED");
@@ -284,7 +284,7 @@ test("throws if more than 65534 parameters", async () => {
 // v.a: this test may not be applicable to `sqlite` since
 // it is dynamically typed.
 test("implicit cast of unknown types", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const date = new Date().toISOString();
   const query = sql`
@@ -297,7 +297,7 @@ test("implicit cast of unknown types", async () => {
 });
 
 test("sql() throws not tagged error", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   let error;
   try {
@@ -311,7 +311,7 @@ test("sql() throws not tagged error", async () => {
 
 
 test("little bobby tables", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const name = "Robert'); DROP TABLE students;--";
   const query = sql`
@@ -325,7 +325,7 @@ test("little bobby tables", async () => {
 
 /// dynamic sql
 test("dynamic table name", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select * from ${sql("test")}
@@ -337,7 +337,7 @@ test("dynamic table name", async () => {
 });
 
 test("dynamic schema name", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select * from ${sql("public")}.test
@@ -349,7 +349,7 @@ test("dynamic schema name", async () => {
 });
 
 test("dynamic schema and table name", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select * from ${sql("public.test")}
@@ -361,7 +361,7 @@ test("dynamic schema and table name", async () => {
 });
 
 test("dynamic column name", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select 1 as ${sql("!not_valid")}
@@ -373,7 +373,7 @@ test("dynamic column name", async () => {
 });
 
 test("dynamic select as", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${sql({ a: 1, b: 2 })}
@@ -385,7 +385,7 @@ test("dynamic select as", async () => {
 });
 
 test("dynamic select as pluck", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${sql({ a: 1, b: 2 }, "a")}
@@ -397,7 +397,7 @@ test("dynamic select as pluck", async () => {
 });
 
 test("dynamic insert", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const x = { a: 42, b: "the answer" };
   const query = sql`
@@ -410,7 +410,7 @@ test("dynamic insert", async () => {
 });
 
 test("dynamic insert pluck", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const x = { a: 42, b: "the answer" };
   const query = sql`
@@ -423,7 +423,7 @@ test("dynamic insert pluck", async () => {
 });
 
 test("dynamic in with empty array", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select * from test where null in ${sql([])}
@@ -436,7 +436,7 @@ test("dynamic in with empty array", async () => {
 });
 
 test("dynamic in after insert", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     with x as (
@@ -455,7 +455,7 @@ test("dynamic in after insert", async () => {
 });
 
 test("array insert", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     insert into test (a, b) values ${sql([1, 2])} returning *
@@ -466,8 +466,8 @@ test("array insert", async () => {
   expect(query.parameters).toEqual([1, 2]);
 });
 
-test("where parameters in()", async () => {  
-  const sql = stl({debug: false});
+test("where parameters in()", async () => {
+  const sql = stl({ debug: false });
 
   const query = sql`
     select * from test where x in ${sql(["a", "b", "c"])}
@@ -479,7 +479,7 @@ test("where parameters in()", async () => {
 });
 
 test("where parameters in() values before", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     with rows(a) as (
@@ -499,7 +499,7 @@ test("where parameters in() values before", async () => {
 });
 
 test("dynamic multi row insert", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const x = { a: 42, b: "the answer" };
   const query = sql`
@@ -514,7 +514,7 @@ test("dynamic multi row insert", async () => {
 });
 
 test("dynamic update", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const x = { a: 42, b: "the answer" };
   const query = sql`
@@ -529,13 +529,13 @@ test("dynamic update", async () => {
 });
 
 test("dynamic update pluck", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     update test set ${sql(
-      { a: 42, b: "the answer" },
-      "a"
-    )} returning *
+    { a: 42, b: "the answer" },
+    "a"
+  )} returning *
   `;
   expect(strip_ws(query.string)).toEqual(
     'update test set "a"=$1 returning *'
@@ -546,7 +546,7 @@ test("dynamic update pluck", async () => {
 });
 
 test("dynamic select array", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${sql(["a", "b"])} from test
@@ -558,7 +558,7 @@ test("dynamic select array", async () => {
 });
 
 test("dynamic returning array", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const cols = ["a", "b"];
   const query = sql`
@@ -571,7 +571,7 @@ test("dynamic returning array", async () => {
 });
 
 test("dynamic select args", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select ${sql("a", "b")} from test
@@ -586,7 +586,7 @@ test("dynamic select args", async () => {
 // in the `as` clause.
 // todo: fix test
 test("dynamic values single row", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select * from (values ${sql(["a", "b", "c"])}) as x(a, b, c)
@@ -601,16 +601,16 @@ test("dynamic values single row", async () => {
 // in the `as` clause. 
 // todo: fix test
 test("dynamic values multi row", async () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   const query = sql`
     select * from (values ${sql([
-      ["a", "b", "c"],
-      ["a", "b", "c"]
-    ])}) as x(a, b, c)
+    ["a", "b", "c"],
+    ["a", "b", "c"]
+  ])}) as x(a, b, c)
   `;
   expect(strip_ws(query.string)).toEqual(
     'select * from (values ($1, $2, $3),($4, $5, $6)) as x(a, b, c)'
   );
-  expect(query.parameters).toEqual(["a", "b", "c","a", "b", "c"]);
+  expect(query.parameters).toEqual(["a", "b", "c", "a", "b", "c"]);
 });

@@ -1,5 +1,5 @@
-import { assert, expect, test, describe, it } from "vitest";
-import stl from "@m5nv/stl";
+import { expect, test, describe, it } from "vitest";
+import stl, { transform } from "@m5nv/stl";
 
 // helper
 const strip_ws = (str) => str.replace(/\s+/g, " ").trim();
@@ -63,21 +63,21 @@ describe("unsafe", () => {
     const query = sql.unsafe(`
       SELECT * FROM users WHERE name = ${iGotPwned}
     `);
-  
+
     // const query = sql`${sql.unsafe("friend_created")}`;
     expect(strip_ws(query.string)).toEqual(
       "SELECT * FROM users WHERE name = 'Alice' AND 1=1"
     );
     expect(query.parameters).to.have.ordered.members([]);
   });
-  
+
   test("once unsafe always unsafe", async () => {
     let sql = stl({ debug: false });
     const iGotPwned = "'Alice' AND 1=1"; // say good bye to your data!
     const query = sql`
       SELECT * FROM users WHERE name = ${sql.unsafe(iGotPwned)}
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       "SELECT * FROM users WHERE name = \'Alice\' AND 1=1"
     );
@@ -92,7 +92,7 @@ describe("unsafe", () => {
       "truly fubared - don\'t do this"
     );
     expect(query.parameters).to.have.ordered.members([]);
-  
+
     query = sql`
       ${sql('or "this" for that matter')},
       ${sql("or.that")}
@@ -102,17 +102,17 @@ describe("unsafe", () => {
     );
     expect(query.parameters).to.have.ordered.members([]);
   });
-  
-  
+
+
   test("valid use case for unsafe", async () => {
     let sql = stl({ debug: false });
-  
+
     const triggerName = "friend_created";
     const triggerFnName = "on_friend_created";
     const eventType = "insert";
     const schema_name = "app";
     const table_name = "friends";
-  
+
     let query = sql`
       create or replace trigger ${sql(triggerName)}
       after ${sql.unsafe(eventType)} 
@@ -130,8 +130,8 @@ describe("unsafe", () => {
       )
     );
     expect(query.parameters).to.have.ordered.members([]);
-  
-  
+
+
     const password = 'fubar';
     query = sql`
       create role friend_service 
@@ -144,9 +144,8 @@ describe("unsafe", () => {
   });
 });
 
-
 describe("basic SQL interpolation", () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
   it("should interpolate values correctly", () => {
     const var1 = 123, var2 = "abc";
@@ -174,16 +173,35 @@ describe("basic SQL interpolation", () => {
   });
 });
 
+describe("Turso compatible query format", () => {
+  const sql = stl({ debug: false });
+
+  it("should interpolate values correctly", () => {
+    const var1 = 123, var2 = "abc";
+    const query = sql`
+      SELECT * FROM x WHERE name = ${var2} AND id = ${var1}
+    `;
+    expect(transform(query)).toEqual(
+      {
+        sql: `
+      SELECT * FROM x WHERE name = $1 AND id = $2
+    `, //<- formatting is important for the test to pass
+        args: { $1: "abc", $2: 123 }
+      }
+    );
+  });
+});
+
 describe("identifiers and functions", () => {
   test("invoke as a function to create identifiers", async () => {
     let sql = stl({ debug: false });
     let query = sql`
       SELECT * FROM ${sql("table_name")}
     `;
-  
+
     expect(strip_ws(query.string)).toEqual('SELECT * FROM "table_name"');
     expect(query.parameters).to.have.ordered.members([]);
-  
+
     query = sql`
       select ${sql(["a", "b", "c"])} as x
     `;
@@ -193,14 +211,14 @@ describe("identifiers and functions", () => {
 
   test("sql functions", async () => {
     let sql = stl({ debug: false });
-  
+
     let date = null;
     let query = sql`
       update users set updated_at = ${date || sql`now()`}
     `;
     expect(strip_ws(query.string)).toEqual("update users set updated_at = now()");
     expect(query.parameters).to.have.ordered.members([]);
-  
+
     date = Date.now();
     query = sql`
       update users set updated_at = ${date || sql`now()`}
@@ -211,17 +229,25 @@ describe("identifiers and functions", () => {
 });
 
 describe("values in `IN clause` and elsewhere", () => {
-  const sql = stl({debug: false});
+  const sql = stl({ debug: false });
 
-  test("just `in` values", () => {
+  test("multiple `in` values", () => {
     const data = [3, "abc", 9];
     const q = sql`SELECT * FROM b WHERE col1 in ${sql(data)}`;
     expect(q.string).to.equal("SELECT * FROM b WHERE col1 in ($1, $2, $3)");
     expect(q.parameters).to.have.ordered.members([3, "abc", 9]);
   });
 
+  test("one `in` value", () => {
+    const data = ["abc"];
+    const q = sql`SELECT * FROM b WHERE col1 in ${sql(data)}`;
+    // console.log(q.string);
+    expect(q.string).to.equal("SELECT * FROM b WHERE col1 in ($1)");
+    expect(q.parameters).to.have.ordered.members(["abc"]);
+  });
+
   test("empty `in` values", () => {
-    const q =  sql`SELECT * FROM b WHERE col1 in ${sql([])}`;
+    const q = sql`SELECT * FROM b WHERE col1 in ${sql([])}`;
     expect(q.string).to.equal("SELECT * FROM b WHERE col1 in (null)");
     expect(q.parameters).to.have.ordered.members([]);
   });
@@ -235,7 +261,7 @@ describe("values in `IN clause` and elsewhere", () => {
       where age in ${sql([68, 75, 23])}
       and age != ${23}
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       "select * from users where age in ($1, $2, $3) and age != $4"
     );
@@ -293,7 +319,7 @@ describe("values in `IN clause` and elsewhere", () => {
 describe("sum of parts and expressions", () => {
   test("use of empty sql`` in a conditional", async () => {
     let sql = stl({ debug: false });
-  
+
     // control variable
     let filterAge = true;
     const olderThan = (x) => sql`and age > ${x}`;
@@ -307,7 +333,7 @@ describe("sum of parts and expressions", () => {
       "select * from users where name is not null and age > $1"
     );
     expect(query.parameters).to.have.ordered.members([50]);
-  
+
     filterAge = false;
     query = sql`
       select
@@ -323,7 +349,7 @@ describe("sum of parts and expressions", () => {
 
   test("dynamic filters", async () => {
     let sql = stl({ debug: false });
-  
+
     // control variable
     let id;
     let query = sql`
@@ -333,7 +359,7 @@ describe("sum of parts and expressions", () => {
     `;
     expect(strip_ws(query.string)).toEqual("select * from users");
     expect(query.parameters).to.have.ordered.members([]);
-  
+
     id = 42;
     query = sql`
       select
@@ -345,7 +371,7 @@ describe("sum of parts and expressions", () => {
     );
     expect(query.parameters).to.have.ordered.members([42]);
   });
-  
+
   test("join fragments into full query", async () => {
     let sql = stl({ debug: false });
 
@@ -357,14 +383,14 @@ describe("sum of parts and expressions", () => {
 
     // v.a can we improve DX for this use case?
     // conditions
-    const email =  sql`
+    const email = sql`
       ${filter.email ? sql`email like ${filter.email}` : sql``}
     `;
     const min_age = sql`
-      ${filter.minAge ? sql`age > ${filter.minAge}`: sql``}
+      ${filter.minAge ? sql`age > ${filter.minAge}` : sql``}
     `;
     const max_age = sql`
-      ${filter.maxAge ?  sql`age < ${filter.maxAge}`: sql``}
+      ${filter.maxAge ? sql`age < ${filter.maxAge}` : sql``}
     `;
     const query = sql`
       select * from test where ${email} and ${min_age} and ${max_age}
@@ -388,7 +414,7 @@ describe("selects", () => {
   test("with query parameters", async () => {
     let sql = stl({ debug: false });
 
-    const name = "Mur",  age = 60;
+    const name = "Mur", age = 60;
     const query = sql`
       select
         name,
@@ -398,13 +424,13 @@ describe("selects", () => {
         name like ${name + "%"}
         and age > ${age}
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       "select name, age from users where name like $1 and age > $2"
     );
     expect(query.parameters).to.have.ordered.members(["Mur%", 60]);
   });
-  
+
   test("from values", async () => {
     let sql = stl({ debug: false });
     const data = [
@@ -412,17 +438,17 @@ describe("selects", () => {
       [51, "Carol"],
       [52, "Bob"],
     ];
-  
+
     const query = sql`
       select * from (values ${sql(data)})
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       "select * from (values ($1, $2),($3, $4),($5, $6))"
     );
     expect(query.parameters).to.have.ordered.members(data.flat());
   });
-  
+
   test("select dynamic column", async () => {
     let sql = stl({ debug: false });
     const columns = ["name", "age"];
@@ -432,7 +458,7 @@ describe("selects", () => {
         ${sql(columns)}
       from users
     `;
-  
+
     expect(strip_ws(query.string)).toEqual('select "id", "name", "age" from users');
     expect(query.parameters).to.have.ordered.members([]);
   });
@@ -443,9 +469,9 @@ describe("selects", () => {
       fullname: "Tom Hardy",
       realage: 52,
     };
-  
+
     const query = sql`select ${sql(aliases)} from fubar`;
-  
+
     expect(strip_ws(query.string)).toEqual(
       'select $1 as "fullname", $2 as "realage" from fubar'
     );
@@ -457,25 +483,25 @@ describe("selects", () => {
     const table = "users",
       column = "id";
     const alias = "foo";
-  
+
     const data = {
       name: "Bad Alice",
       age: 25,
       email: "alice@example.com",
     };
-  
+
     const data2 = [
       [50, "Andrew"],
       [51, "Carol"],
       [52, "Bob"],
     ];
-  
+
     const query = sql`
       select ${sql(column)} as ${sql(alias)} 
       from (values ${sql(data2)} ) as ${sql(table)}
       where name = ${data.name}
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       'select "id" as "foo" from (values ($1, $2),($3, $4),($5, $6) ) as "users" where name = $7'
     );
@@ -512,19 +538,19 @@ describe("inserts", () => {
       name: "Murray",
       age: 68,
     };
-  
+
     const query = sql`
       insert into users ${sql(user, "name", "age")}
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       'insert into users ("name", "age") values ($1, $2)'
     );
-    expect(query.parameters).to.have.ordered.members(["Murray", 68]);  
+    expect(query.parameters).to.have.ordered.members(["Murray", 68]);
   });
-  
+
   it("can handle multiple row inserts", () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
 
     const data = [
       { id: 1, age: 50, name: "Andrew" },
@@ -556,12 +582,12 @@ describe("updates", () => {
       name: "Murray",
       age: 68,
     };
-  
+
     const query = sql`
       update users set ${sql(user, "name", "age")}
       where user_id = ${user.id}
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       'update users set "name"=$1, "age"=$2 where user_id = $3'
     );
@@ -574,13 +600,13 @@ describe("updates", () => {
       [1, "John", 34],
       [2, "Jane", 27],
     ];
-  
+
     const query = sql`
       update users set name = update_data.name, age = update_data.age
       from (values ${sql(data)}) as update_data (id, name, age)
       where users.id = update_data.id
     `;
-  
+
     expect(strip_ws(query.string)).toEqual(
       strip_ws(
         `
@@ -592,8 +618,8 @@ describe("updates", () => {
       )
     );
     expect(query.parameters).to.have.ordered.members([
-      1, "John",  34,
-      2, "Jane",  27,
+      1, "John", 34,
+      2, "Jane", 27,
     ]);
   });
 });
@@ -603,46 +629,46 @@ describe('erroneous invocations', () => {
   const likes = 100;
 
   it('reject untagged identifier or string literal', () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
     let error;
     try {
       // access to trigger error
       sql(`SELECT * FROM posts WHERE likes > ${likes}`).string;
-    } catch(e) {
+    } catch (e) {
       error = e.cause.code;
     }
     expect(error).toEqual("NOT_TAGGED_CALL");
   });
 
   it('reject untagged use with arguments', () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
     let error;
     try {
       // access to trigger error
       sql(`SELECT * FROM posts WHERE likes > ${likes}`, 123, 435).string;
-    } catch(e) {
+    } catch (e) {
       error = e.cause.code;
     }
     expect(error).toEqual("NOT_TAGGED_CALL");
   });
 
   it('reject empty argument', () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
     let error;
     try {
       sql();
-    } catch(e) {
+    } catch (e) {
       error = e.cause.code;
     }
     expect(error).toEqual("UNDEFINED_VALUE");
   });
 
   it('reject empty argument in expression', () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
     let error;
     try {
       sql`select ${sql()}`;
-    } catch(e) {
+    } catch (e) {
       error = e.cause.code;
     }
     expect(error).toEqual("UNDEFINED_VALUE");
@@ -663,15 +689,15 @@ describe('erroneous invocations', () => {
       error = e.cause.code;
     }
     expect(error).toEqual("DATA_LACKS_CONTEXT");
-  
+
     try {
       error = undefined;
-      const data= [
+      const data = [
         { id: 1, name: "John", age: 34 },
         { id: 2, name: "Jane", age: 27 },
       ];
       sql`${sql(data, "id", "name")}`.string;
-    } catch(e) {
+    } catch (e) {
       error = e.cause.code;
     }
     expect(error).toEqual("DATA_LACKS_CONTEXT");
@@ -680,7 +706,7 @@ describe('erroneous invocations', () => {
 
 describe('subquery', () => {
   it('handles subquery properly', () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
     const query = sql`
       insert into users (age)
         select age from users
@@ -693,7 +719,7 @@ describe('subquery', () => {
   });
 
   it('handles CTE subquery properly', () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
     const query = sql`
       with insertables as (
         select age from users
@@ -713,7 +739,7 @@ describe('subquery', () => {
   });
 
   it('handles updates properly', () => {
-    const sql = stl({debug: false});
+    const sql = stl({ debug: false });
     let data = [
       { id: 'foo', selected: true },
       { id: 'bar', selected: false },

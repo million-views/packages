@@ -3,7 +3,7 @@ import storage from './db.js'
 const options = {
   debug: false,
   verbose: true,
-  db: ':memory:',
+  db: 'users.db',
 };
 
 const sql = storage(options);
