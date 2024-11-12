@@ -95,7 +95,7 @@ the `format` option to `turso` when constructing the template literal function.
 import stl from "@m5nv/stl";
 import { createClient } from "@libsql/client";
 
-const client = createClient({
+const db = createClient({
   url: ":memory:",
 });
 
