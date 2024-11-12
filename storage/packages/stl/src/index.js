@@ -1,8 +1,9 @@
 /**
  * STL: function tagged template literal to construct safe SQL
  */
-export default function stl(options) {
-  options = { debug: false, ...options };
+
+export default function stl(options = {}) {
+  options = { debug: false, format: 'default', ...options };
   if (typeof options.debug !== "function") {
     options.debug = options.debug === true ? console.log : () => { };
   }
@@ -23,8 +24,7 @@ export default function stl(options) {
 /// transform stl query format for Turso
 export function transform(query) {
   const args = query.parameters.reduce((acc, val, idx) => ({ ...acc, [`$${idx + 1}`]: val }), {});
-  const sql = query.string;
-  return { sql, args };
+  return { sql: query.string, args };
 }
 
 /// Result wraps either rows returned by the db driver or an Error object
@@ -52,9 +52,9 @@ export function Result(result = null) {
       instance.error = result;
     } else {
       instance.count = result.rowsAffected;
-      instance.columns = result.columns?.map((col, index) => ({
+      instance.columns = result.columns?.map((col, idx) => ({
         name: col,
-        type: result.columnTypes[index],
+        type: result.columnTypes[idx],
       }));
       instance.push(...result.rows);
     }
@@ -101,6 +101,26 @@ const STL = Symbol.for("@m5nv/storage/stl/context/type/query");
 const VAR = Symbol.for("@m5nv/storage/stl/context/type/identifier");
 const FUN = Symbol.for("@m5nv/storage/stl/context/type/builder");
 
+/**
+ * Driver formats for various database clients
+ */
+const FORMATS = {
+  default: {
+    keys: ['string', 'parameters'],
+    transform: (string, parameters, unsafe) => ({ string, parameters })
+  },
+  turso: {
+    keys: ['sql', 'args'],
+    transform: (string, parameters, unsafe) => ({
+      sql: string,
+      args: unsafe ? parameters : parameters.reduce((acc, val, idx) => ({
+        ...acc,
+        [`$${idx + 1}`]: val
+      }), {})
+    })
+  }
+};
+
 const errors = {
   UNDEFINED_VALUE: "undefined values are not allowed",
   NOT_TAGGED_CALL: "query is not a tagged template literal",
@@ -134,27 +154,60 @@ function analyze_inputs(strings, args, options) {
 // main driver function to get things going
 export function sql_tagged_literal(strings, args, options) {
   const [tagged, unsafe, type] = analyze_inputs(strings, args, options);
+  const { keys, transform } = FORMATS[options.format] || FORMATS.default;
 
-  return {
-    get string() {
-      return resolve(this[CTX], options).string;
-    },
-
-    get parameters() {
-      return resolve(this[CTX], options).parameters;
-    },
-
-    [CTX]: {
-      type,
-      unsafe,
-      tagged,
-      strings,
-      args,
-    },
+  const ctx = {
+    type,
+    unsafe,
+    tagged,
+    strings,
+    args,
+    resolved: null
   };
+  const rv = {};
+  Object.defineProperty(rv, CTX, {
+    value: ctx,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  });
+
+  // Define getters and toString on `rv` using `Object.defineProperties`
+  Object.defineProperties(rv, {
+    [keys[0]]: {
+      get() {
+        return this.valueOf()[keys[0]];
+      },
+      enumerable: true,
+      configurable: true
+    },
+    [keys[1]]: {
+      get() {
+        return this.valueOf()[keys[1]];
+      },
+      enumerable: true,
+      configurable: true
+    },
+
+    valueOf: {
+      value() {
+        if (!ctx.resolved) {
+          const pre = resolve(ctx, options);
+          ctx.resolved = transform(pre.string, pre.parameters, unsafe);
+          // console.log("valueOf", pre, ctx.resolved);
+        }
+        return ctx.resolved;
+      },
+      writable: false,
+      enumerable: false,
+      configurable: false
+    }
+  });
+
+  return rv;
 }
 
-function resolve(context, options) {
+function resolve(context, options, transform) {
   options.debug({ fn: 'resolve.enter', context });
   if (context.tagged !== true && context.unsafe === false) {
     throw_error_and_bail("NOT_TAGGED_CALL");
@@ -171,14 +224,14 @@ function resolve(context, options) {
     }
   }
 
+  if (parameters.length >= 65534) {
+    throw_error_and_bail("MAX_PARAMETERS_EXCEEDED");
+  }
+
   // cache the result
   context.resolved = { string, parameters };
 
   options.debug({ fn: 'resolve.done', context });
-
-  if (context.resolved.parameters.length >= 65534) {
-    throw_error_and_bail("MAX_PARAMETERS_EXCEEDED");
-  }
 
   return context.resolved;
 }
@@ -253,6 +306,7 @@ function fragment(q, parameters, options) {
 function stringify_value(string, value, parameters, options) {
   value = value?.[CTX] ?? value;
   options.debug({ fn: 'stringify_value', string, value });
+
   if (value) {
     const type = value?.type;
     if (type === FUN) {
@@ -261,8 +315,8 @@ function stringify_value(string, value, parameters, options) {
       return fragment(value, parameters, options);
     } else if (type === VAR) {
       return escape_identifier(value.strings, options);
-    } else if (value[0]?.type == STL) {
-      // todo: find a test case
+    } else if (Array.isArray(value) && value.length > 0 && value.every(v => v?.[CTX]?.type === STL)) {
+      // This block is only for arrays representing subqueries (constructed using stl)
       options.debug({ fn: "stringify_value.sub_query", value });
       return value.reduce(
         (acc, x) => acc + " " + fragment(x, parameters, options),

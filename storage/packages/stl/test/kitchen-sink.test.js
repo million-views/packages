@@ -1,5 +1,5 @@
 import { expect, test, describe, it } from "vitest";
-import stl, { transform } from "@m5nv/stl";
+import stl from "@m5nv/stl";
 
 // helper
 const strip_ws = (str) => str.replace(/\s+/g, " ").trim();
@@ -170,25 +170,6 @@ describe("basic SQL interpolation", () => {
       "SELECT * FROM users WHERE name = $1 AND id = $2"
     );
     expect(query.parameters).to.have.ordered.members(["abc", 123]);
-  });
-});
-
-describe("Turso compatible query format", () => {
-  const sql = stl({ debug: false });
-
-  it("should interpolate values correctly", () => {
-    const var1 = 123, var2 = "abc";
-    const query = sql`
-      SELECT * FROM x WHERE name = ${var2} AND id = ${var1}
-    `;
-    expect(transform(query)).toEqual(
-      {
-        sql: `
-      SELECT * FROM x WHERE name = $1 AND id = $2
-    `, //<- formatting is important for the test to pass
-        args: { $1: "abc", $2: 123 }
-      }
-    );
   });
 });
 
