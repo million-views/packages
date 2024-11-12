@@ -17,6 +17,7 @@ describe('STL with Turso driver', () => {
     const query = sql`
       SELECT * FROM x WHERE name = ${var2} AND id = ${var1}
     `;
+
     expect(query).toEqual(
       {
         sql: `

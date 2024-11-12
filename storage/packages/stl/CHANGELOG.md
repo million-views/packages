@@ -1,5 +1,14 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/storage/packages/stl)
 
+## v1.2.1 - 12NOV2024
+
+- BUG-FIX: array of subqueries fragments are handled correctly now
+- Removed transform function in favor of 'format' feature; set 'format' to
+  'turso' to be able to pass the result of the tagged literal function directly
+  to Turso's execute function. The default is to be 'node-sqlite3' compatible.
+- Added `valueOf` method to the custom object returned by the tagged literal
+  function;
+
 ## v1.1.1 - 11NOV2024
 
 - BUG-FIX: IN clause with a single item array works correctly now

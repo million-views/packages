@@ -7,8 +7,8 @@ and unsafe SQL. The key distinction with _STL_ is that it doesn't handle
 database connectivity. This gives developers the freedom to combine it with
 their preferred database library.
 
-This library exists so that we can build MVP and prototypes with little to no
-friction when working with databases. It is biased towards `SQLite` being the
+Although _STL_ is database agnostic, it is tested extensively with `SQLite` and
+and occasionally with `Postgres`. It is biased towards `SQLite` being the
 storage layer of choice.
 
 ## Quick start
@@ -80,23 +80,27 @@ STL utilizes [tagged template functions][2-ttf] to process query parameters
 
 Any generic value will be serialized according to an inferred type, and replaced
 by a SQLite protocol placeholder `$1, $2, ...`. The parameters are then sent
-separately to the database which handles escaping & casting.
+separately to the database which handles escaping and casting.
 
-All queries will return a `{string, parameters}` proxy which can then be passed
-in to the functions that accept query string and bind parameters, a standard
-interface in popular SQLite database libraries. A helper `transform` function is
-exported which can be used to transform the proxy object to Turso's named query
-parameter format.
+All queries constructed using the tag function return a custom object which can
+be passed to a driver function that accepts a query string and bind parameters;
+the default key names in the object to access these values are `string` and
+`parameters`. The shape of the parameters and key names can be changed by using
+the 'format' option.
 
-The default is to return `{string, parameters}`, which is used by the
-`node-sqlite` package. A future version may perform this transformation
-automatically based on options provided to `stl` factory function.
+For instance to use query returned by **sql`...`** function with `Turso`, set
+the `format` option to `turso` when constructing the template literal function.
 
 ```js
 import stl from "@m5nv/stl";
-import db from "<your-favorite-database-library>";
+import { createClient } from "@libsql/client";
 
-const sql = stl({ debug: false, driver: "turso" });
+const client = createClient({
+  url: ":memory:",
+});
+
+// Construct query object to be compatible with Turso's named sql format
+const sql = stl({ debug: false, format: "turso" });
 const name = "Mur", age = 60;
 const query = sql`
     select
@@ -121,7 +125,8 @@ const xs = await db.execute(sql`
 
 The result and xs variables above will be in whatever format the driver returns.
 To get the result value as an array like in Porsager's library STL provides a
-`Result` function is exported and can be used as below:
+`Result` function; using Result function allows you to treat the return result
+from a database uniformly:
 
 ```js
 const result_as_array = Result(result);
@@ -159,7 +164,7 @@ const users = Result(db.execute(query));
 // users = [{ name: 'Murray', age: 68 }]
 ```
 
-> [!WARN]\
+> [!WARNING]\
 > Be careful with quotation marks here. Because SQLite infers column types, you
 > do not need to wrap your interpolated parameters in quotes like `'${name}'`.
 > This will cause an error because the tagged template replaces `${name}` with

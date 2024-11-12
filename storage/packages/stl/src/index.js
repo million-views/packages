@@ -21,12 +21,6 @@ export default function stl(options = {}) {
   return sqlHelper;
 }
 
-/// transform stl query format for Turso
-export function transform(query) {
-  const args = query.parameters.reduce((acc, val, idx) => ({ ...acc, [`$${idx + 1}`]: val }), {});
-  return { sql: query.string, args };
-}
-
 /// Result wraps either rows returned by the db driver or an Error object
 /// so that the application layer is not littered with try/catch blocks. For
 /// to work, the developer working with SQL should catch the error and wrap
@@ -141,8 +135,7 @@ function analyze_inputs(strings, args, options) {
     type = STL;
   } else if (typeof strings === "string" && args.length == 0) {
     type = VAR;
-  }
-  else if (strings === null || strings === undefined) {
+  } else if (strings === null || strings === undefined) {
     throw_error_and_bail("UNDEFINED_VALUE");
   } else {
     type = FUN;
@@ -172,7 +165,9 @@ export function sql_tagged_literal(strings, args, options) {
     configurable: false,
   });
 
-  // Define getters and toString on `rv` using `Object.defineProperties`
+  // Define getters and valueOf on `rv` using `Object.defineProperties`
+  // for the caller to retrieve the parameterized sql statement and 
+  // collected parameters using key names expected by the db driver
   Object.defineProperties(rv, {
     [keys[0]]: {
       get() {
@@ -192,16 +187,15 @@ export function sql_tagged_literal(strings, args, options) {
     valueOf: {
       value() {
         if (!ctx.resolved) {
-          const pre = resolve(ctx, options);
-          ctx.resolved = transform(pre.string, pre.parameters, unsafe);
-          // console.log("valueOf", pre, ctx.resolved);
+          // cache the result
+          ctx.resolved = resolve(ctx, options, transform);
         }
         return ctx.resolved;
       },
       writable: false,
       enumerable: false,
       configurable: false
-    }
+    },
   });
 
   return rv;
@@ -212,8 +206,6 @@ function resolve(context, options, transform) {
   if (context.tagged !== true && context.unsafe === false) {
     throw_error_and_bail("NOT_TAGGED_CALL");
   }
-
-  if (context.resolved) return context.resolved;
 
   let parameters = [], string = fragment(context, parameters, options);
 
@@ -228,12 +220,10 @@ function resolve(context, options, transform) {
     throw_error_and_bail("MAX_PARAMETERS_EXCEEDED");
   }
 
-  // cache the result
-  context.resolved = { string, parameters };
+  const resolved = transform(string, parameters, context.unsafe);
+  options.debug({ fn: 'resolve.done', resolved });
 
-  options.debug({ fn: 'resolve.done', context });
-
-  return context.resolved;
+  return resolved;
 }
 
 // used to transform `sql([] | {}, ...)` helper function based on
