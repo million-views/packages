@@ -1,7 +1,45 @@
 /**
- * STL: function tagged template literal to construct safe SQL
+ * STL: function tagged template literal to construct safe SQL.
+ * 
+ * STL allows developers to create and handle SQL queries safely using 
+ * tagged template literals. It also provides a utility to wrap database
+ * results into a standardized structure to simplify error handling.
  */
 
+// type information
+/**
+ * @typedef {Object} Options
+ *  @property {boolean|function} [debug=false]
+ *    Debugging option. If set to true, logs to console; can also be a
+ *    custom logging function.
+ *  @property {string} [format='default']
+ *    The format to use for generating SQL queries.
+ *
+ * @typedef {Object} ResultColumns
+ *  @property {string} name - The column name.
+ *  @property {string} type - The column type.
+ *
+ * @typedef {Object} ResultObject
+ *  @property {number} [count=null]
+ *    Number of affected rows returned by the database.
+ *  @property {string} [command=null]
+ *    The command run by the query (e.g., SELECT, UPDATE, INSERT, DELETE).
+ *  @property {ResultColumns[]} [columns=null]
+ *    Array of column metadata.
+ *  @property {Error|undefined} [error=undefined]
+ *    Error object if the database operation fails.
+ */
+
+
+/**
+ * Creates a tagged template literal function to construct safe/unsafe SQL.
+ *
+ * @param {Options} [options={}]
+ *  Configuration options for STL.
+ * @returns {function} 
+ *  A function that can be used as a tagged template literal for
+ *  constructing SQL queries.
+ */
 export default function stl(options = {}) {
   options = { debug: false, format: 'default', ...options };
   if (typeof options.debug !== "function") {
@@ -21,18 +59,23 @@ export default function stl(options = {}) {
   return sqlHelper;
 }
 
-/// Result wraps either rows returned by the db driver or an Error object
-/// so that the application layer is not littered with try/catch blocks. For
-/// to work, the developer working with SQL should catch the error and wrap
-/// it using Result function.
-///
-/// Note: class performs better than a function but I like creating objects
-/// without using new at the callsite; class or otherwise, it is to be noted
-/// that we are adding latency here for the sake of better ergonomics in 
-/// dealing with database results uniformly.
-///
-/// At the moment this assumes the db driver is Turso. The use of this function
-/// is optional; i.e the STL functionality doesn't depend on it.
+/**
+ * Result wraps either rows returned by the database driver or an Error object.
+ * 
+ * Allows the application to avoid using try/catch blocks by uniformly handling
+ * success and failure cases. For this to be the case the developer working with
+ * the database driver function should catch the error or the result of the call
+ * and pass it to this function.
+ *
+ * @param {Object|null} [result=null]
+ *  The database result or an error object.
+ * @returns {ResultObject} 
+ *  A new instance of Result that contains query data with any metadata returned
+ *  by the database driver or an error.
+ * 
+ * @note At the moment this assumes the db driver is Turso. The use of this
+ *  function is optional; i.e the STL functionality doesn't depend on it.
+ */
 export function Result(result = null) {
   if (!new.target) {
     return new Result(result);
@@ -145,6 +188,18 @@ function analyze_inputs(strings, args, options) {
 }
 
 // main driver function to get things going
+/**
+ * Creates a SQL tagged literal based on provided template literals and arguments.
+ * 
+ * @note This function should not be used by app developers directly; it is 
+ *  exported mainly for library/tool developers to wrap the db and execute
+ *  sql directly instead of passing it to the db driver's execute function.
+ * 
+ * @param {string[]} strings - Strings provided by the tagged template literal.
+ * @param {Array} args - Arguments for the SQL query.
+ * @param {Options} options - Options for formatting and debugging.
+ * @returns {Object} Object containing the constructed SQL query and parameters.
+ */
 export function sql_tagged_literal(strings, args, options) {
   const [tagged, unsafe, type] = analyze_inputs(strings, args, options);
   const { keys, transform } = FORMATS[options.format] || FORMATS.default;

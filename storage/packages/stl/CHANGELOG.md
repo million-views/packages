@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/storage/packages/stl)
 
+## v1.2.3 - 03DEC2024
+
+- Added JSDoc type information for exported functions and types.
+
 ## v1.2.1 - 12NOV2024
 
 - BUG-FIX: array of subqueries fragments are handled correctly now
