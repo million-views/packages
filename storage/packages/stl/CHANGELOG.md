@@ -1,5 +1,11 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/storage/packages/stl)
 
+## v1.2.4 - 03FEB2025
+
+- Added .meta property to Result; this helps in transfering meta information
+  such as pagination from the CRUD API layer that can then be used by the REST
+  API layer.
+
 ## v1.2.3 - 03DEC2024
 
 - Added JSDoc type information for exported functions and types.

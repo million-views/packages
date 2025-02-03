@@ -1,7 +1,7 @@
 /**
  * STL: function tagged template literal to construct safe SQL.
- * 
- * STL allows developers to create and handle SQL queries safely using 
+ *
+ * STL allows developers to create and handle SQL queries safely using
  * tagged template literals. It also provides a utility to wrap database
  * results into a standardized structure to simplify error handling.
  */
@@ -30,20 +30,19 @@
  *    Error object if the database operation fails.
  */
 
-
 /**
  * Creates a tagged template literal function to construct safe/unsafe SQL.
  *
  * @param {Options} [options={}]
  *  Configuration options for STL.
- * @returns {function} 
+ * @returns {function}
  *  A function that can be used as a tagged template literal for
  *  constructing SQL queries.
  */
 export default function stl(options = {}) {
-  options = { debug: false, format: 'default', ...options };
+  options = { debug: false, format: "default", ...options };
   if (typeof options.debug !== "function") {
-    options.debug = options.debug === true ? console.log : () => { };
+    options.debug = options.debug === true ? console.log : () => {};
   }
 
   function sqlHelper(strings, ...args) {
@@ -61,7 +60,7 @@ export default function stl(options = {}) {
 
 /**
  * Result wraps either rows returned by the database driver or an Error object.
- * 
+ *
  * Allows the application to avoid using try/catch blocks by uniformly handling
  * success and failure cases. For this to be the case the developer working with
  * the database driver function should catch the error or the result of the call
@@ -69,10 +68,10 @@ export default function stl(options = {}) {
  *
  * @param {Object|null} [result=null]
  *  The database result or an error object.
- * @returns {ResultObject} 
+ * @returns {ResultObject}
  *  A new instance of Result that contains query data with any metadata returned
  *  by the database driver or an error.
- * 
+ *
  * @note At the moment this assumes the db driver is Turso. The use of this
  *  function is optional; i.e the STL functionality doesn't depend on it.
  */
@@ -88,6 +87,7 @@ export function Result(result = null) {
     if (result instanceof Error) {
       instance.error = result;
     } else {
+      instance.meta = result.meta;
       instance.count = result.rowsAffected;
       instance.columns = result.columns?.map((col, idx) => ({
         name: col,
@@ -98,6 +98,11 @@ export function Result(result = null) {
   }
 
   return instance;
+  // technically, we should freeze the result to maintain a contract with
+  // downstream functions that depend on certain attributes being present;
+  // but that would be at the expense of performance; revisit when V8
+  // performance degradation is negligible
+  // return Object.freeze(instance);
 }
 
 // Inherit from Array
@@ -107,9 +112,9 @@ Object.setPrototypeOf(Result, Array);
 // Define properties
 // Notes:
 //  .count
-//  The count property is the number of affected rows returned by the 
+//  The count property is the number of affected rows returned by the
 //  database. This is useful for insert, update and delete operations to
-//  know the number of rows affected since .length will be 0 in these 
+//  know the number of rows affected since .length will be 0 in these
 //  cases even when using returning clause unless the query explicitly
 //  deals with conflict.... This also implies that .count may not agree
 //  with .length
@@ -120,9 +125,18 @@ Object.setPrototypeOf(Result, Array);
 //
 //  .error
 //  This is specific to our implementation; rather than throw an error,
-//  api could set the error object to transfer the error received from
-//  the database. The value is in a object that will contain `{
-//  {cause: ...}} when set.  TODO: is this a good idea?
+//  the CRUD API layer could `result` argument to be an error object to
+//  transfer any error received from the database. The value is typically
+//  an Error object, preferabily including {cause: {code } } to pinpoint
+//  the error location/cause when set.
+//
+//  .meta
+//  This is specific to our implementation; sometimes you have to convey
+//  additional information about the array items; if the input `result`
+//  argument has a `meta` field then we transfer it through. Can come in
+//  handy for the CRUD layer to return meta information for pagination
+//  in addition to the resulting rows.
+
 Object.defineProperties(Result.prototype, {
   [Symbol.toStringTag]: { value: "Result", writable: false },
   count: { value: null, writable: true },
@@ -130,7 +144,6 @@ Object.defineProperties(Result.prototype, {
   columns: { value: null, writable: true },
   error: { value: undefined, writable: true },
 });
-
 
 ////////////////////////////////////////////////////////////////////////
 const CTX = Symbol.for("@m5nv/storage/stl/context");
@@ -143,19 +156,19 @@ const FUN = Symbol.for("@m5nv/storage/stl/context/type/builder");
  */
 const FORMATS = {
   default: {
-    keys: ['string', 'parameters'],
-    transform: (string, parameters, unsafe) => ({ string, parameters })
+    keys: ["string", "parameters"],
+    transform: (string, parameters, unsafe) => ({ string, parameters }),
   },
   turso: {
-    keys: ['sql', 'args'],
+    keys: ["sql", "args"],
     transform: (string, parameters, unsafe) => ({
       sql: string,
       args: unsafe ? parameters : parameters.reduce((acc, val, idx) => ({
         ...acc,
-        [`$${idx + 1}`]: val
-      }), {})
-    })
-  }
+        [`$${idx + 1}`]: val,
+      }), {}),
+    }),
+  },
 };
 
 const errors = {
@@ -190,11 +203,11 @@ function analyze_inputs(strings, args, options) {
 // main driver function to get things going
 /**
  * Creates a SQL tagged literal based on provided template literals and arguments.
- * 
- * @note This function should not be used by app developers directly; it is 
+ *
+ * @note This function should not be used by app developers directly; it is
  *  exported mainly for library/tool developers to wrap the db and execute
  *  sql directly instead of passing it to the db driver's execute function.
- * 
+ *
  * @param {string[]} strings - Strings provided by the tagged template literal.
  * @param {Array} args - Arguments for the SQL query.
  * @param {Options} options - Options for formatting and debugging.
@@ -210,7 +223,7 @@ export function sql_tagged_literal(strings, args, options) {
     tagged,
     strings,
     args,
-    resolved: null
+    resolved: null,
   };
   const rv = {};
   Object.defineProperty(rv, CTX, {
@@ -221,7 +234,7 @@ export function sql_tagged_literal(strings, args, options) {
   });
 
   // Define getters and valueOf on `rv` using `Object.defineProperties`
-  // for the caller to retrieve the parameterized sql statement and 
+  // for the caller to retrieve the parameterized sql statement and
   // collected parameters using key names expected by the db driver
   Object.defineProperties(rv, {
     [keys[0]]: {
@@ -229,14 +242,14 @@ export function sql_tagged_literal(strings, args, options) {
         return this.valueOf()[keys[0]];
       },
       enumerable: true,
-      configurable: true
+      configurable: true,
     },
     [keys[1]]: {
       get() {
         return this.valueOf()[keys[1]];
       },
       enumerable: true,
-      configurable: true
+      configurable: true,
     },
 
     valueOf: {
@@ -249,7 +262,7 @@ export function sql_tagged_literal(strings, args, options) {
       },
       writable: false,
       enumerable: false,
-      configurable: false
+      configurable: false,
     },
   });
 
@@ -257,7 +270,7 @@ export function sql_tagged_literal(strings, args, options) {
 }
 
 function resolve(context, options, transform) {
-  options.debug({ fn: 'resolve.enter', context });
+  options.debug({ fn: "resolve.enter", context });
   if (context.tagged !== true && context.unsafe === false) {
     throw_error_and_bail("NOT_TAGGED_CALL");
   }
@@ -276,7 +289,7 @@ function resolve(context, options, transform) {
   }
 
   const resolved = transform(string, parameters, context.unsafe);
-  options.debug({ fn: 'resolve.done', resolved });
+  options.debug({ fn: "resolve.done", resolved });
 
   return resolved;
 }
@@ -340,8 +353,8 @@ function fragment(q, parameters, options) {
   let string = q.strings[0], value = q.args[0];
 
   for (let i = 1, imax = q.strings.length; i < imax; i++) {
-    string +=
-      stringify_value(string, value, parameters, options) + q.strings[i];
+    string += stringify_value(string, value, parameters, options) +
+      q.strings[i];
     value = q.args[i];
   }
 
@@ -350,7 +363,7 @@ function fragment(q, parameters, options) {
 
 function stringify_value(string, value, parameters, options) {
   value = value?.[CTX] ?? value;
-  options.debug({ fn: 'stringify_value', string, value });
+  options.debug({ fn: "stringify_value", string, value });
 
   if (value) {
     const type = value?.type;
@@ -360,12 +373,15 @@ function stringify_value(string, value, parameters, options) {
       return fragment(value, parameters, options);
     } else if (type === VAR) {
       return escape_identifier(value.strings, options);
-    } else if (Array.isArray(value) && value.length > 0 && value.every(v => v?.[CTX]?.type === STL)) {
+    } else if (
+      Array.isArray(value) && value.length > 0 &&
+      value.every((v) => v?.[CTX]?.type === STL)
+    ) {
       // This block is only for arrays representing subqueries (constructed using stl)
       options.debug({ fn: "stringify_value.sub_query", value });
       return value.reduce(
         (acc, x) => acc + " " + fragment(x, parameters, options),
-        ""
+        "",
       );
     }
   }
@@ -382,7 +398,7 @@ function build_values(rows, parameters, cols, options) {
         "values",
         rows[i][cols[j]],
         parameters,
-        options
+        options,
       );
       row += (j > 0 ? ", " : "") + col;
     }
@@ -400,8 +416,9 @@ function rows_and_columns_for(fn, first, rest, options) {
     rows = first;
   } else {
     // fix (?) https://github.com/porsager/postgres/issues/321
-    let multi =
-      fn === "insert" ? Array.isArray(first) : Array.isArray(first[0]);
+    let multi = fn === "insert"
+      ? Array.isArray(first)
+      : Array.isArray(first[0]);
     columns = rest.length ? rest.flat() : Object.keys(multi ? first[0] : first);
     rows = multi ? first : [first];
   }
@@ -486,7 +503,7 @@ const builders = Object.entries({
 }).map(([keyword, fn]) => {
   const kre = new RegExp(
     `((?:^|[\\s(])${keyword}(?:$|[\\s(]))(?![\\s\\S]*\\1)`,
-    "i"
+    "i",
   );
   return [kre, fn];
 });
