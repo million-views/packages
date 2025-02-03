@@ -143,6 +143,7 @@ Object.defineProperties(Result.prototype, {
   command: { value: null, writable: true },
   columns: { value: null, writable: true },
   error: { value: undefined, writable: true },
+  meta: { value: undefined, writable: true },
 });
 
 ////////////////////////////////////////////////////////////////////////
