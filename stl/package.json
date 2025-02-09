@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/stl",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "SQL function tagged template literal library",
   "type": "module",
   "main": "src/index.js",

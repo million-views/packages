@@ -1,5 +1,10 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/storage/packages/stl)
 
+## v1.2.5 - 08FEB2025
+
+- Moved to a flat top level package structure. 
+- Fixed import statement in README.md.
+
 ## v1.2.4 - 03FEB2025
 
 - Added .meta property to Result; this helps in transfering meta information
