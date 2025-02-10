@@ -7,7 +7,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/million-views/packages.git",
-    "directory": "storage/packages/stl"
+    "directory": "stl"
   },
   "files": [
     "src/index.js"
@@ -15,7 +15,7 @@
   "bugs": {
     "url": "https://github.com/million-views/packages/issues"
   },
-  "homepage": "https://github.com/million-views/packages/tree/main/storage/packages/stl",
+  "homepage": "https://github.com/million-views/packages/tree/main/stl",
   "author": {
     "name": "Million Views, LLC.",
     "url": "https://m5nv.com"
@@ -44,7 +44,7 @@
     "test:coverage": "vitest --dir test run --coverage"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^3.0.4",
+    "@vitest/coverage-v8": "^3.0.5",
     "@vitest/ui": "latest",
     "vite": "latest",
     "vitest": "latest"
