@@ -1,4 +1,4 @@
-# [Changelog](https://github.com/million-views/packages/commits/main/storage/packages/stl)
+# [Changelog](https://github.com/million-views/packages/commits/main/stl)
 
 ## v1.2.5 - 08FEB2025
 
