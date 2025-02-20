@@ -1,27 +1,23 @@
 {
   "name": "@m5nv/abac",
-  "version": "1.0.0",
-  "type": "module",
+  "version": "1.0.1",
   "description": "A lightweight, intuitive, and powerful library for fine-grained access control.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/million-views/packages.git",
+    "directory": "abac"
+  },
   "exports": {
     ".": "./src/abac.js"
   },
   "files": [
-    "src"
+    "src/abac.js"
   ],
-  "keywords": [
-    "abac",
-    "access control",
-    "authorization",
-    "policy",
-    "attributes",
-    "conditions"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/million-views/packages.git",
-    "directory": "packages/abac"
+  "bugs": {
+    "url": "https://github.com/million-views/packages/issues"
   },
+  "homepage": "https://github.com/million-views/packages/tree/main/abac",
   "author": {
     "name": "Million Views, LLC.",
     "url": "https://m5nv.com"
@@ -30,6 +26,14 @@
   "contributors": [
     "Hemalatha Manickam (https://github.com/hmanicka)",
     "Vijay Aswadhati (https://github.com/vijay8i)"
+  ],
+  "keywords": [
+    "abac",
+    "access control",
+    "authorization",
+    "policy",
+    "attributes",
+    "conditions"
   ],
   "scripts": {
     "test": "vitest --dir test",
