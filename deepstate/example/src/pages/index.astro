@@ -1,0 +1,32 @@
+---
+import { TodoList } from "@components/TodoList.jsx";
+import Layout from "@layouts/Layout.astro";
+
+/// This could be global, per user or per request
+/// global:
+///  - perhaps load from a file
+/// per user:
+///  - use some session based identification to read user specific data
+///
+/// per request:
+///  - typical middleware stuffs something into .local
+///
+/// The only constraint is that this data should be JSON serializable
+const initial = {
+  title: "Live well and prosper",
+  draft: "",
+  todos: [
+    { id: 1, text: "Weed front garden.", completed: true },
+    { id: 2, text: "Chill and smoke some Old Toby.", completed: true },
+    { id: 3, text: "Keep ring secret and safe.", completed: false },
+    { id: 4, text: "Meet Gandalf at Bree.", completed: false },
+    { id: 5, text: "Destroy ring and defeat dark lord.", completed: false },
+  ],
+};
+---
+
+<Layout>
+  <div class="container mx-auto py-8">
+    <TodoList client:load {initial} />
+  </div>
+</Layout>

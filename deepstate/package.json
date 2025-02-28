@@ -1,0 +1,55 @@
+{
+  "name": "@m5nv/deepstate",
+  "version": "1.0.0",
+  "description": "A better DX for using signals in a framework agnostic manner",
+  "type": "module",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/million-views/packages.git",
+    "directory": "stl"
+  },
+  "files": [
+    "src/index.js"
+  ],
+  "bugs": {
+    "url": "https://github.com/million-views/packages/issues"
+  },
+  "homepage": "https://github.com/million-views/packages/tree/main/deepstate",
+  "author": {
+    "name": "Million Views, LLC.",
+    "url": "https://m5nv.com"
+  },
+  "license": "MIT",
+  "contributors": [
+    "Vijay Aswadhati (https://github.com/vijay8i)",
+    "Hemalatha Manickam (https://github.com/hmanicka)"
+  ],
+  "keywords": [
+    "fine-grained",
+    "state",
+    "management",
+    "framework",
+    "agnostic",
+    "signal",
+    "effect",
+    "computed",
+    "deepstate",
+    "deep"
+  ],
+  "scripts": {
+    "test": "vitest --dir test",
+    "test:ui": "vitest --dir test --ui",
+    "test:run": "vitest --dir test run",
+    "test:coverage": "vitest --dir test run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "latest",
+    "@vitest/ui": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  },
+  "peerDependencies": {
+    "@preact/signals": "^2.0.1"
+  }
+}

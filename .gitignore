@@ -1,5 +1,12 @@
-# jank
-users.db
+# jank: stuff we don't commit
+package-lock.json
+.DS_Store
+.netlify
+.astro
+.dist
+**/coverage
+**/*.db*
+
 
 # we don't commit lock files!
 *-lock.json
