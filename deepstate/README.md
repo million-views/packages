@@ -24,7 +24,7 @@ using a `$` prefix, allowing you to leverage all features of `@preact/signals`
   appending `.value` every time.
 - **Maintain Signal Semantics:** Use the `$` prefix as an escape hatch to access
   the native signal instance for advanced performance tuning and debugging.
-- **Attach Actions:** A fluent API to attach actions that receive a store and to
+- **Attach Actions:** A fluent API to attach actions that receive a store and do
   whatever operation with it.
 
 `@m5nv/deepstate` makes working with `@preact/signals` more natural and
@@ -126,8 +126,8 @@ counter.count += 1;
 ```
 
 When destructuring state, reactivity is lost—similar to how Svelte behaves when
-passing a value as a prop. To preserve reactivity, destructure using the `$`
-prefix, which returns the underlying signal.
+passing a `$state` rune as a prop. To preserve reactivity, destructure using the
+`$` prefix, which returns the underlying signal.
 
 ```js
 import { effect } from "@preact/signals";
