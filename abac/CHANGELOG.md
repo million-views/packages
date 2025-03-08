@@ -1,5 +1,10 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/abac)
 
+## v1.0.3 - 07MAR2025
+
+- doc: update README.
+- chore: update dependencies
+
 ## v1.0.2 - 23FEB2025
 
 - Add entry point

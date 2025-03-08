@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/abac",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A lightweight, intuitive, and powerful library for fine-grained access control.",
   "type": "module",
   "main": "src/abac.js",
