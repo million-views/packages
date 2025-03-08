@@ -116,7 +116,7 @@ can retrieve the underlying signal via the `$` prefix.
 DeepState allows you to attach actions to the store using the `attach` method.
 Actions bound to the store receive the `state` object as their first argument.
 Bound actions can be invoked as normal functions; there is no need to pass in
-the store explicitly at the callsite by the caller.
+the `state` explicitly at the callsite by the caller.
 
 Actions can be either **synchronous** or **asynchronous**, allowing you to
 handle state updates, including remote API calls.

@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
+## v1.1.2 - 07MAR2025
+
+- doc: fix typos
+
 ## v1.1.1 - 07MAR2025
 
 - Breaking change: bound actions now receive `state` instead of `store`
