@@ -179,8 +179,11 @@ export function TodoList({ initial }) {
 
   function handle_new_task_keydown(e) {
     if (e.key === "Enter" && state.draft.trim()) {
-      actions.add_todo(state.draft.trim());
-      state.draft = "";
+      actions.add_todo(state.draft.trim()).then(() => {
+        console.log("*** todo.list.added");
+        state.draft = "";
+      });
+      // state.draft = "";
     }
   }
 

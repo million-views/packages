@@ -125,21 +125,23 @@ function create_deepstate(initial, derived = {}, permissive = false) {
 
 export function reify(initial, computed_fns = {}, permissive = false) {
   const state = create_deepstate(initial, computed_fns, permissive);
-  const api = {
+  function attach(actions = {}) {
+    store.actions = Object.fromEntries(
+      Object.entries(actions).map(([name, fn]) => [
+        name,
+        (...args) => fn(store, ...args),
+      ]),
+    );
+    return store;
+  }
+
+  const store = {
     state,
-    attach(actions = {}) {
-      api.actions = Object.fromEntries(
-        Object.entries(actions).map((
-          [k, fn],
-        ) => [k, (...args) => fn(api, ...args)]),
-      );
-      return api;
-    },
-    toJSON() {
-      return state.toJSON();
-    },
+    attach,
+    toJSON: () => state.toJSON(),
   };
-  return api;
+
+  return store;
 }
 
 /*--

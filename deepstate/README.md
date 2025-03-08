@@ -8,7 +8,7 @@
 
 @m5nv/deepstate is a tiny, reactive state management library built on top of
 [@preact/signals][preact/signals]. It provides a better DX (we think) for using
-signals in component-based UI frameworks such as Preact, Svelte, and Astro.
+signals in component-based UI frameworks such as Preact.
 
 For performance-sensitive code, DeepState lets you access the underlying signals
 using a `$` prefix, allowing you to leverage all features of `@preact/signals`
@@ -25,11 +25,12 @@ using a `$` prefix, allowing you to leverage all features of `@preact/signals`
 - **Maintain Signal Semantics:** Use the `$` prefix as an escape hatch to access
   the native signal instance for advanced performance tuning and debugging.
 - **Attach Actions:** A fluent API to attach actions that receive a store and do
-  whatever operation with it.
+  whatever operation with it. Supports both synchronous and asynchronous
+  actions.
 
-`@m5nv/deepstate` makes working with `@preact/signals` more natural and
-intuitive, offering a refined API that respects the original signals model while
-improving the developer experience.
+`@m5nv/deepstate` makes working with `@preact/signals` natural and intuitive,
+offering a refined API that respects the original signals model while improving
+the developer experience.
 
 ---
 
@@ -80,7 +81,9 @@ function Counter() {
 }
 ```
 
-### Using DeepState
+### [Using DeepState][with-deepstate]
+
+[with-deepstate]: https://preactjs.com/repl?code=aW1wb3J0IHsgQ29tcG9uZW50LCByZW5kZXIgfSBmcm9tICdwcmVhY3QnOwppbXBvcnQge3VzZVN0YXRlfSBmcm9tICdwcmVhY3QvY29tcGF0JzsKCgppbXBvcnQgeyByZWlmeSB9IGZyb20gIkBtNW52L2RlZXBzdGF0ZSI7CgpmdW5jdGlvbiBDb3VudGVyKCkgewogIGNvbnN0IFt7IHN0YXRlOiBjb3VudGVyIH1dID0gdXNlU3RhdGUoKCkgPT4KICAgIHJlaWZ5KAogICAgICB7IGNvdW50OiAwIH0sCiAgICAgIHsgZG91YmxlOiAoc3RhdGUpID0%2BIHN0YXRlLmNvdW50ICogMiB9LAogICAgKQogICk7CgogIHJldHVybiAoCiAgICA8ZGl2PgogICAgICA8cD57Y291bnRlci5jb3VudH0geCAyID0ge2NvdW50ZXIuZG91YmxlfTwvcD4KICAgICAgPGJ1dHRvbiBvbkNsaWNrPXsoKSA9PiAoY291bnRlci5jb3VudCsrKX0%2BQ2xpY2sgbWU8L2J1dHRvbj4KICAgIDwvZGl2PgogICk7Cn0KCnJlbmRlcig8Q291bnRlciAvPiwgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2FwcCcpKTsK
 
 ```js
 import { reify } from "@m5nv/deepstate";
@@ -106,52 +109,44 @@ In DeepState, you simply use the properties of your initial object without
 worrying about appending `.value` for reading or writing. When necessary, you
 can retrieve the underlying signal via the `$` prefix.
 
-DeepState fully preserves the lazy nature of computed properties, and `effect`
-works as expected. Consider the following usage:
+---
+
+## Attaching Actions
+
+DeepState allows you to attach actions to the store using the `attach` method.
+Actions can be either **synchronous** or **asynchronous**, giving you
+flexibility to handle state updates, including remote API calls.
+
+### **Synchronous Action Example**
 
 ```js
-// Lazy computation triggers on access: Logs 0
-console.log("Initial:", counter.double);
+const store = reify({ count: 0 }).attach({
+  increment(store) {
+    store.state.$count.value += 1;
+  },
+});
 
-counter.count = 1;
-
-// Logs: 2
-console.log("After update (outside effect):", counter.double);
-
-// Effect observes and logs changes
-effect(() => console.log("Effect:", counter.double));
-
-// Triggers re-computation and effect logs updated value
-counter.count += 1;
+store.actions.increment();
+console.log(store.state.count); // 1
 ```
 
-When destructuring state, reactivity is lost—similar to how Svelte behaves when
-passing a `$state` rune as a prop. To preserve reactivity, destructure using the
-`$` prefix, which returns the underlying signal.
+### **Asynchronous Action Example (Remote API Call)**
 
 ```js
-import { effect } from "@preact/signals";
-import { reify } from "@m5nv/deepstate";
+const store = reify({ count: 0 }).attach({
+  async fetchData(store) {
+    const response = await fetch("https://api.example.com/data");
+    const data = await response.json();
+    store.state.$count.value = data.count;
+  },
+});
 
-const { state: demo } = reify(
-  { name: "Jane", surname: "Doe" },
-  { fullName: (s) => `${s.name} ${s.surname}` },
-  false,
-);
-
-const dispose = effect(() => console.log("Effect:", demo.fullName));
-
-let { name } = demo;
-name = "Mary"; // Does not trigger re-computation
-
-let { $name } = demo;
-$name.value = "Mary"; // Triggers effect and recomputation of fullName
-
-dispose();
+await store.actions.fetchData();
+console.log(store.state.count); // Updated from API response
 ```
 
-Using `$name` lets you directly work with the signal and access all advanced
-functions provided by `@preact/signals`.
+This allows developers to integrate state updates with API calls seamlessly,
+keeping their UI state in sync with remote data sources.
 
 ---
 

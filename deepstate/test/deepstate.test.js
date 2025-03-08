@@ -209,6 +209,42 @@ describe("deepstate reify()", () => {
     });
   });
 
+  describe("Async Actions", () => {
+    it("supports async actions that update state", async () => {
+      const store = reify({ count: 0 }).attach({
+        async fetchCount(store) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          store.state.$count.value = 42;
+        },
+      });
+
+      await store.actions.fetchCount();
+      expect(store.state.count).toBe(42);
+    });
+
+    it("supports async actions that call external APIs", async () => {
+      // global.fetch = vi.fn(() =>
+      //   Promise.resolve({
+      //     json: () => Promise.resolve({ count: 200 }),
+      //   })
+      // );
+
+      const store = reify({ count: 0 }).attach({
+        async fetchData(store) {
+          const response = await fetch(
+            "https://jsonplaceholder.typicode.com/todos",
+          );
+          const data = await response.json();
+          // console.log("data", data);
+          store.state.$count.value = data.length;
+        },
+      });
+
+      await store.actions.fetchData();
+      expect(store.state.count).toBe(200);
+    });
+  });
+
   describe("Serialization", () => {
     it("toJSON omits $ properties and computed properties", () => {
       const { state } = reify(
