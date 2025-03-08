@@ -23,27 +23,27 @@ export function CreateTodoStore(initial) {
 
   todo_store.attach(
     {
-      async add_todo(store, text) {
+      async add_todo(state, text) {
         const new_todo = { id: Date.now(), text, completed: false };
-        store.state.todos = [...store.state.todos, new_todo];
+        state.todos = [...state.todos, new_todo];
       },
-      async remove_todo(store, id) {
-        store.state.todos = store.state.todos.filter((todo) => todo.id !== id);
+      async remove_todo(state, id) {
+        state.todos = state.todos.filter((todo) => todo.id !== id);
       },
-      async toggle_todo(store, id) {
-        const todo = store.state.todos.find((todo) => todo.id === id);
+      async toggle_todo(state, id) {
+        const todo = state.todos.find((todo) => todo.id === id);
         if (todo) {
           todo.completed = !todo.completed;
         }
       },
-      async update_todo(store, id, new_text) {
-        const todo = store.state.todos.find((todo) => todo.id === id);
+      async update_todo(state, id, new_text) {
+        const todo = state.todos.find((todo) => todo.id === id);
         if (todo) {
           todo.text = new_text;
         }
       },
-      async update_title(store, new_title) {
-        store.state.title = new_title;
+      async update_title(state, new_title) {
+        state.title = new_title;
       },
     },
   );

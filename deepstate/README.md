@@ -24,8 +24,8 @@ using a `$` prefix, allowing you to leverage all features of `@preact/signals`
   appending `.value` every time.
 - **Maintain Signal Semantics:** Use the `$` prefix as an escape hatch to access
   the native signal instance for advanced performance tuning and debugging.
-- **Attach Actions:** A fluent API to attach actions that receive a store and do
-  whatever operation with it. Supports both synchronous and asynchronous
+- **Attach Actions:** A fluent API to attach actions that receive the `state`
+  and do whatever operation with it. Supports both synchronous and asynchronous
   actions.
 
 `@m5nv/deepstate` makes working with `@preact/signals` natural and intuitive,
@@ -114,15 +114,19 @@ can retrieve the underlying signal via the `$` prefix.
 ## Attaching Actions
 
 DeepState allows you to attach actions to the store using the `attach` method.
-Actions can be either **synchronous** or **asynchronous**, giving you
-flexibility to handle state updates, including remote API calls.
+Actions bound to the store receive the `state` object as their first argument.
+Bound actions can be invoked as normal functions; there is no need to pass in
+the store explicitly at the callsite by the caller.
+
+Actions can be either **synchronous** or **asynchronous**, allowing you to
+handle state updates, including remote API calls.
 
 ### **Synchronous Action Example**
 
 ```js
 const store = reify({ count: 0 }).attach({
-  increment(store) {
-    store.state.$count.value += 1;
+  increment(state) {
+    state.count += 1;
   },
 });
 
@@ -134,10 +138,10 @@ console.log(store.state.count); // 1
 
 ```js
 const store = reify({ count: 0 }).attach({
-  async fetchData(store) {
-    const response = await fetch("https://api.example.com/data");
+  async fetchData(state) {
+    const response = await fetch("https://jsonplaceholder.typicode.com/todos");
     const data = await response.json();
-    store.state.$count.value = data.count;
+    state.count = data.length;
   },
 });
 

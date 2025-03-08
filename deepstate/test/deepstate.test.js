@@ -183,10 +183,10 @@ describe("deepstate reify()", () => {
     it("supports attach() to bind actions", () => {
       const store = reify({ count: 0 }, {}, false).attach({
         increment(s) {
-          s.state.count++;
+          s.count++;
         },
         setCount(s, v) {
-          s.state.count = v;
+          s.count = v;
         },
       });
       expect(store.state.count).toBe(0);
@@ -198,7 +198,7 @@ describe("deepstate reify()", () => {
     it("throws if accessing undefined actions", () => {
       const store = reify({ count: 0 }, {}, false).attach({
         increment(s) {
-          s.state.count++;
+          s.count++;
         },
       });
       expect(store.actions.increment).toBeDefined();
@@ -212,9 +212,9 @@ describe("deepstate reify()", () => {
   describe("Async Actions", () => {
     it("supports async actions that update state", async () => {
       const store = reify({ count: 0 }).attach({
-        async fetchCount(store) {
+        async fetchCount(state) {
           await new Promise((resolve) => setTimeout(resolve, 10));
-          store.state.$count.value = 42;
+          state.count = 42;
         },
       });
 
@@ -230,13 +230,13 @@ describe("deepstate reify()", () => {
       // );
 
       const store = reify({ count: 0 }).attach({
-        async fetchData(store) {
+        async fetchData(state) {
           const response = await fetch(
             "https://jsonplaceholder.typicode.com/todos",
           );
           const data = await response.json();
           // console.log("data", data);
-          store.state.$count.value = data.length;
+          state.count = data.length;
         },
       });
 

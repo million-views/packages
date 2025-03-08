@@ -156,17 +156,17 @@ function Todos({ store }) {
 }
 
 function CounterApp() {
-  const [{ state: counter }] = useState(() =>
+  const [{ state: counter, actions }] = useState(() =>
     reify(
       { count: 0 },
       { double: (state) => state.count * 2 },
-    )
+    ).attach({ on_click: (state) => state.count++ })
   );
 
   return (
     <div class="ml-2 text-red-500 hover:text-red-700">
       <p>{counter.count} x 2 = {counter.double}</p>
-      <button onClick={() => (counter.count++)}>Click me</button>
+      <button onClick={() => (actions.on_click())}>Click me</button>
     </div>
   );
 }

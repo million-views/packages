@@ -129,7 +129,7 @@ export function reify(initial, computed_fns = {}, permissive = false) {
     store.actions = Object.fromEntries(
       Object.entries(actions).map(([name, fn]) => [
         name,
-        (...args) => fn(store, ...args),
+        (...args) => fn(state, ...args),
       ]),
     );
     return store;
