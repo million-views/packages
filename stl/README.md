@@ -470,3 +470,24 @@ sql`select 1; select 2;`;
 
 - [SQL that works on PostgreSQL, MySQL, and SQLite](https://evertpot.com/writing-sql-for-postgres-mysql-sqlite/)
 - [Differences between engines](https://www.sqlite.org/sqllogictest/wiki?name=Differences+Between+Engines)
+
+---
+
+## Contributing
+
+Contributions to enhance @m5nv/deepstate are welcome. Whether you have
+suggestions, improvements, or bug fixes, please submit an issue or pull request
+on our GitHub repository.
+
+---
+
+## Credits
+
+Substantial portions of `STL` were taken from
+[Porsager's Postgres.js library][1-ppl].
+
+[deepsignal]: https://github.com/luisherranz/deepsignal
+
+## License
+
+Distributed under the MIT License. See [LICENSE](../LICENSE) for details.

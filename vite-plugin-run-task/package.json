@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/vite-plugin-run-task",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A plugin to run an adjunct user defined task within other frameworks that use vite",
   "type": "module",
   "main": "src/index.js",
@@ -29,13 +29,14 @@
     "public",
     "assets",
     "css",
-    "hmr"
+    "hmr",
+    "astro"
   ],
   "dependencies": {
-    "minimatch": "^9.0.3"
+    "minimatch": "^10.0.1"
   },
   "peerDependencies": {
-    "minimatch": "^9.0.3"
+    "minimatch": "^10.0.1"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

@@ -1,8 +1,13 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/stl)
 
+## v1.2.6 - 07MAR2025
+
+- chore: update dependencies
+- doc: add LICENSE and credits to README
+
 ## v1.2.5 - 08FEB2025
 
-- Moved to a flat top level package structure. 
+- Moved to a flat top level package structure.
 - Fixed import statement in README.md.
 
 ## v1.2.4 - 03FEB2025
