@@ -29,7 +29,6 @@ function init_signals(obj, permissive) {
 }
 
 function create_handler(
-  target,
   permissive,
   signals,
   computed = {},
@@ -89,7 +88,7 @@ function create_handler(
 
 function deep_proxy(obj, permissive) {
   const signals = init_signals(obj, permissive);
-  return new Proxy(obj, create_handler(obj, permissive, signals));
+  return new Proxy(obj, create_handler(permissive, signals));
 }
 
 function create_deepstate(initial, derived = {}, permissive = false) {
@@ -111,7 +110,7 @@ function create_deepstate(initial, derived = {}, permissive = false) {
   };
   const state_proxy = new Proxy(
     initial,
-    create_handler(initial, permissive, signals, computed_signals, {
+    create_handler(permissive, signals, computed_signals, {
       toJSON: to_json,
     }),
   );
@@ -182,7 +181,6 @@ export function reify(initial, computed_fns = {}, permissive = false) {
 /**
  * Creates a proxy handler to manage reactive state behavior.
  * @typedef {function} create_handler
- * @param {object} target - The target object.
  * @param {boolean} permissive - Whether to allow adding new properties.
  * @param {object} signals - An object mapping property keys to signals.
  * @param {object} [computed={}] - An object mapping computed property keys to computed signals.

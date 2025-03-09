@@ -1,5 +1,10 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
+## v1.1.3 - 08MAR2025
+
+- doc: add a bit of structure and document the use of 'shallow'
+- remove unused 'target' in create_handler function
+
 ## v1.1.2 - 07MAR2025
 
 - doc: fix typos
