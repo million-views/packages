@@ -33,7 +33,7 @@ etc., reflecting areas of interest of our organization.
 | [@m5nv/deepstate][deepstate]      | State Management | A better DX for using signals in a framework agnostic manner.                       |
 | [@m5nv/abac][abac]                | Security         | A lightweight, intuitive, and powerful library for fine-grained access control.     |
 
-[vpr]: https://github.com/million-views/packages/tree/main/utils/packages/vite-plugin-run-task
+[vpr]: https://github.com/million-views/packages/tree/main/vite-plugin-run-task
 [stl]: https://github.com/million-views/packages/tree/main/stl
 [deepstate]: https://github.com/million-views/packages/tree/main/deepstate
 [abac]: https://github.com/million-views/packages/tree/main/abac
