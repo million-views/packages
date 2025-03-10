@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
+## v1.2.2 - 09MAR2025
+
+- bug: bug fix for bug fix :-(
+
 ## v1.2.1 - 09MAR2025
 
 - bug: array.length needs special treatment

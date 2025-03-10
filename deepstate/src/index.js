@@ -44,12 +44,9 @@ function create_handler(permissive, signals, computed = {}, extra = {}) {
       return Reflect.get(t, prop, receiver);
     },
     set(t, prop, value) {
-      // Special-case for array "length" updates.
+      // Special-case for array "length": simply update the underlying array.
       if (Array.isArray(t) && prop === "length") {
         t[prop] = value;
-        if (signals.hasOwnProperty("length")) {
-          signals["length"].value = value;
-        }
         return true;
       }
       if (typeof value === "function") {
