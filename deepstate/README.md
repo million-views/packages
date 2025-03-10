@@ -174,7 +174,7 @@ when you want to avoid the overhead of deep proxying for parts of your state.
 
 ---
 
-## Advanced Topics
+## Know your DeepState
 
 ### Performance & State Organization
 
@@ -201,6 +201,122 @@ will not be rehydrated from a serialized state.
 - **Permissive Mode:**\
   Allows dynamic property additions, which can be useful for flexible state
   structures but requires careful state management.
+
+### Array Handling
+
+DeepState deep wraps arrays and their elements by default to provide reactivity.
+Every object element in an array is automatically wrapped unless it’s marked as
+shallow using the `shallow` helper.
+
+#### In-Place Mutations vs. Whole Array Replacement
+
+- **In-Place Mutations:**\
+  Common array operations—such as updating an element by index, pushing new
+  items, splicing, using pop/shift, or deleting an element—are allowed. For
+  example:
+
+  ```js
+  state.todos[0] = { text: "New Todo", completed: false };
+  state.todos.push({ text: "Another Todo", completed: false });
+  state.todos.pop();
+  state.todos.shift();
+  state.todos.splice(1, 1);
+  delete state.todos[0];
+  ```
+
+  For deep arrays, DeepState attaches an internal version counter (via a signal
+  named __version). Each in-place mutation bumps this counter, triggering
+  reactivity in any computed properties that depend on the array—even though the
+  array reference remains unchanged.
+
+- **Whole Array Replacement:**\
+  To avoid the performance overhead associated with deep wrapping every element
+  on each update, DeepState **disallows whole array replacement** for deep
+  arrays. For example, the following will throw an error:
+
+  ```js
+  // For a deep array, this is disallowed:
+  state.todos = [...state.todos];
+  ```
+
+  Instead, if you need to replace the entire array, use the `$` escape hatch:
+
+  ```js
+  state.$todos.value = [...state.todos];
+  ```
+
+  **Note:** Using the `$` escape hatch makes your intent explicit. The new array
+  will still be deep wrapped (incurring the cost of wrapping each element), but
+  it prevents accidental whole-array replacements.
+
+- **Shallow Arrays:**\
+  If you mark an array as shallow using the `shallow` helper, whole array
+  replacement is allowed, and its elements will not be deep wrapped. For
+  example:
+
+  ```js
+  const shallowTodos = shallow([{ text: "Task", completed: false }]);
+  const store = reify({ todos: shallowTodos });
+  // This is allowed:
+  store.state.todos = [...store.state.todos];
+  ```
+
+### Best Practices for Large Arrays
+
+Large arrays can be expensive to deep wrap—especially when frequently replaced.
+Consider the following strategies:
+
+- **Prefer In-Place Mutations:**\
+  Use methods such as push, pop, shift, splice, or direct index assignment to
+  modify the array in place. DeepState’s version counter ensures that computed
+  properties depending on the array update correctly without re-wrapping every
+  element.
+
+- **Use the `$` Escape Hatch for Explicit Replacements:**\
+  When you need to replace the entire array, update it via the `$` escape hatch
+  (e.g., `state.$todos.value = newArray`). This makes your intent explicit. Note
+  that the new array will be deep wrapped, so if deep wrapping is not desired,
+  consider marking the array as shallow.
+
+- **Mark Arrays as Shallow:**\
+  If deep reactivity for array elements is not required, mark the array as
+  shallow using the `shallow` helper. This avoids the overhead of deep wrapping
+  and allows whole array replacement.
+
+- **Use Batching to Coalesce Mutations:**\
+  When performing multiple in-place mutations on a deep array, using Preact
+  Signals’ `batch()` function can help coalesce several version bumps into a
+  single update. This reduces the number of re-renders and re-computations that
+  occur as a result of the mutations. For example:
+
+  ```js
+  import { batch } from "@preact/signals";
+
+  // Instead of:
+  state.todos.push(newTodo);
+  state.todos.splice(1, 1);
+
+  // Use batching:
+  batch(() => {
+    state.todos.push(newTodo);
+    state.todos.splice(1, 1);
+  });
+  ```
+
+  In this example, the internal version counter for `state.todos` is incremented
+  only once after the batch completes.
+
+  **Note:** Any in-place mutation that significantly alters the array—such as
+  `push`, `unshift`, `splice`, `reverse`, or even combinations thereof—can
+  trigger multiple version bumps if not batched. Batching ensures that these
+  operations are applied together, minimizing unnecessary reactivity overhead.
+  If granular reactivity is not required, consider marking the array as shallow
+  to avoid deep wrapping altogether.
+
+- **Consider Splitting State:**\
+  For extremely large or deeply nested arrays, splitting the state into multiple
+  smaller stores can reduce the reactivity overhead and simplify state
+  management.
 
 ## Contributing
 

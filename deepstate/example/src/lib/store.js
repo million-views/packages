@@ -25,10 +25,15 @@ export function CreateTodoStore(initial) {
     {
       async add_todo(state, text) {
         const new_todo = { id: Date.now(), text, completed: false };
-        state.todos = [...state.todos, new_todo];
+        // state.todos = [...state.todos, new_todo];
+        state.todos.push(new_todo);
       },
       async remove_todo(state, id) {
-        state.todos = state.todos.filter((todo) => todo.id !== id);
+        // state.todos = state.todos.filter((todo) => todo.id !== id);
+        const index = state.todos.findIndex((todo) => todo.id === id);
+        if (index > -1) {
+          state.todos.splice(index, 1);
+        }
       },
       async toggle_todo(state, id) {
         const todo = state.todos.find((todo) => todo.id === id);

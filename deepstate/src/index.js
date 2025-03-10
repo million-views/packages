@@ -25,6 +25,10 @@ function init_signals(obj, permissive) {
   for (const k in obj) {
     s[k] = signal(deep_wrap(obj[k], permissive));
   }
+
+  if (Array.isArray(obj)) {
+    s.__version = signal(0);
+  }
   return s;
 }
 
@@ -39,14 +43,41 @@ function create_handler(permissive, signals, computed = {}, extra = {}) {
         }
         return signals[key];
       }
+      // For arrays, read the __version signal as a dependency.
+      if (Array.isArray(t) && signals.__version) {
+        // Accessing __version.value triggers reactivity.
+        signals.__version.value;
+      }
       if (prop in signals) return signals[prop].value;
       if (prop in computed) return computed[prop].value;
       return Reflect.get(t, prop, receiver);
     },
     set(t, prop, value) {
-      // Special-case for array "length": simply update the underlying array.
+      // Special-case for array "length": update directly.
       if (Array.isArray(t) && prop === "length") {
         t[prop] = value;
+        if (signals.__version) {
+          signals.__version.value++;
+        }
+        return true;
+      }
+      // Prevent whole array replacement for deep arrays.
+      if (
+        Array.isArray(t[prop]) &&
+        Array.isArray(value) &&
+        !t[prop][IS_SHALLOW]
+      ) {
+        throw Error(
+          "Whole array replacement is disallowed for deep arrays. Use the '$' escape hatch (e.g., state.$todos.value = newArray) to update immutably.",
+        );
+      }
+      // Allow new array index assignments (e.g. push) even in strict mode.
+      if (Array.isArray(t) && Number.isInteger(Number(prop))) {
+        t[prop] = value;
+        signals[prop] = signal(deep_wrap(value, permissive));
+        if (signals.__version) {
+          signals.__version.value++;
+        }
         return true;
       }
       if (typeof value === "function") {
@@ -72,6 +103,24 @@ function create_handler(permissive, signals, computed = {}, extra = {}) {
       t[prop] = value;
       return true;
     },
+    deleteProperty(t, prop) {
+      // For array indices, allow deletion (leaving a hole) and update version.
+      if (Array.isArray(t) && Number.isInteger(Number(prop))) {
+        const result = Reflect.deleteProperty(t, prop);
+        if (signals[prop]) {
+          signals[prop].value = undefined;
+        }
+        if (signals.__version) {
+          signals.__version.value++;
+        }
+        return result;
+      }
+      const result = Reflect.deleteProperty(t, prop);
+      if (signals && signals.hasOwnProperty(prop)) {
+        signals[prop].value = undefined;
+      }
+      return result;
+    },
     ownKeys(t) {
       let keys = Reflect.ownKeys(t);
       if (Object.keys(computed).length > 0) {
@@ -80,7 +129,6 @@ function create_handler(permissive, signals, computed = {}, extra = {}) {
       return keys;
     },
     getOwnPropertyDescriptor(t, prop) {
-      // Defer to the native descriptor if it exists.
       const desc = Reflect.getOwnPropertyDescriptor(t, prop);
       return desc !== undefined
         ? desc

@@ -1,0 +1,10 @@
+---
+import { TodoList } from "./_todo-list";
+import Layout from "@layouts/Layout.astro";
+---
+
+<Layout>
+  <div class="container mx-auto py-8">
+    <TodoList client:load />
+  </div>
+</Layout>

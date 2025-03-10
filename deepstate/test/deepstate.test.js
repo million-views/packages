@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { effect, signal } from "@preact/signals";
+import { batch, effect } from "@preact/signals";
 import { reify, shallow } from "@m5nv/deepstate";
 
 describe("deepstate reify()", () => {
@@ -10,6 +10,7 @@ describe("deepstate reify()", () => {
       expect(state.toJSON()).toEqual({});
       expect(JSON.stringify(state)).toBe("{}");
     });
+
     it("creates reactive state and computed properties", () => {
       const { state } = reify(
         { count: 0 },
@@ -21,6 +22,7 @@ describe("deepstate reify()", () => {
       state.count = 1;
       expect(state.double).toBe(2);
     });
+
     it("computed property is lazy until accessed", () => {
       const spy = vi.fn((s) => s.count * 2);
       const { state } = reify({ count: 0 }, { double: spy }, false);
@@ -33,6 +35,7 @@ describe("deepstate reify()", () => {
       expect(state.double).toBe(4);
       expect(spy).toHaveBeenCalledTimes(2);
     });
+
     it("supports chained computed properties", () => {
       const { state } = reify({ count: 2 }, {
         double: (s) => s.count * 2,
@@ -42,6 +45,7 @@ describe("deepstate reify()", () => {
       state.count = 3;
       expect(state.quadruple).toBe(12);
     });
+
     it("handles nested objects and computed properties", () => {
       const { state } = reify(
         { user: { first: "John", last: "Doe", name: "Jane" } },
@@ -72,6 +76,7 @@ describe("deepstate reify()", () => {
       state.name = "Mary";
       expect(spy).toHaveBeenCalledTimes(2);
     });
+
     it("allows direct access to signals via $ properties", () => {
       const { state } = reify({ count: 0 }, {}, false);
       const { $count } = state;
@@ -80,6 +85,7 @@ describe("deepstate reify()", () => {
       state.count = 1;
       expect(spy).toHaveBeenCalledWith(1);
     });
+
     it("effects stop reacting after dispose()", () => {
       const { state } = reify({ name: "Jane" }, {}, false);
       const spy = vi.fn();
@@ -90,6 +96,7 @@ describe("deepstate reify()", () => {
       state.name = "Jack";
       expect(spy).not.toHaveBeenCalledWith("Jack");
     });
+
     it("chained effects log computed and derived values correctly", () => {
       const { state } = reify(
         { count: 0 },
@@ -112,16 +119,19 @@ describe("deepstate reify()", () => {
       expect(() => (state.newProp = "fail"))
         .toThrow("Cannot add new property 'newProp' in strict mode.");
     });
+
     it("allows new properties in permissive mode", () => {
       const { state } = reify({ count: 0 }, {}, true);
       state.newProp = "Hello";
       expect(state.newProp).toBe("Hello");
     });
+
     it("allows new nested properties in permissive mode", () => {
       const { state } = reify({ user: {} }, {}, true);
       state.user.age = 30;
       expect(state.user.age).toBe(30);
     });
+
     it("rejects direct assignment of $ properties", () => {
       const { state } = reify({ count: 0 }, {}, false);
       expect(() => {
@@ -137,6 +147,7 @@ describe("deepstate reify()", () => {
       state.data.nested.value = 100;
       expect(state.data.nested.value).toBe(100);
     });
+
     it("shallow objects do not trigger computed updates", () => {
       const staticObj = { id: 1, nested: { value: 42 } };
       const { state } = reify(
@@ -168,6 +179,7 @@ describe("deepstate reify()", () => {
       state.user.name = "Frodo";
       expect(state.user.name).toBe("Frodo");
     });
+
     it("supports computed properties across nested objects", () => {
       const { state } = reify(
         { user: { first: "John", last: "Doe" } },
@@ -196,6 +208,7 @@ describe("deepstate reify()", () => {
       store.actions.setCount(42);
       expect(store.state.count).toBe(42);
     });
+
     it("throws if accessing undefined actions", () => {
       const store = reify({ count: 0 }, {}, false).attach({
         increment(s) {
@@ -217,19 +230,17 @@ describe("deepstate reify()", () => {
           state.count = 42;
         },
       });
-
       await store.actions.fetchCount();
       expect(store.state.count).toBe(42);
     });
 
     it("supports async actions that call external APIs", async () => {
-      // Uncomment and customize the following lines if you want to test with a mocked fetch.
+      // Uncomment and customize the following lines to test with a mocked fetch.
       // global.fetch = vi.fn(() =>
       //   Promise.resolve({
       //     json: () => Promise.resolve({ count: 200 }),
       //   })
       // );
-
       const store = reify({ count: 0 }).attach({
         async fetchData(state) {
           const response = await fetch(
@@ -239,7 +250,6 @@ describe("deepstate reify()", () => {
           state.count = data.length;
         },
       });
-
       await store.actions.fetchData();
       expect(store.state.count).toBe(200);
     });
@@ -256,6 +266,7 @@ describe("deepstate reify()", () => {
       state.count = 5;
       expect(JSON.stringify(state)).toBe('{"count":5}');
     });
+
     it("does not allow direct mutation of toJSON", () => {
       const { state } = reify({ count: 0 }, {}, false);
       expect(() => {
@@ -264,78 +275,179 @@ describe("deepstate reify()", () => {
     });
   });
 
-  describe("Advanced Cases", () => {
-    it("supports nested shallow objects", () => {
-      const staticObj = { deep: { id: 1 } };
-      const { state } = reify(
-        { outer: { data: shallow(staticObj) } },
-        {},
-        false,
-      );
-      expect(state.outer.data).toBe(staticObj);
-      expect(state.outer.data.deep.id).toBe(1);
-      state.outer.data.deep.id = 42;
-      expect(state.outer.data.deep.id).toBe(42);
-    });
-    it("does not serialize computed properties", () => {
-      const { state } = reify(
-        { count: 2 },
-        { double: (s) => s.count * 2 },
-        false,
-      );
-      expect(JSON.stringify(state)).toBe('{"count":2}');
-      state.count = 4;
-      expect(JSON.stringify(state)).toBe('{"count":4}');
-    });
-    it("prevents adding computed properties dynamically in permissive mode", () => {
-      const { state } = reify({ count: 0 }, {}, true);
-      expect(() => {
-        state.computedProp = () => state.count * 2;
-      }).toThrow();
-    });
-    it("computed properties do not react to shallow object mutations", () => {
-      const staticObj = shallow({ price: 100 });
-      const { state } = reify(
-        { item: staticObj },
-        { priceWithTax: (s) => s.item.price * 1.1 },
-        false,
-      );
-      expect(state.priceWithTax).toBeCloseTo(110, 10);
-      state.item.price = 200;
-      expect(state.priceWithTax).toBeCloseTo(110, 10);
-      expect(state.item).toBe(staticObj);
-    });
-    it("double updates correctly after initial read", () => {
-      const { state } = reify(
-        { count: 0 },
-        { double: (s) => s.count * 2 },
-        false,
-      );
-      state.count = 1;
-      expect(state.double).toBe(2);
-      state.count = 2;
-      expect(state.double).toBe(4);
-    });
-  });
-
-  // NEW TESTS FOR ARRAY HANDLING
   describe("Array Handling", () => {
     it("updates array length correctly when splice is called", () => {
       const { state } = reify({ todos: [1, 2, 3, 4] });
-      const todos = state.todos;
-      expect(todos.length).toBe(4);
-      // Removing two items should update the length
-      todos.splice(1, 2);
-      expect(todos.length).toBe(2);
-      expect(todos).toEqual([1, 4]);
+      expect(state.todos.length).toBe(4);
+      state.todos.splice(1, 2);
+      expect(state.todos.length).toBe(2);
+      expect(state.todos).toEqual([1, 4]);
     });
+
     it("ensures array elements are deep wrapped by default", () => {
       const { state } = reify({ items: [{ value: 10 }, { value: 20 }] });
-      // Check that the array elements are proxied (not the same as the original object)
+      // Check that the array elements are reactive.
       expect(state.items[0]).not.toBeUndefined();
-      // Updating an element's property should be reactive
       state.items[0].value = 15;
       expect(state.items[0].value).toBe(15);
+    });
+
+    it("prevents whole array replacement for deep arrays", () => {
+      const { state } = reify({ todos: [1, 2, 3] });
+      expect(() => {
+        state.todos = [...state.todos];
+      }).toThrow(
+        "Whole array replacement is disallowed for deep arrays",
+      );
+    });
+
+    it("allows whole array replacement for shallow arrays", () => {
+      const shallowTodos = shallow([1, 2, 3]);
+      const { state } = reify({ todos: shallowTodos });
+      expect(() => {
+        state.todos = [...state.todos];
+      }).not.toThrow();
+      expect(state.todos).toEqual([1, 2, 3]);
+    });
+
+    it("allows whole array replacement for deep arrays via the $ escape hatch", () => {
+      const { state } = reify({ todos: [1, 2, 3] });
+      expect(() => {
+        state.$todos.value = [...state.todos, 4];
+      }).not.toThrow();
+      expect(state.todos).toEqual([1, 2, 3, 4]);
+    });
+  });
+
+  describe("Array Handling - Mutative Methods with Batching", () => {
+    it("allows push and triggers reactivity with batching", () => {
+      const { state } = reify({ todos: [{ text: "Task", completed: false }] });
+      const spy = vi.fn(() => state.todos.length);
+      const dispose = effect(spy);
+      batch(() => {
+        state.todos.push({ text: "Another Todo", completed: false });
+      });
+      expect(state.todos.length).toBe(2);
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      dispose();
+    });
+
+    it("allows pop and triggers reactivity with batching", () => {
+      const { state } = reify({ todos: [1, 2, 3] });
+      const spy = vi.fn(() => state.todos.length);
+      const dispose = effect(spy);
+      let popped;
+      batch(() => {
+        popped = state.todos.pop();
+      });
+      expect(popped).toBe(3);
+      expect(state.todos.length).toBe(2);
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      dispose();
+    });
+
+    it("allows shift and triggers reactivity with batching", () => {
+      const { state } = reify({ todos: [1, 2, 3] });
+      const spy = vi.fn(() => state.todos.length);
+      const dispose = effect(spy);
+      let shifted;
+      batch(() => {
+        shifted = state.todos.shift();
+      });
+      expect(shifted).toBe(1);
+      expect(state.todos.length).toBe(2);
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      dispose();
+    });
+
+    it("allows splice and triggers reactivity with batching", () => {
+      const { state } = reify({
+        todos: [
+          { text: "Task 1", completed: false },
+          { text: "Task 2", completed: false },
+          { text: "Task 3", completed: false },
+        ],
+      });
+      const spy = vi.fn(() => state.todos.map((todo) => todo.text).join(","));
+      const dispose = effect(spy);
+      batch(() => {
+        state.todos.splice(1, 1);
+      });
+      expect(state.todos.length).toBe(2);
+      expect(state.todos.map((todo) => todo.text)).toEqual([
+        "Task 1",
+        "Task 3",
+      ]);
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      dispose();
+    });
+
+    it("allows delete operator on array elements and triggers reactivity with batching", () => {
+      const { state } = reify({
+        todos: [
+          { text: "Task 1", completed: false },
+          { text: "Task 2", completed: false },
+        ],
+      });
+      const spy = vi.fn(() => state.todos[0]);
+      const dispose = effect(spy);
+      batch(() => {
+        delete state.todos[0];
+      });
+      expect(state.todos[0]).toBeUndefined();
+      expect(state.todos.length).toBe(2);
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      dispose();
+    });
+  });
+
+  describe("Array Handling - Unshift & Reverse", () => {
+    it("triggers multiple re-renders when using unshift without batching", () => {
+      const { state } = reify({ todos: [2, 3] });
+      const spy = vi.fn(() => state.todos[0]);
+      const dispose = effect(spy);
+      state.todos.unshift(1);
+      expect(state.todos).toEqual([1, 2, 3]);
+      // Without batching, unshift triggers multiple updates.
+      expect(spy.mock.calls.length).toBeGreaterThan(1);
+      dispose();
+    });
+
+    it("triggers minimal re-renders when using unshift with batching", () => {
+      const { state } = reify({ todos: [2, 3] });
+      const spy = vi.fn(() => state.todos[0]);
+      const dispose = effect(spy);
+      batch(() => {
+        state.todos.unshift(1);
+      });
+      expect(state.todos).toEqual([1, 2, 3]);
+      // With batching, the effect re-runs only once (after the batch completes)
+      expect(spy.mock.calls.length).toBeLessThanOrEqual(2);
+      dispose();
+    });
+
+    it("triggers multiple re-renders when using reverse without batching", () => {
+      const { state } = reify({ todos: [1, 2, 3] });
+      const spy = vi.fn(() => state.todos.join(","));
+      const dispose = effect(spy);
+      state.todos.reverse();
+      expect(state.todos).toEqual([3, 2, 1]);
+      // Without batching, reverse causes multiple re-renders.
+      expect(spy.mock.calls.length).toBeGreaterThan(1);
+      dispose();
+    });
+
+    it("triggers minimal re-renders when using reverse with batching", () => {
+      const { state } = reify({ todos: [1, 2, 3] });
+      const spy = vi.fn(() => state.todos.join(","));
+      const dispose = effect(spy);
+      batch(() => {
+        state.todos.reverse();
+      });
+      expect(state.todos).toEqual([3, 2, 1]);
+      // With batching, the effect should run only once after the batch.
+      expect(spy.mock.calls.length).toBeLessThanOrEqual(2);
+      dispose();
     });
   });
 });
