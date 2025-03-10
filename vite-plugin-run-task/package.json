@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/vite-plugin-run-task",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A plugin to run an adjunct user defined task within other frameworks that use vite",
   "type": "module",
   "main": "src/index.js",
@@ -15,7 +15,7 @@
   "bugs": {
     "url": "https://github.com/million-views/packages/issues"
   },
-  "homepage": "https://github.com/million-views/packages/tree/main/utils/packages/vite-plugin-run-task",
+  "homepage": "https://github.com/million-views/packages/tree/main/vite-plugin-run-task",
   "author": "Million Views, LLC. (https://m5nv.com)",
   "license": "MIT",
   "contributors": [
