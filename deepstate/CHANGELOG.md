@@ -1,5 +1,10 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
+## v1.2.1 - 09MAR2025
+
+- bug: array.length needs special treatment
+- added tests to check array methods
+
 ## v1.1.3 - 08MAR2025
 
 - doc: add a bit of structure and document the use of 'shallow'

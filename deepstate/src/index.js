@@ -28,12 +28,7 @@ function init_signals(obj, permissive) {
   return s;
 }
 
-function create_handler(
-  permissive,
-  signals,
-  computed = {},
-  extra = {},
-) {
+function create_handler(permissive, signals, computed = {}, extra = {}) {
   return {
     get(t, prop, receiver) {
       if (prop in extra) return extra[prop];
@@ -49,6 +44,14 @@ function create_handler(
       return Reflect.get(t, prop, receiver);
     },
     set(t, prop, value) {
+      // Special-case for array "length" updates.
+      if (Array.isArray(t) && prop === "length") {
+        t[prop] = value;
+        if (signals.hasOwnProperty("length")) {
+          signals["length"].value = value;
+        }
+        return true;
+      }
       if (typeof value === "function") {
         throw Error(
           "Functions are not allowed as state properties in DeepState.",
@@ -59,7 +62,6 @@ function create_handler(
           `Cannot directly set '${prop}'. Use the signal's 'value' property.`,
         );
       }
-
       if (prop in signals) {
         signals[prop].value = deep_wrap(value, permissive);
         return true;
@@ -80,8 +82,12 @@ function create_handler(
       }
       return keys;
     },
-    getOwnPropertyDescriptor() {
-      return { enumerable: true, configurable: true };
+    getOwnPropertyDescriptor(t, prop) {
+      // Defer to the native descriptor if it exists.
+      const desc = Reflect.getOwnPropertyDescriptor(t, prop);
+      return desc !== undefined
+        ? desc
+        : { enumerable: true, configurable: true };
     },
   };
 }

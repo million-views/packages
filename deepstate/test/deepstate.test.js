@@ -149,6 +149,7 @@ describe("deepstate reify()", () => {
       const spy = vi.fn();
       const dispose = effect(() => spy(state.nestedValue));
       state.data.nested.value = 100;
+      // Since the shallow object isn't proxied, computed value remains unchanged.
       expect(state.nestedValue).toBe(42);
       expect(spy).toHaveBeenCalledTimes(1);
       dispose();
@@ -204,8 +205,7 @@ describe("deepstate reify()", () => {
       expect(store.actions.increment).toBeDefined();
       expect(() => {
         store.actions.decrement();
-      })
-        .toThrow(/store.actions\.decrement is not a function/);
+      }).toThrow(/store\.actions\.decrement is not a function/);
     });
   });
 
@@ -223,6 +223,7 @@ describe("deepstate reify()", () => {
     });
 
     it("supports async actions that call external APIs", async () => {
+      // Uncomment and customize the following lines if you want to test with a mocked fetch.
       // global.fetch = vi.fn(() =>
       //   Promise.resolve({
       //     json: () => Promise.resolve({ count: 200 }),
@@ -235,7 +236,6 @@ describe("deepstate reify()", () => {
             "https://jsonplaceholder.typicode.com/todos",
           );
           const data = await response.json();
-          // console.log("data", data);
           state.count = data.length;
         },
       });
@@ -315,6 +315,27 @@ describe("deepstate reify()", () => {
       expect(state.double).toBe(2);
       state.count = 2;
       expect(state.double).toBe(4);
+    });
+  });
+
+  // NEW TESTS FOR ARRAY HANDLING
+  describe("Array Handling", () => {
+    it("updates array length correctly when splice is called", () => {
+      const { state } = reify({ todos: [1, 2, 3, 4] });
+      const todos = state.todos;
+      expect(todos.length).toBe(4);
+      // Removing two items should update the length
+      todos.splice(1, 2);
+      expect(todos.length).toBe(2);
+      expect(todos).toEqual([1, 4]);
+    });
+    it("ensures array elements are deep wrapped by default", () => {
+      const { state } = reify({ items: [{ value: 10 }, { value: 20 }] });
+      // Check that the array elements are proxied (not the same as the original object)
+      expect(state.items[0]).not.toBeUndefined();
+      // Updating an element's property should be reactive
+      state.items[0].value = 15;
+      expect(state.items[0].value).toBe(15);
     });
   });
 });
