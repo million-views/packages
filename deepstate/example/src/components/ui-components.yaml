@@ -1,0 +1,1332 @@
+- vendor: Geist (Vercel)
+  components:
+    - category: Navigation
+      name: Tabs
+      description: "Tabs organize content into multiple sections, allowing one section to be viewed at a time"
+      also_knownAs: ["TabView", "Tabbed navigation"]
+    - category: Navigation
+      name: Link
+      description: "A link allows a user to navigate to another page or resource"
+      alsoKnownAs: ["Anchor", "Hyperlink"]
+    - category: Navigation
+      name: Breadcrumbs
+      description: "Displays a hierarchy of links to the current page or resource"
+      alsoKnownAs: ["Breadcrumb trail"]
+    - category: Navigation
+      name: Disclosure
+      description: "A collapsible section of content (toggle to hide/show content)"
+      alsoKnownAs: ["Expandable panel", "Details"]
+    - category: Navigation
+      name: Accordion
+      description: "A grouping of related disclosure panels (multiple collapsible sections)"
+      alsoKnownAs: ["Expansion panel"]
+    - category: Form
+      name: Button
+      description: "Triggers an action or event, such as submitting a form or opening a dialog"
+      alsoKnownAs: ["Push button", "CTA"]
+    - category: Form
+      name: Toggle
+      description: "Displays a boolean value as an interactive switch (on/off state)"
+      alsoKnownAs: ["Toggle Switch"]
+    - category: Form
+      name: Switch
+      description: "Allows the user to choose between a set of options (often rendered as a segmented control)"
+      alsoKnownAs: ["Segmented switch", "Option toggle"]
+    - category: Form
+      name: Checkbox
+      description: "A control that toggles between two states: checked or unchecked"
+      alsoKnownAs: ["Checkbox input"]
+    - category: Form
+      name: Checkbox Group
+      description: "A group of checkboxes allowing multiple selections from a list"
+      alsoKnownAs: ["Checkbox list"]
+    - category: Form
+      name: Radio
+      description: "Provides a single selection from a set of options (radio button)"
+      alsoKnownAs: ["Radio button"]
+    - category: Form
+      name: Radio Group
+      description: "A group of radio buttons allowing one item to be selected at a time"
+      alsoKnownAs: ["Option group"]
+    - category: Form
+      name: Choicebox
+      description: "A larger selectable card acting like a radio or checkbox with a bigger tap area and details"
+      alsoKnownAs: ["Selection card", "Option card"]
+    - category: Form
+      name: Input
+      description: "Retrieves text input from a user (single-line text field)"
+      alsoKnownAs: ["Text field", "Textbox"]
+    - category: Form
+      name: Textarea
+      description: "Allows a user to enter a multi-line text value via keyboard"
+      alsoKnownAs: ["Multiline text field"]
+    - category: Form
+      name: Select
+      description: "Displays a dropdown list of items for the user to choose from"
+      alsoKnownAs: ["Dropdown", "Picker"]
+    - category: Form
+      name: Combobox
+      description: "Combines a text input with a list of options, allowing filtering and selection"
+      alsoKnownAs: ["Autocomplete", "Searchable select"]
+    - category: Form
+      name: FileTrigger
+      description: "A button that opens the file system dialog for file selection"
+      alsoKnownAs: ["File upload button"]
+    - category: Form
+      name: Slider
+      description: "Allows a user to select a numeric value within a range by sliding a thumb"
+      alsoKnownAs: ["Range slider"]
+    - category: Form
+      name: RangeSlider
+      description: "Allows a user to select a range of values within a larger range (two-thumb slider)"
+      alsoKnownAs: ["Double slider"]
+    - category: Form
+      name: NumberField
+      description: "Allows a user to enter, increment, or decrement a numeric value"
+      alsoKnownAs: ["Numeric stepper", "Spinner input"]
+    - category: Form
+      name: SearchField
+      description: "A text field with an integrated clear button for entering search queries"
+      alsoKnownAs: ["Search box"]
+    - category: Form
+      name: Form
+      description: "Provides layout and alignment for a grouping of input fields (form container)"
+      alsoKnownAs: ["Fieldset", "Form container"]
+    - category: Overlay
+      name: Modal
+      description: "Displays popup content that requires user attention or input without leaving the page"
+      alsoKnownAs: ["Modal dialog", "Dialog box"]
+    - category: Overlay
+      name: Drawer
+      description: "Displays content in a panel that slides in from the edge of the screen (usually on small viewports)"
+      alsoKnownAs: ["Sidebar", "Slide-out panel"]
+    - category: Overlay
+      name: Dialog
+      description: "An overlay shown above other content, typically to present important information or a prompt"
+      alsoKnownAs: ["Dialog box", "Pop-up"]
+    - category: Overlay
+      name: Alert Dialog
+      description: "A modal window that alerts users with important information and awaits their acknowledgment or action"
+      alsoKnownAs: ["Confirmation prompt"]
+    - category: Overlay
+      name: ContextualHelp
+      description: "Shows extra contextual information adjacent to another component (often via hover or click)"
+      alsoKnownAs: ["Help tooltip", "Info popover"]
+    - category: Overlay
+      name: Tooltip
+      description: "Displays a brief description of an element when the user hovers or focuses on it"
+      alsoKnownAs: ["Hint", "Info tooltip"]
+    - category: Overlay
+      name: Toast
+      description: "A succinct message displayed temporarily as feedback for an action"
+      alsoKnownAs: ["Snackbar", "Notification toast"]
+    - category: Overlay
+      name: Spinner
+      description: "An animation indicating an action is in progress (often used as loading feedback)"
+      alsoKnownAs: ["Loading spinner"]
+    - category: Data Display
+      name: Avatar
+      description: "Represents a user or entity with an image, initials, or icon"
+      alsoKnownAs: ["User avatar", "Profile image"]
+    - category: Data Display
+      name: Badge
+      description: "A label that highlights an item or categorizes it, often to draw attention"
+      alsoKnownAs: ["Tag", "Pill"]
+    - category: Data Display
+      name: Status Dot
+      description: "Displays a small colored indicator to convey status or state"
+      alsoKnownAs: ["Status indicator", "Status light"]
+    - category: Data Display
+      name: Note
+      description: "Displays text that needs attention or provides additional information in a highlighted block"
+      alsoKnownAs: ["Callout", "Notification note"]
+    - category: Data Display
+      name: Error
+      description: "Displays an error message in a clear and friendly way to unblock users"
+      alsoKnownAs: ["Error message", "Validation error"]
+    - category: Data Display
+      name: Empty State
+      description: "Fills spaces when content is missing or not yet added, to provide context and prevent confusion"
+      alsoKnownAs: ["No-data state", "Blank slate"]
+    - category: Data Display
+      name: Feedback (Form)
+      description: "Collects text feedback from a user along with an associated sentiment (e.g. rating)"
+      alsoKnownAs: ["Feedback form"]
+    - category: Data Display
+      name: Description
+      description: "Displays a brief heading with a subheading to provide context or extra information"
+      alsoKnownAs: ["Description list", "Metadata pair"]
+    - category: Data Display
+      name: Book
+      description: "A responsive content card styled to resemble a book or article preview"
+      alsoKnownAs: ["Article card"]
+    - category: Data Display
+      name: Calendar
+      description: "Displays a calendar grid from which users can select a date or date range"
+      alsoKnownAs: ["Date picker (calendar mode)"]
+    - category: Data Display
+      name: RangeCalendar
+      description: "Displays a calendar that allows selection of a contiguous date range"
+      alsoKnownAs: ["Range date picker"]
+    - category: Data Display
+      name: DateField
+      description: "An input field for entering and editing a date value (with keyboard support)"
+      alsoKnownAs: ["Date input"]
+    - category: Data Display
+      name: DatePicker
+      description: "Combines a DateField with a Calendar popover for selecting a date"
+      alsoKnownAs: ["Date selector"]
+    - category: Data Display
+      name: DateRangePicker
+      description: "Combines two DateFields with a RangeCalendar popover for selecting a date range"
+      alsoKnownAs: ["Range date selector"]
+    - category: Data Display
+      name: TimeField
+      description: "An input field that allows entering and editing a time value via keyboard"
+      alsoKnownAs: ["Time input"]
+    - category: Data Display
+      name: Relative Time Card
+      description: "A popover card that shows a given date/time in the user’s local time (on hover or focus)"
+      alsoKnownAs: ["Time tooltip", "Local time display"]
+    - category: Data Display
+      name: Gauge
+      description: "A circular visual indicator conveying a percentage or fractional value"
+      alsoKnownAs: ["Donut chart", "Progress ring"]
+    - category: Data Display
+      name: Progress
+      description: "A linear indicator showing the progress of an operation over time"
+      alsoKnownAs: ["Progress bar"]
+    - category: Data Display
+      name: Meter
+      description: "Represents a quantity within a known range (like a progress bar for static values)"
+      alsoKnownAs: ["Meter gauge"]
+    - category: Data Display
+      name: Table
+      description: "Displays data in rows and columns using semantic HTML table structure"
+      alsoKnownAs: ["Data table", "Grid table"]
+    - category: Data Display
+      name: Snippet
+      description: "Displays a snippet of copyable code (often command-line instructions)"
+      alsoKnownAs: ["Code snippet", "Code block"]
+    - category: Feedback
+      name: Alert (Message)
+      description: "A brief, important message to draw the user’s attention (often used for success/warning/error info)"
+      alsoKnownAs: ["Callout", "Banner"]
+    - category: Feedback
+      name: AlertDialog (Confirm)
+      description: "A confirmation dialog that interrupts the user flow to request an explicit action (e.g., confirm delete)"
+      alsoKnownAs: ["Confirmation prompt"]
+    - category: Feedback
+      name: Badge (Status)
+      description: "A small badge labeling an item with a category or status (often color-coded)"
+      alsoKnownAs: ["Status badge", "Tag"]
+    - category: Feedback
+      name: Callout
+      description: "A short highlighted message designed to attract the user’s attention"
+      alsoKnownAs: ["Notice", "Tip"]
+    - category: Miscellaneous
+      name: Avatar Group
+      description: "Displays a stack or cluster of avatars, often representing multiple people (stacked avatars indicate a group)"
+      alsoKnownAs: ["Avatar stack", "Avatar list"]
+    - category: Miscellaneous
+      name: Keyboard Input
+      description: "Displays keyboard keys or shortcuts in a stylized way"
+      alsoKnownAs: ["Keycap", "Shortcut hint"]
+    - category: Miscellaneous
+      name: Material
+      description: "Provides various surface styles with shadows, built on top of the Stack component"
+      alsoKnownAs: ["Surface", "Card surface"]
+    - category: Miscellaneous
+      name: Loading Dots
+      description: "An animation of dots indicating an action running in the background (often used for loading)"
+      alsoKnownAs: ["Animated ellipsis", "Dot loader"]
+    - category: Miscellaneous
+      name: Book (Cover)
+      description: "A responsive component styled like a book cover or card, typically used to preview content"
+      alsoKnownAs: ["Article preview", "Card flip"]
+    - category: Miscellaneous
+      name: Stack
+      description: "A layout component to display elements vertically or horizontally with consistent spacing"
+      alsoKnownAs: ["Stack layout", "Flex stack"]
+    - category: Miscellaneous
+      name: Grid
+      description: "A layout component for arranging content in a two-dimensional grid with a consistent gap"
+      alsoKnownAs: ["Grid layout", "CSS grid"]
+
+- vendor: Radix Primitives
+  components:
+    - category: Disclosure
+      name: Accordion
+      description: "A vertically stacked set of interactive headings that each reveal an associated section of content"
+      alsoKnownAs: ["Collapsible panel set", "Expansion panel"]
+    - category: Overlay
+      name: Alert Dialog
+      description: "A modal dialog that interrupts the user with important content and expects a response"
+      alsoKnownAs: ["Confirmation dialog", "Critical dialog"]
+    - category: Layout
+      name: Aspect Ratio
+      description: "Maintains a consistent width-to-height ratio for its child content (e.g., 16:9)"
+      alsoKnownAs: ["Ratio box"]
+    - category: Data Display
+      name: Avatar
+      description: "A visual representation of a user or entity, shown as an image, icon, or initials"
+      alsoKnownAs: ["Profile avatar"]
+    - category: Data Display
+      name: Badge
+      description: "A small label used to denote status or category, often displayed adjacent to other content"
+      alsoKnownAs: ["Tag", "Pill"]
+    - category: Navigation
+      name: Breadcrumb
+      description: "Shows the navigation path (hierarchy) to the current page, with links for each level"
+      alsoKnownAs: ["Breadcrumb trail"]
+    - category: Actions
+      name: Button
+      description: "A clickable element that triggers an action or event"
+      alsoKnownAs: ["Push button", "CTA"]
+    - category: Date & Time
+      name: Calendar
+      description: "Displays a calendar interface for date selection"
+      alsoKnownAs: ["Date picker (calendar mode)"]
+    - category: Surfaces
+      name: Card
+      description: "A container that groups related content and actions into a panel"
+      alsoKnownAs: ["Panel", "Tile"]
+    - category: Navigation
+      name: Carousel
+      description: "Allows cycling through a series of content items (usually images or cards) by sliding or fading"
+      alsoKnownAs: ["Slider (content carousel)"]
+    - category: Data Display
+      name: Chart
+      description: "A visual representation of data (likely integrated from an external chart library)"
+      alsoKnownAs: ["Graph"]
+    - category: Form
+      name: Checkbox
+      description: "A square toggle input allowing binary checked/unchecked selection"
+      alsoKnownAs: ["Checkbox input"]
+    - category: Disclosure
+      name: Collapsible
+      description: "A single collapsible section of content with a toggle to hide or show it"
+      alsoKnownAs: ["Collapse panel"]
+    - category: Form
+      name: Combobox
+      description: "A combo box allowing free text input and selection from a filtered list of options"
+      alsoKnownAs: ["Autocomplete field"]
+    - category: Command
+      name: Command
+      description: "An input with a list of commands or options that filter as you type (command palette)"
+      alsoKnownAs: ["Command palette", "Spotlight search"]
+    - category: Navigation
+      name: Context Menu
+      description: "A menu that appears upon user interaction (e.g., right-click) offering contextual actions"
+      alsoKnownAs: ["Contextual menu", "Right-click menu"]
+    - category: Data Display
+      name: Data Table
+      description: "A table component for displaying data in sortable columns and rows (with built-in styling/logic)"
+      alsoKnownAs: ["Data grid"]
+    - category: Date & Time
+      name: Date Picker
+      description: "An input or popover that allows selecting a date from a calendar interface"
+      alsoKnownAs: ["Date selector"]
+    - category: Overlay
+      name: Dialog
+      description: "A window overlaid on the interface, used for brief interactions or information display"
+      alsoKnownAs: ["Modal dialog"]
+    - category: Overlay
+      name: Drawer (Sheet)
+      description: "A panel that slides in from the edge of the screen to reveal content or options"
+      alsoKnownAs: ["Side sheet", "Slide-in panel"]
+    - category: Navigation
+      name: Dropdown Menu
+      description: "A menu that toggles visibility (often via a button), offering a list of actions or options"
+      alsoKnownAs: ["Popup menu", "Select menu"]
+    - category: Forms
+      name: Form
+      description: "A collection of input fields, labels, and controls that together submit user input"
+      alsoKnownAs: ["Form container"]
+    - category: Overlay
+      name: Hover Card
+      description: "A card that appears when a user hovers over a trigger element, showing additional information"
+      alsoKnownAs: ["Hover popover", "Info card"]
+    - category: Form
+      name: Input
+      description: "A text field for user input, typically single-line (supports various types via attributes)"
+      alsoKnownAs: ["Text input", "Textbox"]
+    - category: Form
+      name: Input OTP
+      description: "A set of inputs for one-time password (OTP) or verification code entry (usually fixed-length)"
+      alsoKnownAs: ["PIN input", "Code input"]
+    - category: Navigation
+      name: Label
+      description: "A text label associated with a form input or component, indicating its purpose"
+      alsoKnownAs: ["Form label", "Caption"]
+    - category: Navigation
+      name: Menubar
+      description: "A horizontal menu offering a list of actions or sub-menus, often used in app toolbars"
+      alsoKnownAs: ["Menu bar", "Application menu"]
+    - category: Navigation
+      name: Navigation Menu
+      description: "A menu component for site navigation, which can include nested submenus"
+      alsoKnownAs: ["Nav menu", "Mega menu"]
+    - category: Navigation
+      name: Pagination
+      description: "A control for navigating between pages of content (prev/next buttons, page numbers)"
+      alsoKnownAs: ["Pager"]
+    - category: Overlay
+      name: Popover
+      description: "A small overlay that opens on top of UI, anchored to a trigger, to display arbitrary content"
+      alsoKnownAs: ["Popup", "Popover card"]
+    - category: Feedback
+      name: Progress
+      description: "A bar indicating the completion progress of a task or operation"
+      alsoKnownAs: ["Progress bar"]
+    - category: Form
+      name: Radio Group
+      description: "A set of radio buttons where only one option can be selected at a time"
+      alsoKnownAs: ["Option group", "Radio set"]
+    - category: Layout
+      name: Scroll Area
+      description: "A container that enables custom styling of overflow scrollbars for scrollable content"
+      alsoKnownAs: ["Scrollable area", "Scroll region"]
+    - category: Form
+      name: Select
+      description: "A form control presenting a list of options, allowing one to be selected (triggered by a button)"
+      alsoKnownAs: ["Dropdown select"]
+    - category: Structure
+      name: Separator
+      description: "A visual divider that groups or separates content, typically rendered as a line or space"
+      alsoKnownAs: ["Divider", "Rule"]
+    - category: Form
+      name: Slider
+      description: "An input allowing selection of a numeric value by dragging a handle along a track"
+      alsoKnownAs: ["Range slider"]
+    - category: Feedback
+      name: Spinner
+      description: "A looping animation indicating an ongoing process (often used while content is loading)"
+      alsoKnownAs: ["Loading spinner"]
+    - category: Form
+      name: Switch
+      description: "A two-state toggle switch that allows users to turn a setting on or off"
+      alsoKnownAs: ["Toggle switch"]
+    - category: Data Display
+      name: Table
+      description: "A tabular component for displaying data in rows and columns (unstyled, for custom styling)"
+      alsoKnownAs: ["Data table"]
+    - category: Navigation
+      name: Tabs
+      description: "A set of tabs that allow switching between different content panels in the same space"
+      alsoKnownAs: ["Tab view", "Tabbed interface"]
+    - category: Form
+      name: Textarea
+      description: "A multiline text input field for extended user input"
+      alsoKnownAs: ["Multiline text box"]
+    - category: Feedback
+      name: Toast
+      description: "A brief notification message that pops up temporarily to inform the user of an action’s outcome"
+      alsoKnownAs: ["Snackbar", "Notification toast"]
+    - category: Form
+      name: Toggle
+      description: "A button that toggles between two states (pressed or not pressed), often used for boolean actions"
+      alsoKnownAs: ["Toggle button"]
+    - category: Form
+      name: Toggle Group
+      description: "A set of related toggle buttons where multiple can be pressed (or a single in exclusive mode)"
+      alsoKnownAs: ["Button group (toggle mode)"]
+    - category: Navigation
+      name: Toolbar
+      description: "A container for grouping a set of actions or controls, typically displayed as a horizontal bar"
+      alsoKnownAs: ["Action bar", "Toolstrip"]
+    - category: Overlay
+      name: Tooltip
+      description: "A text label that appears when a user hovers over or focuses on an element, providing extra information"
+      alsoKnownAs: ["Hover tooltip", "Info tip"]
+
+- vendor: Radix Themes
+  components:
+    - category: Overlay
+      name: Alert Dialog
+      description: "A pre-styled modal dialog that interrupts the user with important content, expecting a confirmation"
+      alsoKnownAs: ["Confirm dialog (themed)"]
+    - category: Layout
+      name: Aspect Ratio
+      description: "A box that enforces a specific aspect ratio for its content (with default styles)"
+      alsoKnownAs: ["Ratio container"]
+    - category: Data Display
+      name: Avatar
+      description: "A styled avatar component for displaying user images or initials out-of-the-box"
+      alsoKnownAs: ["Profile avatar (themed)"]
+    - category: Data Display
+      name: Badge
+      description: "A colored label for highlighting status or category, provided with default theme styling"
+      alsoKnownAs: ["Tag (themed)"]
+    - category: Actions
+      name: Button
+      description: "A primary action button with Radix’s default theme styles applied"
+      alsoKnownAs: ["CTA button (themed)"]
+    - category: Feedback
+      name: Callout
+      description: "A prominent, pre-styled message box for drawing attention to important content"
+      alsoKnownAs: ["Callout box (themed)"]
+    - category: Surfaces
+      name: Card
+      description: "A theme-styled container (card) grouping related information and actions"
+      alsoKnownAs: ["Content card"]
+    - category: Form
+      name: Checkbox
+      description: "A styled checkbox input for toggling a boolean value (with theming for box, check icon, etc.)"
+      alsoKnownAs: ["Checkbox (themed)"]
+    - category: Form
+      name: Checkbox Group
+      description: "A fieldset of related checkboxes with a group label, styled consistently"
+      alsoKnownAs: ["Checkbox set (themed)"]
+    - category: Form
+      name: Checkbox Cards
+      description: "A set of checkbox options presented as cards, allowing multiple selection with a richer visual style"
+      alsoKnownAs: ["Selectable cards (multi-select)"]
+    - category: Navigation
+      name: Context Menu
+      description: "A contextual menu with Radix Themes styling, appearing on right-click or trigger action"
+      alsoKnownAs: ["Context menu (themed)"]
+    - category: Data Display
+      name: Data List
+      description: "A stylized list for displaying structured data in a list form (an alternative to tables)"
+      alsoKnownAs: ["Key-value list", "Definition list"]
+    - category: Overlay
+      name: Dialog
+      description: "A theme-styled dialog overlay for general-purpose modals"
+      alsoKnownAs: ["Modal (themed)"]
+    - category: Navigation
+      name: Dropdown Menu
+      description: "A dropdown menu with default theme styles, for presenting a list of actions or options"
+      alsoKnownAs: ["Dropdown (themed)"]
+    - category: Overlay
+      name: Hover Card
+      description: "A pop-up card that appears on hover, with built-in theming for content and arrow"
+      alsoKnownAs: ["Info hovercard (themed)"]
+    - category: Actions
+      name: Icon Button
+      description: "A circular or square icon-only button provided with default styles (for toolbar/icons)"
+      alsoKnownAs: ["Icon-only button"]
+    - category: Layout
+      name: Inset
+      description: "A utility component providing consistent padding/inset spacing for wrapping content"
+      alsoKnownAs: ["Padded box", "Container (themed spacing)"]
+    - category: Overlay
+      name: Popover
+      description: "A themed popover component that displays content in a surface overlaying the UI"
+      alsoKnownAs: ["Popover (themed)"]
+    - category: Feedback
+      name: Progress
+      description: "A progress bar with theme styles, indicating completion percentage of a task"
+      alsoKnownAs: ["Progress bar (themed)"]
+    - category: Form
+      name: Radio
+      description: "A styled radio button (circular selection control) for choosing one option from many"
+      alsoKnownAs: ["Radio button (themed)"]
+    - category: Form
+      name: Radio Group
+      description: "A group of radio buttons with an optional label, styled with the theme"
+      alsoKnownAs: ["Radio set (themed)"]
+    - category: Form
+      name: Radio Cards
+      description: "A set of mutually exclusive options presented as selection cards (only one card can be active)"
+      alsoKnownAs: ["Selectable cards (single-select)"]
+    - category: Layout
+      name: Scroll Area
+      description: "A scrollable container with theming for scrollbar and scroll track visuals"
+      alsoKnownAs: ["ScrollArea (themed)"]
+    - category: Form
+      name: Segmented Control
+      description: "A segmented switch allowing selection of one option from several (visually like a button group with one active)"
+      alsoKnownAs: ["Segmented toggle", "Option segments"]
+    - category: Form
+      name: Select
+      description: "A select dropdown component with Radix default theme applied (button trigger and options list)"
+      alsoKnownAs: ["Select dropdown (themed)"]
+    - category: Structure
+      name: Separator
+      description: "A themed horizontal or vertical separator line dividing content"
+      alsoKnownAs: ["Divider (themed)"]
+    - category: Feedback
+      name: Skeleton
+      description: "A placeholder skeleton block or lines shown while content is loading, styled with theme defaults"
+      alsoKnownAs: ["Skeleton loader (themed)"]
+    - category: Form
+      name: Slider
+      description: "A range slider with default theme styling for track and thumb"
+      alsoKnownAs: ["Slider (themed)"]
+    - category: Feedback
+      name: Spinner
+      description: "A loading spinner icon with theme-consistent styling (for indeterminate progress)"
+      alsoKnownAs: ["Loading spinner (themed)"]
+    - category: Form
+      name: Switch
+      description: "A toggle switch component with built-in styling for on/off states"
+      alsoKnownAs: ["Switch (themed toggle)"]
+    - category: Data Display
+      name: Table
+      description: "A responsive, styled table for displaying tabular data (with base theme styles applied)"
+      alsoKnownAs: ["Data table (themed)"]
+    - category: Navigation
+      name: Tabs
+      description: "A tabs component with default styling for tab list and content switching"
+      alsoKnownAs: ["Tabs (themed)"]
+    - category: Navigation
+      name: Tab Nav
+      description: "A simplified tab-style navigation for links (often used for page navigation, styled as tabs)"
+      alsoKnownAs: ["Tabbed nav (themed)"]
+    - category: Form
+      name: Text Area
+      description: "A multi-line text input area with built-in styling for border, focus, etc."
+      alsoKnownAs: ["Textarea (themed)"]
+    - category: Form
+      name: Text Field
+      description: "A single-line text input field with theme styling (borders, focus outline, placeholder)"
+      alsoKnownAs: ["Text input (themed)"]
+    - category: Overlay
+      name: Tooltip
+      description: "A small tooltip popup with preset styles (background color, text, arrow) for hover or focus hints"
+      alsoKnownAs: ["Tooltip (themed)"]
+
+- vendor: shadcn/ui (ShadCN)
+  components:
+    - category: Disclosure
+      name: Accordion
+      description: "A collapsible set of sections with titled headers that can each expand or collapse"
+      alsoKnownAs: ["Accordion (Tailwind, Radix-based)"]
+    - category: Feedback
+      name: Alert
+      description: "A component for displaying important messages or statuses, typically colored (success, error, etc.)"
+      alsoKnownAs: ["Banner", "Flash message"]
+    - category: Overlay
+      name: Alert Dialog
+      description: "A modal confirmation dialog requiring user action (with integrated Tailwind styles)"
+      alsoKnownAs: ["Confirm modal (shadcn)"]
+    - category: Layout
+      name: Aspect Ratio
+      description: "Enforces a specific aspect ratio on content, using Radix AspectRatio under the hood"
+      alsoKnownAs: ["Aspect box"]
+    - category: Data Display
+      name: Avatar
+      description: "A user avatar component (with support for image fallback to initials)"
+      alsoKnownAs: ["User avatar (shadcn)"]
+    - category: Data Display
+      name: Badge
+      description: "A small badge for labeling or indicating status, styled with the shadcn design"
+      alsoKnownAs: ["Badge (shadcn)"]
+    - category: Navigation
+      name: Breadcrumb
+      description: "A breadcrumb navigation component to display the page hierarchy"
+      alsoKnownAs: ["Breadcrumbs (shadcn)"]
+    - category: Actions
+      name: Button
+      description: "A reusable button component with various styles (solid, outline, etc.) in shadcn UI"
+      alsoKnownAs: ["Button (shadcn styled)"]
+    - category: Date & Time
+      name: Calendar
+      description: "A calendar/date picker component built on Radix Calendar, styled for shadcn UI"
+      alsoKnownAs: ["Calendar (shadcn date picker)"]
+    - category: Surfaces
+      name: Card
+      description: "A content card container with padding, shadow, etc., part of the shadcn design system"
+      alsoKnownAs: ["Card (shadcn)"]
+    - category: Navigation
+      name: Carousel
+      description: "A carousel/slider component for cycling through content (likely using an external library integration)"
+      alsoKnownAs: ["Carousel slider"]
+    - category: Data Display
+      name: Chart
+      description: "A chart component (e.g., for displaying graphs) integrated into shadcn UI"
+      alsoKnownAs: ["Chart (shadcn)"]
+    - category: Form
+      name: Checkbox
+      description: "A styled checkbox input for boolean selection (with Radix functionality)"
+      alsoKnownAs: ["Checkbox (shadcn)"]
+    - category: Disclosure
+      name: Collapsible
+      description: "A component to hide or show its children with a toggle, similar to an accordion panel"
+      alsoKnownAs: ["Collapsible section (shadcn)"]
+    - category: Form
+      name: Combobox
+      description: "A combination input + listbox component for searchable select menus (uses Radix Combobox)"
+      alsoKnownAs: ["Autocomplete field (shadcn)"]
+    - category: Command
+      name: Command
+      description: "A command palette component for filtering and executing commands (fuzzy search through actions)"
+      alsoKnownAs: ["Command palette (shadcn)"]
+    - category: Navigation
+      name: Context Menu
+      description: "A right-click context menu with nested submenus, built with Radix and styled with Tailwind"
+      alsoKnownAs: ["Context menu (shadcn)"]
+    - category: Data Display
+      name: Data Table
+      description: "A data table/grid component for displaying data sets with sorting, filtering, etc."
+      alsoKnownAs: ["Table (shadcn enhanced)"]
+    - category: Date & Time
+      name: Date Picker
+      description: "A date picker component (calendar popover + input) using Radix and styled for shadcn UI"
+      alsoKnownAs: ["Date picker (shadcn)"]
+    - category: Overlay
+      name: Dialog
+      description: "A general-purpose dialog/modal component with shadcn default styles (Radix Dialog)"
+      alsoKnownAs: ["Modal (shadcn)"]
+    - category: Overlay
+      name: Drawer (Sheet)
+      description: "A side-sheet or bottom-sheet component that slides in to reveal content (shadcn 'Sheet')"
+      alsoKnownAs: ["Drawer (shadcn sheet)"]
+    - category: Navigation
+      name: Dropdown Menu
+      description: "A dropdown menu for actions or selections, built on Radix DropdownMenu (styled)"
+      alsoKnownAs: ["Dropdown (shadcn)"]
+    - category: Form
+      name: Form
+      description: "Utilities or components for building forms (shadcn provides form field wrappers, validation styling)"
+      alsoKnownAs: ["Form (shadcn kit)"]
+    - category: Overlay
+      name: Hover Card
+      description: "An info card that appears when hovering a trigger, using Radix HoverCard (themed with Tailwind)"
+      alsoKnownAs: ["Hovercard (shadcn)"]
+    - category: Form
+      name: Input
+      description: "A text input component styled with the shadcn theme (includes variants for different sizes, etc.)"
+      alsoKnownAs: ["Text field (shadcn)"]
+    - category: Form
+      name: Input OTP
+      description: "An OTP input field split into multiple inputs for each digit (often 4-6 inputs for verification codes)"
+      alsoKnownAs: ["OTP input", "Pin code input"]
+    - category: Layout
+      name: Resizable
+      description: "A component that allows the user to resize an area (e.g., a panel or text area) by dragging a handle"
+      alsoKnownAs: ["Resizable panel"]
+    - category: Navigation
+      name: Menubar
+      description: "A horizontal menu bar with dropdown menus (Radix Menubar) for site or app navigation"
+      alsoKnownAs: ["Menubar (shadcn)"]
+    - category: Navigation
+      name: Navigation Menu
+      description: "A navigation menu component (Radix NavigationMenu) for site navigation with submenus"
+      alsoKnownAs: ["Navigation menu (shadcn)"]
+    - category: Navigation
+      name: Pagination
+      description: "A pagination control for navigating through pages of content (with Tailwind styling)"
+      alsoKnownAs: ["Pagination (shadcn)"]
+    - category: Overlay
+      name: Popover
+      description: "A small popover card with content, anchored to a trigger (Radix Popover with shadcn styles)"
+      alsoKnownAs: ["Popover (shadcn)"]
+    - category: Feedback
+      name: Progress
+      description: "A progress indicator (linear bar) showing completion progress, styled via shadcn default theme"
+      alsoKnownAs: ["Progress bar (shadcn)"]
+    - category: Form
+      name: Radio Group
+      description: "A set of radio inputs allowing a single selection, with Tailwind styles applied (Radix RadioGroup)"
+      alsoKnownAs: ["Radio buttons (shadcn)"]
+    - category: Layout
+      name: Resizable (Panel)
+      description: "Enables an element (like a panel or text area) to be resized by the user, with visual resize handle"
+      alsoKnownAs: ["Draggable resizer"]
+    - category: Layout
+      name: Scroll Area
+      description: "A scrollable container with custom styled scrollbars (Radix ScrollArea)"
+      alsoKnownAs: ["Scroll box (shadcn)"]
+    - category: Form
+      name: Select
+      description: "A select dropdown component with shadcn styles (Radix Select for choosing one option)"
+      alsoKnownAs: ["Select box (shadcn)"]
+    - category: Structure
+      name: Separator
+      description: "A themed divider line or spacer, for separating content (Radix Separator with Tailwind styling)"
+      alsoKnownAs: ["Separator (shadcn)"]
+    - category: Overlay
+      name: Sheet
+      description: "A modal sheet that slides in from screen edge (alias of Drawer) for showing supplemental content"
+      alsoKnownAs: ["Side sheet (shadcn)"]
+    - category: Navigation
+      name: Sidebar
+      description: "A collapsible side navigation panel component (often used for app navigation or settings)"
+      alsoKnownAs: ["Side nav (shadcn)"]
+    - category: Feedback
+      name: Skeleton
+      description: "A skeleton loader component to show placeholder shapes while content loads (Tailwind styled)"
+      alsoKnownAs: ["Skeleton screen (shadcn)"]
+    - category: Form
+      name: Slider
+      description: "A range slider input with shadcn styles for the track and thumb (Radix Slider)"
+      alsoKnownAs: ["Slider (shadcn)"]
+    - category: Feedback
+      name: Sonner (Toast)
+      description: "Shadcn’s integrated toast notification system (Sonner) for temporary messages"
+      alsoKnownAs: ["Toast notifications"]
+    - category: Form
+      name: Switch
+      description: "A toggle switch for on/off values, styled with shadcn’s default theme (Radix Switch)"
+      alsoKnownAs: ["Toggle switch (shadcn)"]
+    - category: Data Display
+      name: Table
+      description: "A table component for displaying data with styles and maybe sorting/filtering utilities (shadcn)"
+      alsoKnownAs: ["Data table (shadcn)"]
+    - category: Navigation
+      name: Tabs
+      description: "A tabs component for switching between views, with Tailwind styling (Radix Tabs)"
+      alsoKnownAs: ["Tabs (shadcn)"]
+    - category: Form
+      name: Textarea
+      description: "A multiline text input area with shadcn styling for borders, focus states, etc."
+      alsoKnownAs: ["Textarea (shadcn)"]
+    - category: Feedback
+      name: Toast
+      description: "A toast notification component (powered by Sonner library in shadcn) for brief alerts at screen edge"
+      alsoKnownAs: ["Toast (shadcn notifications)"]
+    - category: Form
+      name: Toggle
+      description: "A headless toggle button that can be pressed or not pressed, often used for activation states"
+      alsoKnownAs: ["Toggle button (shadcn)"]
+    - category: Form
+      name: Toggle Group
+      description: "A group of related toggle buttons (Radix ToggleGroup) with styling – can allow single or multiple selection"
+      alsoKnownAs: ["Toggle button group (shadcn)"]
+    - category: Navigation
+      name: Toolbar
+      description: "A set of action buttons or controls displayed in a horizontal bar (Radix Toolbar) with shadcn styling"
+      alsoKnownAs: ["Toolbar (shadcn)"]
+    - category: Overlay
+      name: Tooltip
+      description: "A headless tooltip component for showing brief helper text on hover or focus (Radix Tooltip)"
+      alsoKnownAs: ["Tooltip (shadcn)"]
+
+- vendor: Geist Shyakadavis
+  components:
+    - category: Data Display
+      name: Avatar
+      description: "Avatars represent a user or a team. Stacked avatars represent a group of people"
+      alsoKnownAs: ["Profile picture", "User avatar"]
+    - category: Data Display
+      name: Badge
+      description: "A label that emphasizes an element that requires attention, or helps categorize with other similar elements."
+      alsoKnownAs: ["Tag", "Pill", "Label"]
+    - category: Data Display
+      name: Book
+      description: "A responsive book component."
+      alsoKnownAs: []
+    - category: Form
+      name: Button
+      description: "Trigger an action or event, such as submitting a form or displaying a dialog."
+      alsoKnownAs: ["CTA button", "Push button"]
+    - category: Form
+      name: Calendar
+      description: "Displays a calendar from which users can select a date or range of dates."
+      alsoKnownAs: ["Date picker", "Date selector"]
+    - category: Form
+      name: Checkbox
+      description: "A control that toggles between two options, checked or unchecked."
+      alsoKnownAs: ["Tick box", "Check box"]
+    - category: Form
+      name: Choicebox
+      description: "A larger form of Radio or Checkbox, where the user has a larger tap target and more details."
+      alsoKnownAs: ["Option card", "Selection tile"]
+    - category: Data Display
+      name: Collapse
+      description: "A set of headings, vertically stacked, that each reveal an related section of content. Commonly referred to as an accordion."
+      alsoKnownAs: ["Accordion", "Collapsible panel"]
+    - category: Form
+      name: Combobox
+      description: "Filters large lists to selectable options based on the matching query."
+      alsoKnownAs: ["Autocomplete dropdown", "Combo box"]
+    - category: Navigation
+      name: Context Menu
+      description: "Displays a brief heading and subheading to communicate any additional information or context a user needs to continue."
+      alsoKnownAs: ["Right-click menu", "Contextual menu"]
+    - category: Data Display
+      name: Description
+      description: "Displays a brief heading and subheading to communicate any additional information or context a user needs to continue."
+      alsoKnownAs: ["Key-value list", "Description list"]
+    - category: Overlay
+      name: Drawer
+      description: "Display content in a separate view from the existing context."
+      alsoKnownAs: ["Sidebar", "Slide-out panel"]
+    - category: Feedback
+      name: Empty State
+      description: "Fill spaces when no content has been added yet, or is temporarily empty due to the nature of the feature and should be designed to prevent confusion."
+      alsoKnownAs: ["Blank slate", "No content state"]
+    - category: Feedback
+      name: Error
+      description: "Good error design is clear, useful, and friendly. Designing concise and accurate error messages unblocks users and builds trust by meeting people where they are."
+      alsoKnownAs: ["Error message", "Validation error"]
+    - category: Form
+      name: Feedback
+      description: "Gather text feedback with an associated emotion."
+      alsoKnownAs: ["Feedback form", "User feedback prompt"]
+    - category: Data Display
+      name: Gauge
+      description: "A circular visual for conveying a percentage."
+      alsoKnownAs: ["Radial progress", "Donut chart"]
+    - category: Form
+      name: Input
+      description: "Retrieve text input from a user."
+      alsoKnownAs: ["Text field", "Textbox"]
+    - category: Data Display
+      name: Keyboard Input
+      description: "Display keyboard input that triggers an action."
+      alsoKnownAs: ["Keycap", "Keyboard shortcut key"]
+    - category: Feedback
+      name: Loading Dots
+      description: "Indicate an action running in the background."
+      alsoKnownAs: ["Ellipsis loader", "Dot loader"]
+    - category: Navigation
+      name: Menu
+      description: "Dropdown menu opened via button. Supports typeahead and keyboard navigation."
+      alsoKnownAs: ["Dropdown menu", "Action menu"]
+    - category: Overlay
+      name: Modal
+      description: "Display popup content that requires attention or provides additional information."
+      alsoKnownAs: ["Dialog", "Popup"]
+    - category: Feedback
+      name: Note
+      description: "Display text that requires attention or provides additional information."
+      alsoKnownAs: ["Callout", "Alert note"]
+    - category: Navigation
+      name: Pagination
+      description: "Navigate to the previous or next page."
+      alsoKnownAs: ["Pager", "Page navigator"]
+    - category: Feedback
+      name: Progress
+      description: "Display progress relative to a limit or related to a task."
+      alsoKnownAs: ["Progress bar", "Progress indicator"]
+    - category: Feedback
+      name: Project Banner
+      description: "Used for temporary, project-wide notifications that require resolution"
+      alsoKnownAs: ["Notification banner", "Announcement bar"]
+    - category: Form
+      name: Radio
+      description: "Provides single user input from a selection of options."
+      alsoKnownAs: ["Radio button", "Option button"]
+    - category: Form
+      name: Select
+      description: "Display a dropdown list of items."
+      alsoKnownAs: ["Dropdown", "Select box"]
+    - category: Data Display
+      name: Show more
+      description: "Styling component to show expanded or collapsed content."
+      alsoKnownAs: ["Read more", "Expander"]
+    - category: Feedback
+      name: Skeleton
+      description: "Display a skeleton whilst another component is loading."
+      alsoKnownAs: ["Loading placeholder", "Shimmer loading"]
+    - category: Data Display
+      name: Snippet
+      description: "Display a snippet of copyable code for the command line."
+      alsoKnownAs: ["Code snippet", "Code block"]
+    - category: Feedback
+      name: Spinner
+      description: "Indicate an action running in the background. Unlike the loading dots, this should generally be used to indicate loading feedback in response to a user action, like for buttons, pagination, etc."
+      alsoKnownAs: ["Loading spinner", "Activity indicator"]
+    - category: Feedback
+      name: Status Dot
+      description: "Display an indicator of deployment status."
+      alsoKnownAs: ["Status indicator", "Status light"]
+    - category: Form
+      name: Switch
+      description: "Displays a boolean value."
+      alsoKnownAs: ["Toggle switch", "Toggle"]
+    - category: Data Display
+      name: Table
+      description: "A semantic HTML table component"
+      alsoKnownAs: ["Data table"]
+    - category: Navigation
+      name: Tabs
+      description: "Display tab content."
+      alsoKnownAs: ["Tab navigation", "Tabbed interface"]
+    - category: Form
+      name: Textarea
+      description: "Retrieve multi-line user input."
+      alsoKnownAs: ["Text area", "Multi-line text field"]
+    - category: Form
+      name: Theme Switcher
+      description: "Component that allows users to switch between light and dark themes."
+      alsoKnownAs: ["Theme toggle", "Dark mode switch"]
+    - category: Overlay
+      name: Tooltip
+      description: "A set of headings, vertically stacked, that each reveal an related section of content. Commonly referred to as an accordion."
+      alsoKnownAs: ["Hover tooltip", "Info bubble"]
+    - category: Data Display
+      name: Window
+      description: "Display content inside of a generic window frame."
+      alsoKnownAs: ["Browser frame", "Preview window"]
+
+- vendor: Bits UI (Svelte headless)
+  components:
+    - category: Disclosure
+      name: Accordion
+      description: "A vertically stacked set of sections that can expand/collapse one at a time"
+      alsoKnownAs: ["Accordion (headless)"]
+    - category: Overlay
+      name: Alert Dialog
+      description: "A modal dialog that interrupts the flow to present critical information and options"
+      alsoKnownAs: ["Alert modal"]
+    - category: Layout
+      name: Aspect Ratio
+      description: "A container that maintains a set aspect ratio for its children (e.g., 16:9)"
+      alsoKnownAs: ["AspectRatio (headless)"]
+    - category: Data Display
+      name: Avatar
+      description: "A headless avatar component for displaying user images or initials"
+      alsoKnownAs: ["Avatar (headless)"]
+    - category: Actions
+      name: Button
+      description: "A headless button that can act as a `<button>` or `<a>` depending on props (e.g., `href`)"
+      alsoKnownAs: ["Button (headless)"]
+    - category: Date & Time
+      name: Calendar
+      description: "A calendar interface allowing date selection (headless logic for building a calendar UI)"
+      alsoKnownAs: ["Calendar (headless)"]
+    - category: Form
+      name: Checkbox
+      description: "A headless checkbox input element for binary selection"
+      alsoKnownAs: ["Checkbox (headless)"]
+    - category: Disclosure
+      name: Collapsible
+      description: "A component providing toggleable show/hide of content sections (headless)"
+      alsoKnownAs: ["Collapse (headless)"]
+    - category: Form
+      name: Combobox
+      description: "A combo box input that filters a list of options based on user typing (headless)"
+      alsoKnownAs: ["Autocomplete (headless)"]
+    - category: Command
+      name: Command
+      description: "A headless command palette component for filtering and selecting actions (similar to Spotlight)"
+      alsoKnownAs: ["Command menu (headless)"]
+    - category: Navigation
+      name: Context Menu
+      description: "A headless context menu that can display actions upon right-click or similar interactions"
+      alsoKnownAs: ["ContextMenu (headless)"]
+    - category: Form
+      name: Date Field
+      description: "An input field for entering dates, with headless logic for parsing/formatting"
+      alsoKnownAs: ["Date input (headless)"]
+    - category: Date & Time
+      name: Date Picker
+      description: "A component combining a text field and calendar popover to pick dates (headless)"
+      alsoKnownAs: ["DatePicker (headless)"]
+    - category: Form
+      name: Date Range Field
+      description: "Input fields for selecting a start and end date (headless logic, usually paired with a range picker)"
+      alsoKnownAs: ["Date range input"]
+    - category: Date & Time
+      name: Date Range Picker
+      description: "A headless component for selecting a date range (typically two calendars or a combined UI)"
+      alsoKnownAs: ["DateRangePicker (headless)"]
+    - category: Overlay
+      name: Dialog
+      description: "A headless modal dialog component that can be used to build custom dialogs with Svelte"
+      alsoKnownAs: ["Modal (headless)"]
+    - category: Navigation
+      name: Dropdown Menu
+      description: "A headless dropdown menu for actions or links, supporting submenus and keyboard navigation"
+      alsoKnownAs: ["Menu (headless)"]
+    - category: Data Display
+      name: Label
+      description: "A headless label component for form inputs or UI elements (associates text with a control)"
+      alsoKnownAs: ["Form label (headless)"]
+    - category: Data Display
+      name: Link Preview
+      description: "Displays a preview (e.g., title or thumbnail) when hovering over or focusing on a hyperlink"
+      alsoKnownAs: ["URL preview"]
+    - category: Navigation
+      name: Menubar
+      description: "A headless menubar component for building menu bars with nested menus (common in desktop apps)"
+      alsoKnownAs: ["Menu bar (headless)"]
+    - category: Feedback
+      name: Meter
+      description: "Displays a quantitative measurement within a known range (like a progress bar but for static values)"
+      alsoKnownAs: ["Meter (headless)"]
+    - category: Navigation
+      name: Navigation Menu
+      description: "A headless navigation menu component that can include dropdowns or mega-menus (for site navigation)"
+      alsoKnownAs: ["NavMenu (headless)"]
+    - category: Navigation
+      name: Pagination
+      description: "A headless pagination component providing logic for page navigation UI (prev/next buttons, page numbers)"
+      alsoKnownAs: ["Pagination (headless)"]
+    - category: Form
+      name: Pin Input
+      description: "A set of inputs for entering a multi-digit PIN or verification code (headless logic)"
+      alsoKnownAs: ["OTP input (headless)"]
+    - category: Overlay
+      name: Popover
+      description: "A headless popover component for showing content in a tooltip-like overlay attached to a trigger"
+      alsoKnownAs: ["Popover (headless)"]
+    - category: Feedback
+      name: Progress
+      description: "A headless progress bar indicating how much of a task is completed"
+      alsoKnownAs: ["Progress bar (headless)"]
+    - category: Form
+      name: Radio Group
+      description: "A group of radio inputs (headless) that ensures only one option is selected at a time"
+      alsoKnownAs: ["RadioGroup (headless)"]
+    - category: Date & Time
+      name: Range Calendar
+      description: "A calendar component for selecting date ranges (headless, often paired with date range fields)"
+      alsoKnownAs: ["RangeCalendar (headless)"]
+    - category: Layout
+      name: Scroll Area
+      description: "A headless scroll container that provides custom scroll behavior or styling hooks"
+      alsoKnownAs: ["ScrollArea (headless)"]
+    - category: Form
+      name: Select
+      description: "A headless select dropdown component enabling custom trigger and option styling"
+      alsoKnownAs: ["Select (headless)"]
+    - category: Structure
+      name: Separator
+      description: "A headless separator (horizontal or vertical line) for dividing content"
+      alsoKnownAs: ["Divider (headless)"]
+    - category: Form
+      name: Slider
+      description: "A headless slider input for selecting a value in a range by dragging a thumb control"
+      alsoKnownAs: ["Range slider (headless)"]
+    - category: Form
+      name: Switch
+      description: "A headless switch component (toggle) for boolean on/off values"
+      alsoKnownAs: ["Toggle (headless)"]
+    - category: Navigation
+      name: Tabs
+      description: "A headless tabs component for switching between content panels by clicking tab headers"
+      alsoKnownAs: ["Tabs (headless)"]
+    - category: Overlay
+      name: Toggle Group
+      description: "A headless group of toggle buttons, supporting single or multiple selection modes"
+      alsoKnownAs: ["Button toggle group (headless)"]
+    - category: Form
+      name: Toggle
+      description: "A headless toggle button that can be pressed or not pressed, often used for activation states"
+      alsoKnownAs: ["Toggle button (headless)"]
+    - category: Navigation
+      name: Toolbar
+      description: "A headless toolbar container to group interactive controls (buttons, toggle, inputs) in a line"
+      alsoKnownAs: ["Toolbar (headless)"]
+    - category: Overlay
+      name: Tooltip
+      description: "A headless tooltip component for showing brief helper text on hover or focus"
+      alsoKnownAs: ["Tooltip (headless)"]
+
+- vendor: React Spectrum (Adobe)
+  components:
+    - category: Actions
+      name: ActionButton
+      description: "A button that typically contains an icon or short text, allowing the user to perform an action"
+      alsoKnownAs: ["Icon button", "Shortcut button"]
+    - category: Actions
+      name: ActionGroup
+      description: "A grouping of related action buttons displayed together"
+      alsoKnownAs: ["Button group (actions)"]
+    - category: Navigation
+      name: Breadcrumbs
+      description: "Displays a hierarchy of links representing the current page’s location"
+      alsoKnownAs: ["Breadcrumb trail"]
+    - category: Navigation
+      name: Tabs
+      description: "Organizes content into multiple tabs, with one section visible at a time"
+      alsoKnownAs: ["TabView"]
+    - category: Navigation
+      name: Accordion
+      description: "A grouping of related collapsible sections (disclosures) allowing only one open at a time"
+      alsoKnownAs: ["Expansion panel"]
+    - category: Navigation
+      name: Disclosure
+      description: "A single collapsible section of content with a title that can toggle expansion"
+      alsoKnownAs: ["Collapsible panel"]
+    - category: Overlays
+      name: Dialog
+      description: "A modal overlay that presents content or prompts that require user interaction"
+      alsoKnownAs: ["Modal dialog"]
+    - category: Overlays
+      name: AlertDialog
+      description: "A modal dialog used for urgent interruptions, requiring the user’s immediate attention/response"
+      alsoKnownAs: ["Alert modal"]
+    - category: Overlays
+      name: DialogTrigger
+      description: "A wrapper that provides the logic to trigger a Dialog (as popover, modal, or tray) when activated"
+      alsoKnownAs: ["Dialog launcher"]
+    - category: Overlays
+      name: Tooltip
+      description: "A transient message that appears when a user hovers or focuses on an element, describing its function"
+      alsoKnownAs: ["Hover tooltip"]
+    - category: Overlays
+      name: ContextualHelp
+      description: "A small popover providing contextual information or help for an adjacent UI element"
+      alsoKnownAs: ["Help popover"]
+    - category: Overlays
+      name: Tray (DialogTrigger mode)
+      description: "A non-modal overlay that slides in (often from bottom) to present supplementary content (triggered via DialogTrigger)"
+      alsoKnownAs: ["Tray panel"]
+    - category: Overlays
+      name: Popover (DialogTrigger mode)
+      description: "A popover variant of Dialog, typically used for lightweight dialogs anchored to a trigger"
+      alsoKnownAs: ["Popover dialog"]
+    - category: Collections
+      name: Menu
+      description: "A list of actions or options that a user can choose from (often opened via a button or context menu)"
+      alsoKnownAs: ["Dropdown menu"]
+    - category: Collections
+      name: ActionMenu
+      description: "A menu presented as an action (often as a collapsed overflow of actions in a button)"
+      alsoKnownAs: ["Overflow menu"]
+    - category: Collections
+      name: ListBox
+      description: "Displays a list of options and allows a user to select one or more of them"
+      alsoKnownAs: ["List selector"]
+    - category: Collections
+      name: ListView
+      description: "Displays a list of interactive items (with keyboard navigation, selection, drag-and-drop)"
+      alsoKnownAs: ["List widget", "Listbox (interactive)"]
+    - category: Collections
+      name: TableView
+      description: "Displays data in rows and columns with features like row selection and sorting"
+      alsoKnownAs: ["Data table"]
+    - category: Collections
+      name: TreeView
+      description: "Displays hierarchical data with expandable/collapsible nodes and selection"
+      alsoKnownAs: ["Tree control"]
+    - category: Collections
+      name: TagGroup
+      description: "Displays a list of items (tags) with support for keyboard navigation and removal"
+      alsoKnownAs: ["Tag list"]
+    - category: Pickers
+      name: ComboBox
+      description: "Combines a text input with a listbox, allowing a user to filter options and select one"
+      alsoKnownAs: ["Autocomplete", "Searchable dropdown"]
+    - category: Pickers
+      name: Picker
+      description: "Displays a collapsible list of options (usually via a popover) and lets a user select one"
+      alsoKnownAs: ["Select dropdown"]
+    - category: Pickers
+      name: Select (Picker alias)
+      description: "An alternate name for Picker – a control that lets the user choose one item from a list"
+      alsoKnownAs: ["Dropdown select"]
+    - category: Date and Time
+      name: Calendar
+      description: "Allows a user to select a single date from a calendar grid"
+      alsoKnownAs: ["Calendar picker"]
+    - category: Date and Time
+      name: RangeCalendar
+      description: "Allows a user to select a contiguous range of dates on a calendar"
+      alsoKnownAs: ["Date range picker (calendar)"]
+    - category: Date and Time
+      name: DateField
+      description: "Allows a user to enter and edit date values using the keyboard"
+      alsoKnownAs: ["Date input field"]
+    - category: Date and Time
+      name: DatePicker
+      description: "Combines a DateField and a Calendar popover for date selection"
+      alsoKnownAs: ["Date picker (with field)"]
+    - category: Date and Time
+      name: DateRangePicker
+      description: "Combines two DateFields and a RangeCalendar popover for selecting a date range"
+      alsoKnownAs: ["Date range selector"]
+    - category: Date and Time
+      name: TimeField
+      description: "Allows a user to enter and edit time values via keyboard input"
+      alsoKnownAs: ["Time input field"]
+    - category: Color
+      name: ColorPicker
+      description: "Combines a color swatch with a popover for selecting and editing a color"
+      alsoKnownAs: ["Color picker (swatch + picker)"]
+    - category: Color
+      name: ColorArea
+      description: "Allows users to adjust two channels of a color (displayed as a 2D area, e.g., saturation vs. brightness)"
+      alsoKnownAs: ["Color area picker"]
+    - category: Color
+      name: ColorSlider
+      description: "Allows users to adjust an individual channel of a color (displayed as a slider)"
+      alsoKnownAs: ["Color channel slider"]
+    - category: Color
+      name: ColorWheel
+      description: "Allows users to adjust the hue of a color value using a circular color wheel interface"
+      alsoKnownAs: ["Hue picker"]
+    - category: Color
+      name: ColorField
+      description: "Allows users to input a color value (hex or individual channels) via text field"
+      alsoKnownAs: ["Color input field"]
+    - category: Color
+      name: ColorSwatch
+      description: "Displays a preview swatch of a selected color"
+      alsoKnownAs: ["Color preview"]
+    - category: Color
+      name: ColorSwatchPicker
+      description: "Displays a list of color swatches and allows the user to select one"
+      alsoKnownAs: ["Swatch picker"]
+    - category: Forms
+      name: Checkbox
+      description: "Allows a user to select or deselect an option (individual boolean choice)"
+      alsoKnownAs: ["Checkbox input"]
+    - category: Forms
+      name: CheckboxGroup
+      description: "Allows a user to select one or more items from a list of options (rendered as grouped checkboxes)"
+      alsoKnownAs: ["Checkbox list"]
+    - category: Forms
+      name: RadioGroup
+      description: "Allows a user to select a single option from a list (rendered as grouped radio buttons)"
+      alsoKnownAs: ["Radio button group"]
+    - category: Forms
+      name: Switch
+      description: "Allows a user to toggle a setting on or off (rendered as a binary on/off switch)"
+      alsoKnownAs: ["Toggle switch"]
+    - category: Forms
+      name: TextField
+      description: "Allows a user to input a single-line plain text value"
+      alsoKnownAs: ["Text input field"]
+    - category: Forms
+      name: TextArea
+      description: "Allows a user to input a multi-line text value"
+      alsoKnownAs: ["Textarea"]
+    - category: Forms
+      name: SearchField
+      description: "Allows a user to input and clear a search query (text field with search semantics)"
+      alsoKnownAs: ["Search box"]
+    - category: Forms
+      name: NumberField
+      description: "Allows a user to input a number, with controls for incrementing or decrementing the value"
+      alsoKnownAs: ["Numeric stepper"]
+    - category: Forms
+      name: Form
+      description: "Provides layout and alignment for a group of form fields, labels, and controls"
+      alsoKnownAs: ["Form container"]
+    - category: Forms
+      name: Slider
+      description: "Allows selection of a numeric value within a range via a draggable thumb control"
+      alsoKnownAs: ["Range slider"]
+    - category: Forms
+      name: RangeSlider
+      description: "Allows selection of a numeric range (two values) within a larger range via two thumbs"
+      alsoKnownAs: ["Double-ended slider"]
+    - category: Status
+      name: ProgressBar
+      description: "Shows progress of an operation over time as a filled linear bar"
+      alsoKnownAs: ["Progress indicator (linear)"]
+    - category: Status
+      name: ProgressCircle
+      description: "Shows progress of an operation over time as a circular spinner/progress indicator"
+      alsoKnownAs: ["Circular progress"]
+    - category: Status
+      name: Meter
+      description: "Represents a quantity within a known range or a fractional value (visually similar to a progress bar)"
+      alsoKnownAs: ["Meter gauge"]
+    - category: Status
+      name: StatusLight
+      description: "Displays the status or category of an entity using a colored light indicator"
+      alsoKnownAs: ["Status indicator", "LED"]
+    - category: Status
+      name: LabeledValue
+      description: "Displays a non-editable value with a label, often with locale-specific formatting"
+      alsoKnownAs: ["Key–value label"]
+    - category: Status
+      name: Badge
+      description: "Displays a small badge with color-categorized metadata for an object"
+      alsoKnownAs: ["Tag", "Status badge"]
+    - category: Status
+      name: Toast
+      description: "Displays a transient notification message about an action, error, or event"
+      alsoKnownAs: ["Snackbar"]
+    - category: Drag and drop
+      name: DropZone
+      description: "Defines an area into which one or more objects can be dragged and dropped"
+      alsoKnownAs: ["Drag-and-drop zone"]
