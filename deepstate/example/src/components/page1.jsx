@@ -1,5 +1,6 @@
 import { reify } from "@m5nv/deepstate";
-import { useState } from "preact/hooks";
+import { useState, useContext } from "preact/hooks";
+import { createContext } from 'preact';
 
 const Counter = () => {
   const [{state: counter }] = useState (() => 
@@ -59,6 +60,8 @@ const ReactiveCounter = () => {
     </main>
   );
 };
+
+const Store = createContext();
 
 function Value({counter}) {
   console.log('counter.count');
@@ -207,7 +210,6 @@ const SearchWithAutoComplete = () => {
     </main>
   );
 };
-
 
 export {
   Counter,
