@@ -1,7 +1,10 @@
-import { h } from "preact";
-import { useState } from "preact/hooks";
+import { createContext } from "preact";
+import { useContext } from "preact/hooks";
+import { useSignal } from "@preact/signals";
 
-// General purpose Disclosure component with "as" prop support
+// Create a disclosure context
+const DisclosureContext = createContext(null);
+
 export function Disclosure({
   as: Component = "div",
   children,
@@ -9,46 +12,67 @@ export function Disclosure({
   className,
   ...props
 }) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  // Use useSignal hook for state management
+  const isOpen = useSignal(defaultOpen);
 
-  // Create a context value containing state and togglers
-  const context = {
-    isOpen,
-    toggle: () => setIsOpen((prev) => !prev),
-    open: () => setIsOpen(true),
-    close: () => setIsOpen(false),
+  // Create actions for state management
+  const actions = {
+    toggle: () => isOpen.value = !isOpen.value,
+    open: () => isOpen.value = true,
+    close: () => isOpen.value = false,
   };
 
-  // Apply data-state and data-open attributes based on isOpen
-  const disclosureProps = {
+  // Create context value
+  const context = { isOpen, ...actions };
+
+  // Get derived props including data attributes
+  const derivedProps = {
     ...props,
     className,
-    "data-state": isOpen ? "open" : "closed",
-    "data-open": isOpen || undefined, // Only add data-open when true
+    "data-state": isOpen.value ? "open" : "closed",
+    "data-open": isOpen.value || undefined,
   };
 
   return (
-    <Component {...disclosureProps}>
-      {typeof children === "function" ? children(context) : children}
-    </Component>
+    <DisclosureContext.Provider value={context}>
+      <Component {...derivedProps}>
+        {typeof children === "function"
+          ? children({ isOpen: isOpen.value, ...actions })
+          : children}
+      </Component>
+    </DisclosureContext.Provider>
   );
 }
 
-// Disclosure.Button component for toggling disclosure state
+// Button that controls the disclosure state
 Disclosure.Button = function DisclosureButton({
   as: Component = "button",
   children,
   className,
-  onClick,
   ...props
 }) {
-  // Properly combine the group class with any existing className
+  const context = useContext(DisclosureContext);
+
+  if (!context) {
+    console.error(
+      "Disclosure.Button must be used within a Disclosure component",
+    );
+    return null;
+  }
+
+  const { isOpen, toggle } = context;
+
+  // Combine classes, ensuring 'group' is included for group variants
   const buttonClassName = className ? `group ${className}` : "group";
 
   return (
     <Component
       type={Component === "button" ? "button" : undefined}
       className={buttonClassName}
+      onClick={toggle}
+      aria-expanded={isOpen.value}
+      data-state={isOpen.value ? "open" : "closed"}
+      data-open={isOpen.value || undefined}
       {...props}
     >
       {children}
@@ -56,16 +80,41 @@ Disclosure.Button = function DisclosureButton({
   );
 };
 
-// Disclosure.Panel component for content that shows/hides
+// Panel that is shown/hidden based on disclosure state
 Disclosure.Panel = function DisclosurePanel({
   as: Component = "div",
   children,
   className,
   ...props
 }) {
+  const context = useContext(DisclosureContext);
+
+  if (!context) {
+    console.error(
+      "Disclosure.Panel must be used within a Disclosure component",
+    );
+    return null;
+  }
+
+  const { isOpen } = context;
+
+  // If closed and forceMount is not set, don't render anything
+  if (!isOpen.value && !props.forceMount) {
+    return null;
+  }
+
+  // Allow the caller to control visibility if forceMount is true
+  const style = !isOpen.value && props.forceMount
+    ? { display: "none" }
+    : undefined;
+
+  delete props.forceMount; // Clean up our custom prop
+
   return (
     <Component
       className={className}
+      data-state={isOpen.value ? "open" : "closed"}
+      style={style}
       {...props}
     >
       {children}
