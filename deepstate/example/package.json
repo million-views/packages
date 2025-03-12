@@ -17,6 +17,7 @@
     "preact": "^10.26.4",
     "tailwindcss": "^4.0.12",
     "@preact/signals": "2.0.1",
-    "@m5nv/deepstate": "file:../"
+    "@m5nv/deepstate": "file:../",
+    "@heroicons/preact": "file:../../heroicons/preact"
   }
 }
