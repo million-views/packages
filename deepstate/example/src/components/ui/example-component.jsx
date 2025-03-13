@@ -1,6 +1,5 @@
-import { h } from 'preact';
-import { useState } from 'preact/hooks';
-import CodeBlock from './code-block.jsx';
+import { useState } from "preact/hooks";
+import CodeBlock from "./code-block.jsx";
 
 const codeJSX = `function MyComponent(props) {
   return (
@@ -21,15 +20,15 @@ const codeTSX = `function MyComponent(props: { name: string }) {
 }`;
 
 export function ExampleComponent() {
-  const [language, setLanguage] = useState('jsx');
+  const [language, setLanguage] = useState("jsx");
 
   const languages = [
-    { label: 'JavaScript', value: 'jsx' },
-    { label: 'TypeScript', value: 'tsx' },
+    { label: "JavaScript", value: "jsx" },
+    { label: "TypeScript", value: "tsx" },
   ];
 
-  const code = language === 'tsx' ? codeTSX : codeJSX;
-  const filename = language === 'tsx' ? 'MyComponent.tsx' : 'MyComponent.jsx';
+  const code = language === "tsx" ? codeTSX : codeJSX;
+  const filename = language === "tsx" ? "MyComponent.tsx" : "MyComponent.jsx";
 
   return (
     <div className="p-4">

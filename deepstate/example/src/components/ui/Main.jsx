@@ -3,6 +3,8 @@ import { NavigationProvider } from "././providers/navigation";
 import { Navbar } from "./Navbar";
 import { ActivatedContent } from "./ActivatedContent";
 import { TodoList } from "@components/TodoList.jsx";
+import { ExampleComponent as CodeBlockContent } from "./example-component.jsx";
+import { DatePresets } from "./code-block2.jsx";
 
 // Page content components
 const DashboardContent = () => (
@@ -52,12 +54,21 @@ const TodoAppContent = () => <TodoList initial={initial} />;
 //   </div>
 // );
 
+// const CodeBlockContent = () => <TodoList initial={initial} />;
+//   <div className="bg-white shadow rounded-lg p-6">
+//     <h2 className="text-xl font-semibold mb-4">Calendar</h2>
+//     <p>View your upcoming meetings and deadlines.</p>
+//   </div>
+// );
+
 const navigationItems = [
   { name: "Dashboard", href: "#", component: DashboardContent },
   { name: "Team", href: "#", component: TeamContent },
   { name: "Projects", href: "#", component: ProjectsContent },
   { name: "Calendar", href: "#", component: CalendarContent },
   { name: "Todos", href: "#", component: TodoAppContent },
+  { name: "CodeBlock", href: "#", component: () => <CodeBlockContent /> },
+  { name: "DatePresets", href: "#", component: () => <DatePresets /> },
 ];
 
 export function App() {

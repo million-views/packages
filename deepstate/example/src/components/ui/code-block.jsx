@@ -1,5 +1,4 @@
-import { h } from 'preact';
-import { useMemo } from 'preact/hooks';
+import { useMemo } from "preact/hooks";
 
 /**
  * Props:
@@ -21,10 +20,10 @@ const CodeBlock = (props) => {
     hideLineNumbers = false,
   } = props;
   // Access aria-label from props (note: the prop name is "aria-label")
-  const ariaLabel = props['aria-label'];
+  const ariaLabel = props["aria-label"];
 
   // Split the code into lines only once.
-  const codeLines = useMemo(() => children.split('\n'), [children]);
+  const codeLines = useMemo(() => children.split("\n"), [children]);
 
   return (
     <div className="my-4 shadow rounded overflow-hidden">
