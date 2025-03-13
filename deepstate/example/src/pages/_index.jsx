@@ -1,10 +1,9 @@
 import icon from "@assets/icon.svg";
-import { NavigationProvider } from "././providers/navigation";
-import { Navbar } from "./Navbar";
-import { ActivatedContent } from "./ActivatedContent";
+import { NavigationProvider } from "@components/ui/providers/navigation";
+import { Navbar } from "@components/ui/Navbar";
+import { ActivatedContent } from "@components/ui/ActivatedContent";
 import { TodoList } from "@components/TodoList.jsx";
-import { ExampleComponent as CodeBlockContent } from "./example-component.jsx";
-import { DatePresets } from "./code-block2.jsx";
+import { ExampleComponent as CodeBlockContent } from "@components/ui/example-component.jsx";
 import BasicExampleContent from "@components/BasicExamples.jsx";
 
 // Page content components
@@ -12,13 +11,6 @@ const DashboardContent = () => (
   <div className="bg-white shadow rounded-lg p-6">
     <h2 className="text-xl font-semibold mb-4">Welcome to the Dashboard</h2>
     <p>This is your main dashboard content area.</p>
-  </div>
-);
-
-const ProjectsContent = () => (
-  <div className="bg-white shadow rounded-lg p-6">
-    <h2 className="text-xl font-semibold mb-4">Projects Overview</h2>
-    <p>Track the status of all your ongoing projects.</p>
   </div>
 );
 
@@ -49,26 +41,13 @@ const initial = {
 };
 
 const TodoAppContent = () => <TodoList initial={initial} />;
-//   <div className="bg-white shadow rounded-lg p-6">
-//     <h2 className="text-xl font-semibold mb-4">Calendar</h2>
-//     <p>View your upcoming meetings and deadlines.</p>
-//   </div>
-// );
-
-// const CodeBlockContent = () => <TodoList initial={initial} />;
-//   <div className="bg-white shadow rounded-lg p-6">
-//     <h2 className="text-xl font-semibold mb-4">Calendar</h2>
-//     <p>View your upcoming meetings and deadlines.</p>
-//   </div>
-// );
 
 const navigationItems = [
   { name: "Dashboard", href: "#", component: DashboardContent },
   { name: "Basic", href: "#", component: () => <BasicExampleContent /> },
   { name: "Advanced", href: "#", component: AdvancedContent },
   { name: "Todos", href: "#", component: TodoAppContent },
-  { name: "UIComponents", href: "#", component: () => <UIComponents />},
-  { name: "DatePresets", href: "#", component: () => <DatePresets /> },
+  { name: "UIComponents", href: "#", component: () => <UIComponents />}
 ];
 
 export function App() {

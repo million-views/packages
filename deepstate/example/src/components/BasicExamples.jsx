@@ -188,7 +188,7 @@ export default function BasicExampleContent() {
   return (
     <main class="p-4">
       <section id="component2" class="bg-white shadow-md rounded-lg p-6 mb-4">
-        <h2 class="text-xl font-bold mb-2 text-gray-800">Counter Example</h2>      
+        <h2 class="text-xl font-bold mb-2 text-gray-800">Basic Deepstate</h2>      
         {renderComponent (Counter, codeJSX)}
       </section>
 
