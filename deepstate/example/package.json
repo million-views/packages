@@ -11,13 +11,16 @@
   "dependencies": {
     "@astrojs/node": "^9.1.3",
     "@astrojs/preact": "^4.0.5",
+    "@heroicons/preact": "file:../../heroicons/preact",
+    "@m5nv/deepstate": "file:../",
+    "@preact/signals": "2.0.1",
     "@tailwindcss/vite": "^4.0.12",
     "astro": "^5.4.3",
     "lucide-preact": "0.479.0",
     "preact": "^10.26.4",
-    "tailwindcss": "^4.0.12",
-    "@preact/signals": "2.0.1",
-    "@m5nv/deepstate": "file:../",
-    "@heroicons/preact": "file:../../heroicons/preact"
+    "tailwindcss": "^4.0.12"
+  },
+  "devDependencies": {
+    "shiki": "^3.2.1"
   }
 }
