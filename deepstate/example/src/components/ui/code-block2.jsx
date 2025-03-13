@@ -1,6 +1,7 @@
 // DatePresets.jsx
 import { useState } from "preact/hooks";
 import { Disclosure } from "./Disclosure";
+import CodeBlock from "./code-block.jsx";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -77,6 +78,16 @@ export function Component(): JSX.Element {
   );
 }`;
 
+const codeJSX = `function MyComponent(props) {
+  return (
+    <div>
+      <h1>Hello, {props.name}!</h1>
+      <p>This is an example Preact component.</p>
+    </div>
+  );
+}`;
+
+
 export function DatePresets() {
   const [date, setDate] = useState(null);
 
@@ -142,30 +153,13 @@ export function DatePresets() {
                   </svg>
                 </button>
                 <pre className="leading-relaxed">
-                  <code className="text-white">
-                    {codeString.split('\n').map((line, i) => {
-                      // This is a simplified syntax highlighting
-                      let coloredLine = line
-                        .replace(/(import|export|from|const|function|return)/g, '<span class="text-pink-500">$1</span>')
-                        .replace(/(type|JSX)/g, '<span class="text-blue-400">$1</span>')
-                        .replace(/(useState|startOfDay|subDays|subWeeks|subMonths|endOfDay)/g, '<span class="text-purple-400">$1</span>')
-                        .replace(/('.*?'|".*?")/g, '<span class="text-green-300">$1</span>')
-                        .replace(/({|}|\(|\)|<|>|=|;|:)/g, '<span class="text-gray-400">$1</span>');
-
-                      return (
-                        <div key={i} className="flex">
-                          <span className="text-gray-500 w-8 text-right mr-4">{i + 1}</span>
-                          <span dangerouslySetInnerHTML={{ __html: coloredLine }} />
-                        </div>
-                      );
-                    })}
-                  </code>
-                // This is a simplified syntax highlighting
-
-                // This is a simplified syntax highlighting
-
-                // This is a simplified syntax highlighting
-
+                  <CodeBlock
+                    aria-label="Simple Code Block"
+                    language="jsx"
+                    hideLineNumbers
+                  >
+                    {codeJSX}
+                  </CodeBlock>
                 </pre>
               </div>
             </Disclosure.Panel>
