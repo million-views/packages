@@ -78,14 +78,6 @@ export function Component(): JSX.Element {
   );
 }`;
 
-const codeJSX = `function MyComponent(props) {
-  return (
-    <div>
-      <h1>Hello, {props.name}!</h1>
-      <p>This is an example Preact component.</p>
-    </div>
-  );
-}`;
 
 
 export function DatePresets() {

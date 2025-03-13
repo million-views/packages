@@ -5,19 +5,13 @@ import { ActivatedContent } from "./ActivatedContent";
 import { TodoList } from "@components/TodoList.jsx";
 import { ExampleComponent as CodeBlockContent } from "./example-component.jsx";
 import { DatePresets } from "./code-block2.jsx";
+import BasicExampleContent from "@components/BasicExamples.jsx";
 
 // Page content components
 const DashboardContent = () => (
   <div className="bg-white shadow rounded-lg p-6">
     <h2 className="text-xl font-semibold mb-4">Welcome to the Dashboard</h2>
     <p>This is your main dashboard content area.</p>
-  </div>
-);
-
-const TeamContent = () => (
-  <div className="bg-white shadow rounded-lg p-6">
-    <h2 className="text-xl font-semibold mb-4">Team Members</h2>
-    <p>View and manage your team members here.</p>
   </div>
 );
 
@@ -28,10 +22,17 @@ const ProjectsContent = () => (
   </div>
 );
 
-const CalendarContent = () => (
+const AdvancedContent = () => (
   <div className="bg-white shadow rounded-lg p-6">
-    <h2 className="text-xl font-semibold mb-4">Calendar</h2>
-    <p>View your upcoming meetings and deadlines.</p>
+    <h2 className="text-xl font-semibold mb-4">Advance Examples</h2>
+    <p>Advanced usage examples of DeepState</p>
+  </div>
+);
+
+const UIComponents = () => (
+  <div className="bg-white shadow rounded-lg p-6">
+    <h2 className="text-xl font-semibold mb-4">UI Components</h2>
+    <p>Use of DeepState in UI components</p>
   </div>
 );
 
@@ -63,11 +64,10 @@ const TodoAppContent = () => <TodoList initial={initial} />;
 
 const navigationItems = [
   { name: "Dashboard", href: "#", component: DashboardContent },
-  { name: "Team", href: "#", component: TeamContent },
-  { name: "Projects", href: "#", component: ProjectsContent },
-  { name: "Calendar", href: "#", component: CalendarContent },
+  { name: "Basic", href: "#", component: () => <BasicExampleContent /> },
+  { name: "Advanced", href: "#", component: AdvancedContent },
   { name: "Todos", href: "#", component: TodoAppContent },
-  { name: "CodeBlock", href: "#", component: () => <CodeBlockContent /> },
+  { name: "UIComponents", href: "#", component: () => <UIComponents />},
   { name: "DatePresets", href: "#", component: () => <DatePresets /> },
 ];
 
