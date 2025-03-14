@@ -1,0 +1,37 @@
+---
+import Layout from "./_/layout.astro";
+---
+
+<Layout>
+  <div class="container mx-auto py-8">
+    <h1 class="text-3xl font-bold mb-6">About Page</h1>
+
+    <p class="mb-4">
+      This is the About page. Notice how the navigation automatically highlights
+      the "About" link because we're on this page.
+    </p>
+
+    <p class="mb-4">
+      The Navigator component is using the current URL path to determine which
+      navigation item should be highlighted.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+      <div class="bg-gray-100 p-6 rounded-lg">
+        <h2 class="text-xl font-bold mb-3">Page-Based Navigation</h2>
+        <p>
+          When you click on navigation items with an <code>href</code> property,
+          you'll navigate to a new page. This is handled by Astro's file-based routing.
+        </p>
+      </div>
+
+      <div class="bg-gray-100 p-6 rounded-lg">
+        <h2 class="text-xl font-bold mb-3">Component-Based Navigation</h2>
+        <p>
+          When you click on navigation items with a <code>component</code> property,
+          the content will be rendered in-page by the NavigatedContent component.
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>

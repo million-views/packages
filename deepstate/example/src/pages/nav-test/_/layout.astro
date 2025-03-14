@@ -1,0 +1,77 @@
+---
+import BaseLayout from "@layouts/Layout.astro";
+import { NavigationProvider, Navigator, NavigatedContent } from "./navigator";
+// Replace with an actual logo if available
+const logo = "https://via.placeholder.com/100x40?text=Logo";
+
+// Define the main navigation routes
+const mainRoutes = [
+  {
+    href: "/",
+    label: "Home",
+  },
+  {
+    href: "/about",
+    label: "About",
+  },
+  {
+    label: "Resources",
+    children: [
+      {
+        href: "/tutorials",
+        label: "Tutorials",
+      },
+      {
+        href: "/docs",
+        label: "Documentation",
+      },
+    ],
+  },
+];
+
+// Combine main routes with any additional routes passed to the layout
+const { additionalRoutes = [] } = Astro.props;
+const routes = [...mainRoutes, ...additionalRoutes];
+
+// Define right-side actions (e.g. login/signup buttons)
+const rightActions = [
+  {
+    label: "Login",
+    href: "/login",
+    type: "button",
+  },
+  {
+    label: "Sign Up",
+    href: "/signup",
+    type: "button",
+    primary: true,
+  },
+];
+
+// Get the current URL for initial active path
+const currentPath = Astro.url.pathname;
+---
+
+<BaseLayout>
+  <!-- Navigation - client:only prevents SSR -->
+  <NavigationProvider
+    routes={routes}
+    initialPath={currentPath}
+    client:only="preact"
+  >
+    <Navigator
+      logo={logo}
+      variant="horizontal"
+      showSearch={true}
+      rightActions={rightActions}
+      client:only="preact"
+    />
+  </NavigationProvider>
+
+  <!-- Main content -->
+  <main>
+    <slot />
+  </main>
+
+  <!-- In-page component container - also client:only -->
+</BaseLayout>
