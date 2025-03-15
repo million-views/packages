@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from "vitest";
-// import dom from "@m5nv/dom";
 import dom from "../src/index.js";
 
 describe("@m5nv/dom API", () => {
@@ -28,6 +27,19 @@ describe("@m5nv/dom API", () => {
     $items.els.forEach((el) => {
       expect(el.classList.contains("active")).toBe(false);
     });
+  });
+
+  it("toggles classes", () => {
+    const $item = dom(".item").els[0];
+    const $wrapped = dom($item);
+    // Initially, no 'highlight' class.
+    expect($wrapped.hasClass("highlight")).toBe(false);
+    // Toggle on
+    $wrapped.toggleClass("highlight");
+    expect($wrapped.hasClass("highlight")).toBe(true);
+    // Toggle off
+    $wrapped.toggleClass("highlight");
+    expect($wrapped.hasClass("highlight")).toBe(false);
   });
 
   it("gets and sets attributes", () => {

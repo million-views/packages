@@ -1,6 +1,6 @@
 /// A simple DOM manipulation library in the style of jQuery
 
-const dom = (sel) => {
+function dom(sel) {
   let els;
   if (sel === window || sel === document) {
     els = [sel];
@@ -13,37 +13,62 @@ const dom = (sel) => {
   } else {
     els = [];
   }
-
   return {
     els,
     on(e, fn) {
-      this.els.forEach((el) => el.addEventListener(e, fn));
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        this.els[i].addEventListener(e, fn);
+      }
       return this;
     },
     each(fn) {
-      this.els.forEach((el, i) => fn.call(el, i, el));
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        fn.call(this.els[i], i, this.els[i]);
+      }
       return this;
     },
     addClass(c) {
-      this.els.forEach((el) => el.classList.add(c));
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        this.els[i].classList.add(c);
+      }
       return this;
     },
     removeClass(c) {
-      this.els.forEach((el) => el.classList.remove(c));
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        this.els[i].classList.remove(c);
+      }
       return this;
+    },
+    toggleClass(c) {
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        this.els[i].classList.toggle(c);
+      }
+      return this;
+    },
+    hasClass(c) {
+      return this.els[0]?.classList.contains(c);
     },
     attr(n, v) {
       if (v === undefined) return this.els[0]?.getAttribute(n);
-      this.els.forEach((el) => el.setAttribute(n, v));
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        this.els[i].setAttribute(n, v);
+      }
       return this;
     },
     css(p, v) {
-      this.els.forEach((el) => el.style[p] = v);
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        this.els[i].style[p] = v;
+      }
       return this;
     },
     find(s) {
       let res = [];
-      this.els.forEach((el) => res = res.concat([...el.querySelectorAll(s)]));
+      for (let i = 0, len = this.els.length; i < len; i++) {
+        const found = this.els[i].querySelectorAll(s);
+        for (let j = 0, flen = found.length; j < flen; j++) {
+          res.push(found[j]);
+        }
+      }
       return dom(res);
     },
     closest(s) {
@@ -56,6 +81,6 @@ const dom = (sel) => {
       return dom(this.els[0]?.parentNode);
     },
   };
-};
+}
 
 export default dom;

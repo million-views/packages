@@ -1,7 +1,6 @@
 import { bench, describe } from "vitest";
-// import dom from "@m5nv/dom";
 import dom from "../src/index.js";
-const imax = 70000;
+const imax = 100000;
 
 describe("Benchmarking @m5nv/dom", () => {
   describe("0. Warmup", () => {
@@ -20,14 +19,13 @@ describe("Benchmarking @m5nv/dom", () => {
     });
   });
   describe("Comprehensive", () => {
-    // Prepare DOM structure for testing
     document.body.innerHTML = `
-  <div id="container">
-    <div class="item">Item 1</div>
-    <div class="item">Item 2</div>
-    <div class="item">Item 3</div>
-  </div>
-`;
+      <div id="container">
+        <div class="item">Item 1</div>
+        <div class="item">Item 2</div>
+        <div class="item">Item 3</div>
+      </div>
+    `;
 
     describe("1. Select by ID", () => {
       bench("using @m5nv/dom", () => {
@@ -55,7 +53,6 @@ describe("Benchmarking @m5nv/dom", () => {
         }
       });
     });
-
     describe("3. Class Manipulation (addClass)", () => {
       const $items = dom(".item");
       bench("using @m5nv/dom", () => {
@@ -67,9 +64,7 @@ describe("Benchmarking @m5nv/dom", () => {
         items.forEach((item) => item.classList.add("active"));
       });
     });
-
     describe("4. DOM Traversal (find)", () => {
-      // 4. DOM Traversal (find)
       bench("children using @m5nv/dom", () => {
         const container = dom("#container");
         container.find(".item");
@@ -81,7 +76,6 @@ describe("Benchmarking @m5nv/dom", () => {
       });
     });
     describe("5. Event Binding", () => {
-      // 5. Event Binding
       bench("using @m5nv/dom", () => {
         const container = dom("#container");
         container.on("click", () => {});
@@ -90,6 +84,27 @@ describe("Benchmarking @m5nv/dom", () => {
       bench("using native addEventListener", () => {
         const container = document.querySelector("#container");
         container.addEventListener("click", () => {});
+      });
+    });
+    describe("6. Toggle Class", () => {
+      const $item = dom(".item").els[0];
+      bench("using @m5nv/dom (toggleClass)", () => {
+        const $wrapped = dom($item);
+        $wrapped.toggleClass("active");
+      });
+      bench("using native classList.toggle", () => {
+        const item = document.querySelector(".item");
+        item.classList.toggle("active");
+      });
+    });
+    describe("7. Has Class", () => {
+      const $item = dom(".item").els[0];
+      bench("using @m5nv/dom (hasClass)", () => {
+        const _ = dom($item).hasClass("item");
+      });
+      bench("using native classList.contains", () => {
+        const item = document.querySelector(".item");
+        const _ = item.classList.contains("item");
       });
     });
   });
