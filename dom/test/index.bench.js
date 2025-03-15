@@ -1,19 +1,20 @@
 import { bench, describe } from "vitest";
 // import dom from "@m5nv/dom";
 import dom from "../src/index.js";
+const imax = 70000;
 
 describe("Benchmarking @m5nv/dom", () => {
   describe("0. Warmup", () => {
     document.body.innerHTML = `<div id="container"></div>`;
 
     bench("dom (#container) using @m5nv/dom", () => {
-      for (let i = 0; i < 10000; i++) {
+      for (let i = 0; i < imax; i++) {
         dom("#container");
       }
     });
 
     bench("native querySelector (#container)", () => {
-      for (let i = 0; i < 10000; i++) {
+      for (let i = 0; i < imax; i++) {
         document.querySelector("#container");
       }
     });
@@ -30,26 +31,26 @@ describe("Benchmarking @m5nv/dom", () => {
 
     describe("1. Select by ID", () => {
       bench("using @m5nv/dom", () => {
-        for (let i = 0; i < 10000; i++) {
+        for (let i = 0; i < imax; i++) {
           dom("#container");
         }
       });
 
       bench("using native querySelector", () => {
-        for (let i = 0; i < 10000; i++) {
+        for (let i = 0; i < imax; i++) {
           document.querySelector("#container");
         }
       });
     });
     describe("2. Select by Class", () => {
       bench("using @m5nv/dom", () => {
-        for (let i = 0; i < 10000; i++) {
+        for (let i = 0; i < imax; i++) {
           dom(".item");
         }
       });
 
       bench("using native querySelectorAll", () => {
-        for (let i = 0; i < 10000; i++) {
+        for (let i = 0; i < imax; i++) {
           document.querySelectorAll(".item");
         }
       });
