@@ -1,0 +1,48 @@
+{
+  "name": "@m5nv/dom",
+  "version": "1.0.0",
+  "description": "A nano jQuery‑like DOM manipulation library",
+  "type": "module",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/million-views/packages.git",
+    "directory": "stl"
+  },
+  "files": [
+    "src/index.js"
+  ],
+  "bugs": {
+    "url": "https://github.com/million-views/packages/issues"
+  },
+  "homepage": "https://github.com/million-views/packages/tree/main/dom",
+  "author": {
+    "name": "Million Views, LLC.",
+    "url": "https://m5nv.com"
+  },
+  "license": "MIT",
+  "contributors": [
+    "Vijay Aswadhati (https://github.com/vijay8i)",
+    "Hemalatha Manickam (https://github.com/hmanicka)"
+  ],
+  "keywords": [
+    "dom",
+    "jquery",
+    "nano",
+    "vanilla",
+    "lightweight"
+  ],
+  "scripts": {
+    "bench": "vitest bench --environment jsdom",
+    "test": "vitest --dir test --environment jsdom",
+    "test:ui": "vitest --dir test --ui --environment jsdom",
+    "test:run": "vitest --dir test run --environment jsdom",
+    "test:coverage": "vitest --dir test run --coverage --environment jsdom"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.0.8",
+    "@vitest/ui": "^3.0.8",
+    "jsdom": "^26.0.0",
+    "vitest": "^3.0.8"
+  }
+}
