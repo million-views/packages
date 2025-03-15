@@ -85,4 +85,69 @@ describe("@m5nv/dom API", () => {
     const $closest = dom(firstItem).closest("#wrapper");
     expect($closest.els[0].id).toBe("wrapper");
   });
+
+  describe("Deep DOM Navigation", () => {
+    beforeEach(() => {
+      // Reset document for each test.
+      document.body.innerHTML = `
+        <div id="grandparent">
+          <div id="parent">
+            <div id="child">
+              <span id="target">Hello</span>
+            </div>
+            <div id="sibling">Sibling</div>
+          </div>
+        </div>
+      `;
+    });
+
+    it("closest() returns the nearest matching ancestor", () => {
+      const $target = dom("#target");
+      // Look for the closest element with id "parent"
+      const $closestParent = $target.closest("#parent");
+      expect($closestParent.els.length).toBe(1);
+      expect($closestParent.els[0].id).toBe("parent");
+
+      // Look for the closest element with id "grandparent"
+      const $closestGrandparent = $target.closest("#grandparent");
+      expect($closestGrandparent.els.length).toBe(1);
+      expect($closestGrandparent.els[0].id).toBe("grandparent");
+    });
+
+    it("parent() returns the immediate parent", () => {
+      const $target = dom("#target");
+      // The immediate parent of <span id="target"> is the <div id="child">
+      const $parent = $target.parent();
+      expect($parent.els.length).toBe(1);
+      expect($parent.els[0].id).toBe("child");
+    });
+
+    it("next() returns the next sibling element", () => {
+      // Create a simple sibling structure
+      document.body.innerHTML = `
+        <div id="container">
+          <p id="first">First</p>
+          <p id="second">Second</p>
+          <p id="third">Third</p>
+        </div>
+      `;
+      const $first = dom("#first");
+      const $next = $first.next();
+      expect($next.els.length).toBe(1);
+      expect($next.els[0].id).toBe("second");
+    });
+
+    it("combines navigation methods for deep traversal", () => {
+      // Starting from the target, navigate up then find a sibling.
+      const $target = dom("#target");
+      // $target.parent() returns the immediate parent (child)
+      // Calling parent() again on that returns its parent (parent)
+      const $childParent = $target.parent();
+      const $parent = $childParent.parent();
+      // Now, find the sibling element of the #child inside #parent.
+      const $sibling = $parent.find("#sibling");
+      expect($sibling.els.length).toBe(1);
+      expect($sibling.els[0].id).toBe("sibling");
+    });
+  });
 });
