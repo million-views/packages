@@ -6,7 +6,7 @@ import SampleComponent from "./_/sample-component.jsx";
 // which will be shown in-page rather than navigating to new URLs
 const additionalRoutes = [
   {
-    path: "/sample",
+    path: "/nav-test/sample",
     label: "Sample Component",
     component: SampleComponent,
   },
@@ -16,29 +16,10 @@ const additionalRoutes = [
 <Layout additionalRoutes={additionalRoutes}>
   <div class="container mx-auto py-8">
     <h1 class="text-3xl font-bold mb-6">Welcome to the Navigation Test</h1>
-
     <p class="mb-4">
-      This page demonstrates the Navigator component system. You can:
+      Click the navigation items above to explore the site. Use the "Sample
+      Component" link to see in-page component rendering without page
+      navigation.
     </p>
-
-    <ul class="list-disc pl-6 mb-6">
-      <li>Navigate to different pages using the top navigation</li>
-      <li>Try the dropdown menus</li>
-      <li>Click on "Sample Component" to see in-page component rendering</li>
-      <li>Resize the browser to see the responsive mobile navigation</li>
-    </ul>
-
-    <div class="bg-blue-50 p-4 rounded-lg">
-      <p>The Navigator system consists of three main components:</p>
-      <ul class="list-disc pl-6 mt-2">
-        <li>
-          <strong>NavigationProvider</strong> - Provides the navigation context
-        </li>
-        <li><strong>Navigator</strong> - Renders the navigation UI</li>
-        <li>
-          <strong>NavigatedContent</strong> - Renders the active component
-        </li>
-      </ul>
-    </div>
   </div>
 </Layout>

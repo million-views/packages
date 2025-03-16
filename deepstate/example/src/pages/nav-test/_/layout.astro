@@ -1,27 +1,29 @@
 ---
 import BaseLayout from "@layouts/Layout.astro";
-import { NavigationProvider, Navigator, NavigatedContent } from "./navigator";
-// Replace with an actual logo if available
-const logo = "https://via.placeholder.com/100x40?text=Logo";
+import { NavigatorClient } from "./navigator-client.jsx";
 
-// Define the main navigation routes
-const mainRoutes = [
+// Define main navigation routes
+const defaultRoutes = [
   {
-    href: "/",
+    path: "/",
+    href: "/nav-test",
     label: "Home",
   },
   {
-    href: "/about",
+    path: "/about",
+    href: "/nav-test/about",
     label: "About",
   },
   {
     label: "Resources",
     children: [
       {
+        path: "/tutorials",
         href: "/tutorials",
         label: "Tutorials",
       },
       {
+        path: "/docs",
         href: "/docs",
         label: "Documentation",
       },
@@ -29,49 +31,53 @@ const mainRoutes = [
   },
 ];
 
-// Combine main routes with any additional routes passed to the layout
-const { additionalRoutes = [] } = Astro.props;
-const routes = [...mainRoutes, ...additionalRoutes];
+// Get props from the layout
+const {
+  logoSrc = "https://via.placeholder.com/100x40?text=Logo",
+  additionalRoutes = [],
+  variant = "horizontal",
+  currentPath = Astro.url.pathname,
+} = Astro.props;
 
-// Define right-side actions (e.g. login/signup buttons)
-const rightActions = [
-  {
-    label: "Login",
-    href: "/login",
-    type: "button",
-  },
-  {
-    label: "Sign Up",
-    href: "/signup",
-    type: "button",
-    primary: true,
-  },
-];
+// Merge routes
+let routes = [...defaultRoutes];
 
-// Get the current URL for initial active path
-const currentPath = Astro.url.pathname;
+// Add additional in-page component routes
+additionalRoutes.forEach((route) => {
+  const existingIndex = routes.findIndex(
+    (r) =>
+      (r.path && r.path === route.path) || (r.href && r.href === route.path),
+  );
+
+  if (existingIndex >= 0) {
+    routes[existingIndex] = { ...routes[existingIndex], ...route };
+  } else {
+    routes.push(route);
+  }
+});
+
+// Serialize the configuration for the client component
+const config = {
+  routes: JSON.stringify(routes),
+  logoSrc,
+  variant,
+  currentPath,
+};
 ---
 
 <BaseLayout>
-  <!-- Navigation - client:only prevents SSR -->
-  <NavigationProvider
-    routes={routes}
-    initialPath={currentPath}
-    client:only="preact"
-  >
-    <Navigator
-      logo={logo}
-      variant="horizontal"
-      showSearch={true}
-      rightActions={rightActions}
-      client:only="preact"
-    />
-  </NavigationProvider>
+  <div id="astro-navigator-app" data-config={JSON.stringify(config)}>
+    <!-- Navigator will be client-rendered here -->
+    <NavigatorClient client:only="preact" />
+  </div>
 
-  <!-- Main content -->
   <main>
+    <!-- Page content from <slot /> -->
     <slot />
-  </main>
 
-  <!-- In-page component container - also client:only -->
+    <!-- For in-page component rendering -->
+    <div id="navigated-content-container" class="container mx-auto py-4">
+      <!-- Will be populated client-side -->
+    </div>
+  </main>
 </BaseLayout>

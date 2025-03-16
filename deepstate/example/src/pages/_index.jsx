@@ -2,10 +2,10 @@ import icon from "@assets/icon.svg";
 import { NavigationProvider } from "@components/ui/providers/navigation";
 import { Navbar } from "@components/ui/Navbar";
 import { ActivatedContent } from "@components/ui/ActivatedContent";
-import TodoExampleContent  from "@components/todo-list.jsx";
+import TodoExampleContent from "@components/todo-list.jsx";
 import BasicExampleContent from "@components/basic-examples.jsx";
 import AdvExampleContent from "@components/advanced-examples.jsx";
-import UIComponents from "@components/UiComponents.jsx"
+import UIComponents from "@components/UiComponents.jsx";
 
 // Page content components
 const DashboardContent = () => (
@@ -18,9 +18,10 @@ const DashboardContent = () => (
 const navigationItems = [
   { name: "Dashboard", href: "#", component: DashboardContent },
   { name: "Basic", href: "#", component: () => <BasicExampleContent /> },
-  { name: "Advanced", href: "#", component: () => <AdvExampleContent />},
-  { name: "Todos", href: "#", component: () => <TodoExampleContent />},
-  { name: "UIComponents", href: "#", component: () => <UIComponents />}
+  { name: "Advanced", href: "#", component: () => <AdvExampleContent /> },
+  { name: "Todos", href: "#", component: () => <TodoExampleContent /> },
+  { name: "UIComponents", href: "#", component: () => <UIComponents /> },
+  { name: "About", href: "nav-test/about" },
 ];
 
 export function App() {
