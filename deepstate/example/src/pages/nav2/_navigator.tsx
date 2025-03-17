@@ -1,8 +1,5 @@
-import clsx from "clsx"; // Import clsx directly
+import clsx from "clsx";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { useLocation, useNavigate } from "react-router";
-import { BrowserRouter } from "react-router-dom";
-
 import {
   ChevronDown,
   ChevronRight,
@@ -30,6 +27,7 @@ import {
   TooltipTrigger,
 } from "./_components";
 import type { FunctionComponent } from "preact";
+import { NavigationProvider, useNavigation } from "./_navigationContext";
 
 // Enhanced interfaces for task-focused navigation
 interface NavTask {
@@ -69,6 +67,9 @@ interface ResponsiveNavigatorProps {
 
 type DeviceType = "mobile" | "tablet" | "desktop";
 
+// Safe check for browser environment
+const isBrowser = typeof window !== "undefined";
+
 export default function ResponsiveNavigator({
   items,
   className,
@@ -80,17 +81,21 @@ export default function ResponsiveNavigator({
   showViewIndicators = false,
   primaryTasks = [],
 }: ResponsiveNavigatorProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const pathname = location.pathname;
+  const {
+    activeView,
+    activeSubView,
+    currentPage,
+    navigateTo,
+    handleViewChange,
+    handleSubViewChange,
+    handleTaskAction,
+  } = useNavigation();
+
+  // Safely determine pathname (only access window in the browser)
+  const pathname = currentPage || (isBrowser ? window.location.pathname : "/");
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTaskMenuOpen, setIsTaskMenuOpen] = useState(false);
-  const [activeView, setActiveView] = useState<string | null>(
-    defaultView || null,
-  );
-  const [activeSubView, setActiveSubView] = useState<string | null>(
-    defaultSubView || null,
-  );
   const [deviceType, setDeviceType] = useState<DeviceType>("desktop");
   const [visibleTasks, setVisibleTasks] = useState<NavTask[]>([]);
   const [overflowTasks, setOverflowTasks] = useState<NavTask[]>([]);
@@ -98,14 +103,17 @@ export default function ResponsiveNavigator({
 
   // Find the current active page
   const activePage = items.find((item) =>
-    pathname === item.href || pathname.startsWith(`${item.href}/`)
+    pathname === item.href ||
+    (pathname.startsWith(`${item.href}/`) && item.href !== "/")
   );
-
   // Find the current active view
   const currentView = activePage?.views?.find((view) => view.id === activeView);
 
   // Determine device type based on viewport width
   useEffect(() => {
+    // Skip this effect during server-side rendering
+    if (!isBrowser) return;
+
     const handleResize = () => {
       const width = window.innerWidth;
       if (width < 640) {
@@ -151,86 +159,30 @@ export default function ResponsiveNavigator({
 
   // Recalculate tasks when the active page or view changes
   useEffect(() => {
+    // Skip this effect during server-side rendering
+    if (!isBrowser) return;
+
     calculateTasksVisibility();
   }, [activePage, currentView, primaryTasks]);
 
   // Set default view for the active page if available
   useEffect(() => {
+    // Skip this effect during server-side rendering
+    if (!isBrowser) return;
+
     if (activePage?.views?.length && !activeView) {
-      setActiveView(activePage.views[0].id);
+      handleViewChange(activePage.views[0].id);
 
       // If the first view has subviews, set the first subview as active
       if (activePage.views[0].subViews?.length) {
-        setActiveSubView(activePage.views[0].subViews[0].id);
-      } else {
-        setActiveSubView(null);
+        handleSubViewChange(activePage.views[0].subViews[0].id);
       }
     }
   }, [activePage, activeView]);
 
-  // Handle view change
-  const handleViewChange = (viewId: string, pageHref?: string) => {
-    const newView = activePage?.views?.find((view) => view.id === viewId);
-    setActiveView(viewId);
-
-    // If the new view has subviews, set the first subview as active
-    if (newView?.subViews?.length) {
-      setActiveSubView(newView.subViews[0].id);
-    } else {
-      setActiveSubView(null);
-    }
-
-    // Close sidebar on mobile after selection
-    if (deviceType === "mobile") {
-      setIsSidebarOpen(false);
-    }
-
-    // Dispatch a custom event that pages can listen for
-    const event = new CustomEvent("viewChange", {
-      detail: {
-        viewId,
-        subViewId: newView?.subViews?.[0]?.id || null,
-        pageHref: pageHref || activePage?.href,
-      },
-    });
-    window.dispatchEvent(event);
-  };
-
-  // Handle subview change
-  const handleSubViewChange = (subViewId: string) => {
-    setActiveSubView(subViewId);
-
-    // Close sidebar on mobile after selection
-    if (deviceType === "mobile") {
-      setIsSidebarOpen(false);
-    }
-
-    // Dispatch a custom event that pages can listen for
-    const event = new CustomEvent("subViewChange", {
-      detail: {
-        viewId: activeView,
-        subViewId,
-        pageHref: activePage?.href,
-      },
-    });
-    window.dispatchEvent(event);
-  };
-
   // Handle task action
-  const handleTaskAction = (task: NavTask) => {
-    if (task.action) {
-      task.action();
-    }
-
-    // Dispatch a custom event that pages can listen for
-    const event = new CustomEvent("taskAction", {
-      detail: {
-        taskId: task.id,
-        pageHref: activePage?.href,
-        viewId: activeView,
-      },
-    });
-    window.dispatchEvent(event);
+  const onTaskAction = (task: NavTask) => {
+    handleTaskAction(task.id, task.action);
 
     // Close task menu if open
     setIsTaskMenuOpen(false);
@@ -276,7 +228,7 @@ export default function ResponsiveNavigator({
                   <Button
                     variant="ghost"
                     className="font-bold text-xl"
-                    onClick={() => navigate("/")}
+                    onClick={() => navigateTo("/")}
                   >
                     <Home className="h-5 w-5 mr-2" />
                     App
@@ -296,7 +248,7 @@ export default function ResponsiveNavigator({
                         pathname.startsWith(`${item.href}/`)) &&
                         activeClassName,
                     )}
-                    onClick={() => navigate(item.href)}
+                    onClick={() => navigateTo(item.href)}
                   >
                     {item.icon && <span className="mr-2">{item.icon}</span>}
                     {item.title}
@@ -320,7 +272,7 @@ export default function ResponsiveNavigator({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleTaskAction(task)}
+                          onClick={() => onTaskAction(task)}
                           className="h-9 w-9"
                         >
                           {task.icon}
@@ -349,7 +301,7 @@ export default function ResponsiveNavigator({
                       {overflowTasks.map((task) => (
                         <DropdownMenuItem
                           key={task.id}
-                          onClick={() => handleTaskAction(task)}
+                          onClick={() => onTaskAction(task)}
                         >
                           {task.icon && (
                             <span className="mr-2">{task.icon}</span>
@@ -516,7 +468,7 @@ export default function ResponsiveNavigator({
                 <Button
                   variant="ghost"
                   className="font-bold"
-                  onClick={() => navigate("/")}
+                  onClick={() => navigateTo("/")}
                 >
                   <Home className="h-5 w-5 mr-2" />
                   App
@@ -531,7 +483,7 @@ export default function ResponsiveNavigator({
                   key={task.id}
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleTaskAction(task)}
+                  onClick={() => onTaskAction(task)}
                   className="h-9 w-9"
                 >
                   {task.icon}
@@ -554,7 +506,7 @@ export default function ResponsiveNavigator({
                     {overflowTasks.map((task) => (
                       <DropdownMenuItem
                         key={task.id}
-                        onClick={() => handleTaskAction(task)}
+                        onClick={() => onTaskAction(task)}
                       >
                         {task.icon && <span className="mr-2">{task.icon}</span>}
                         {task.title}
@@ -610,7 +562,7 @@ export default function ResponsiveNavigator({
                           activeClassName,
                       )}
                       onClick={() => {
-                        navigate(item.href);
+                        navigateTo(item.href);
                         setIsSidebarOpen(false);
                       }}
                     >
@@ -693,7 +645,7 @@ export default function ResponsiveNavigator({
                         variant="ghost"
                         className="w-full justify-start text-left px-3 py-2 rounded-md text-sm"
                         onClick={() => {
-                          handleTaskAction(task);
+                          onTaskAction(task);
                           setIsSidebarOpen(false);
                         }}
                       >
@@ -711,6 +663,46 @@ export default function ResponsiveNavigator({
     );
   };
 
+  // If we're server-side rendering, return minimal skeleton
+  if (!isBrowser) {
+    return (
+      <header className="sticky top-0 z-50 w-full">
+        <nav className={clsx("w-full bg-base-100 border-b", className)}>
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  className="font-bold text-xl"
+                >
+                  <Home className="h-5 w-5 mr-2" />
+                  App
+                </Button>
+              </div>
+              <div className="hidden md:flex space-x-1">
+                {items.map((item) => (
+                  <Button
+                    key={item.href}
+                    variant="ghost"
+                    className="px-3 py-2 rounded-md text-sm"
+                  >
+                    {item.icon && <span className="mr-2">{item.icon}</span>}
+                    {item.title}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex items-center space-x-1"></div>
+            </div>
+          </div>
+        </nav>
+        <div className="w-full bg-base-200 border-b h-12">
+          <div className="container mx-auto px-4 h-full" aria-hidden="true">
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full">
       {deviceType === "mobile"
@@ -721,13 +713,15 @@ export default function ResponsiveNavigator({
 }
 
 import { navigationItems, primaryTasks } from "./_navigation";
-export function NavigatorWithRouter(props) {
+
+// Wrapper component that includes the NavigationProvider
+export function NavigatorWithRouter() {
   return (
-    <BrowserRouter>
+    <NavigationProvider>
       <ResponsiveNavigator
         items={navigationItems}
         primaryTasks={primaryTasks}
       />
-    </BrowserRouter>
+    </NavigationProvider>
   );
 }

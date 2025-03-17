@@ -39,12 +39,12 @@ export const primaryTasks = [
 export const navigationItems = [
   {
     title: "Home",
-    href: "/",
+    href: "/nav2",
     icon: <Home className="h-4 w-4" />,
   },
   {
     title: "Dashboard",
-    href: "/dashboard",
+    href: "/nav2/dashboard",
     icon: <LayoutDashboard className="h-4 w-4" />,
     views: [
       {
@@ -113,7 +113,7 @@ export const navigationItems = [
   },
   {
     title: "Users",
-    href: "/users",
+    href: "/nav2/users",
     icon: <Users className="h-4 w-4" />,
     views: [
       {
@@ -155,17 +155,17 @@ export const navigationItems = [
   },
   {
     title: "Simple Page",
-    href: "/simple-page",
+    href: "/nav2/simple-page",
     icon: <File className="h-4 w-4" />,
   },
   {
     title: "Messages",
-    href: "/messages",
+    href: "/nav2/messages",
     icon: <Mail className="h-4 w-4" />,
   },
   {
     title: "Settings",
-    href: "/settings",
+    href: "/nav2/settings",
     icon: <Settings className="h-4 w-4" />,
   },
 ];

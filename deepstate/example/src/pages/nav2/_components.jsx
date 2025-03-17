@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { cloneElement, toChildArray } from "preact";
 
 export const Button = (props) => {
   const {
@@ -92,13 +93,13 @@ export function SheetClose({ className, children, ...props }) {
   );
 }
 
-// Dropdown Menu
+// Updated dropdown menu
 export function DropdownMenu({ open, onOpenChange, children }) {
   return (
     <div className="dropdown">
-      {React.Children.map(children, (child) => {
+      {toChildArray(children).map((child) => {
         if (child.type === DropdownMenuTrigger) {
-          return React.cloneElement(child, { open, onOpenChange });
+          return cloneElement(child, { open, onOpenChange });
         }
         return child;
       })}
@@ -113,7 +114,7 @@ export function DropdownMenuTrigger({ asChild, children, open, onOpenChange }) {
   };
 
   if (asChild) {
-    return React.cloneElement(React.Children.only(children), {
+    return cloneElement(toChildArray(children)[0], {
       onClick: handleClick,
       "data-dropdown-open": open ? "true" : "false",
     });
@@ -177,11 +178,10 @@ export function Tooltip({ children }) {
 
 export function TooltipTrigger({ asChild, children }) {
   if (asChild) {
-    return React.cloneElement(React.Children.only(children), {
+    return cloneElement(toChildArray(children)[0], {
       "data-tip": true,
     });
   }
-
   return <span data-tip={true}>{children}</span>;
 }
 
@@ -193,7 +193,7 @@ export function TooltipContent({ className, children }) {
   );
 }
 
-// Card components
+// Updated Card components to use DaisyUI
 export function Card({ className, children, ref, ...props }) {
   return (
     <div
@@ -207,13 +207,19 @@ export function Card({ className, children, ref, ...props }) {
 }
 
 export function CardHeader({ className, children }) {
-  return <div className={clsx("card-header p-4", className)}>{children}</div>;
+  return (
+    <div className={clsx("card-header p-6 pb-2", className)}>{children}</div>
+  );
 }
 
 export function CardTitle({ className, children }) {
-  return <h2 className={clsx("card-title", className)}>{children}</h2>;
+  return (
+    <h2 className={clsx("card-title text-xl font-semibold", className)}>
+      {children}
+    </h2>
+  );
 }
 
 export function CardContent({ className, children }) {
-  return <div className={clsx("card-body", className)}>{children}</div>;
+  return <div className={clsx("card-body pt-2", className)}>{children}</div>;
 }

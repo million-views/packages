@@ -3,11 +3,44 @@ import BaseLayout from "@layouts/Layout.astro";
 import { NavigatorWithRouter } from "./_navigator.tsx";
 
 const pathname = Astro.url.pathname;
+const searchParams = Astro.url.searchParams;
+const viewParam = searchParams.get('view');
+const subviewParam = searchParams.get('subview');
 ---
 
 <BaseLayout>
   <div class="min-h-screen flex flex-col">
+    <!-- Pass URL parameters as props to ensure consistent state -->
     <NavigatorWithRouter client:only="preact" />
+    
+    <!-- Hidden metadata to ensure state persists across page loads -->
+    <script id="nav-state" type="application/json" set:html={JSON.stringify({
+      pathname,
+      view: viewParam,
+      subview: subviewParam
+    })}>
+    </script>
+    
+    <!-- Initialize navigation state from URL -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        try {
+          // Get state from embedded JSON
+          const stateElement = document.getElementById('nav-state');
+          if (stateElement) {
+            const state = JSON.parse(stateElement.textContent || '{}');
+            
+            // Dispatch event to initialize navigation state
+            window.dispatchEvent(new CustomEvent('initNavigationState', { 
+              detail: state 
+            }));
+          }
+        } catch (error) {
+          console.error('Error initializing navigation state:', error);
+        }
+      });
+    </script>
+    
     <!-- Page content from <slot /> -->
     <slot />
   </div>
