@@ -1,0 +1,14 @@
+---
+import BaseLayout from "@layouts/Layout.astro";
+import { NavigatorWithRouter } from "./_navigator.tsx";
+
+const pathname = Astro.url.pathname;
+---
+
+<BaseLayout>
+  <div class="min-h-screen flex flex-col">
+    <NavigatorWithRouter client:only="preact" />
+    <!-- Page content from <slot /> -->
+    <slot />
+  </div>
+</BaseLayout>

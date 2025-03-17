@@ -14,14 +14,21 @@
     "@heroicons/preact": "file:../../heroicons/preact",
     "@m5nv/deepstate": "file:../",
     "@preact/signals": "2.0.1",
-    "@tailwindcss/vite": "^4.0.12",
-    "astro": "^5.4.3",
-    "lucide-preact": "0.479.0",
-    "preact": "^10.26.4"
+    "@tailwindcss/vite": "^4.0.14",
+    "astro": "^5.5.2",
+    "lucide-preact": "0.482.0",
+    "preact": "^10.26.4",
+    "clsx": "^2.1.1",
+    "react-router": "^7.3.0",
+    "react-router-dom": "^7.3.0"
   },
   "devDependencies": {
     "tailwindcss": "^4.0.14",
-    "daisyui": "^5.0.3",
+    "daisyui": "^5.0.4",
     "shiki": "^3.2.1"
+  },
+  "overrides": {
+    "react": "npm:@preact/compat@latest",
+    "react-dom": "npm:@preact/compat@latest"
   }
 }
