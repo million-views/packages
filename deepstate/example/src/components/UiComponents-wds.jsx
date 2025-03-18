@@ -1,6 +1,18 @@
 import { useMemo, useState } from "preact/hooks";
 import { reify } from "@m5nv/deepstate";
 
+// import { promises as fs } from "node:fs";
+
+// async function read_file_contents(file_path) {
+//   try {
+//     const file_conents = await fs.readFile(file_path, 'utf8');
+//     return file_contents;
+//   } catch (error) {
+//     console.error(`Error reading file: , ${error.message}`);
+//     throw error;
+//   }
+// }
+
 const UIComponentExplorerCombined = () => {
 
   const [{state: explorer}] = useState(() => 
@@ -21,7 +33,7 @@ const UIComponentExplorerCombined = () => {
     ));
 
   // Simple version of the data - you'll replace this with file loading
-  const componentData = useMemo(() => {
+  const component_data = useMemo(() => {
     return {
       vendors: [
         {
@@ -66,12 +78,16 @@ const UIComponentExplorerCombined = () => {
     };
   }, []);
 
+  // const component_data = reify ({vendors: read_file_contents('ui-components.yaml')});
+
+  console.log ('component_data:', component_data);
+
   // Get all categories for filtering
   const categories = useMemo(() => {
-    if (!componentData.vendors) return ["all"];
+    if (!component_data.vendors) return ["all"];
 
     const allCategories = new Set();
-    componentData.vendors.forEach((vendor) => {
+    component_data.vendors.forEach((vendor) => {
       vendor.components.forEach((component) => {
         if (component.category) {
           allCategories.add(component.category);
@@ -79,15 +95,15 @@ const UIComponentExplorerCombined = () => {
       });
     });
     return ["all", ...Array.from(allCategories).sort()];
-  }, [componentData]);
+  }, [component_data]);
 
   // Filter components based on search and filters
   const filteredComponents = useMemo(() => {
-    if (!componentData.vendors) return [];
+    if (!component_data.vendors) return [];
 
     let results = [];
 
-    componentData.vendors.forEach((vendor) => {
+    component_data.vendors.forEach((vendor) => {
       if (explorer.selected_framework !== "all" && vendor.name !== explorer.selected_framework) {
         return;
       }
@@ -120,7 +136,7 @@ const UIComponentExplorerCombined = () => {
 
     // Sort by name
     return results.sort((a, b) => a.name.localeCompare(b.name));
-  }, [componentData, explorer.selected_category, explorer.selected_framework, explorer.search_term]);
+  }, [component_data, explorer.selected_category, explorer.selected_framework, explorer.search_term]);
 
   // Component equivalence groups for comparison view
   const componentEquivalenceGroups = {
@@ -131,11 +147,11 @@ const UIComponentExplorerCombined = () => {
 
   // Component comparison data
   const comparisonData = useMemo(() => {
-    if (!componentData.vendors) return {};
+    if (!component_data.vendors) return {};
 
     // Create a normalized list of all components
     const frameworkData = {};
-    componentData.vendors.forEach((vendor) => {
+    component_data.vendors.forEach((vendor) => {
       frameworkData[vendor.name] = vendor.components.map((comp) => comp.name);
     });
 
@@ -210,7 +226,7 @@ const UIComponentExplorerCombined = () => {
           componentFrameworkMap[component].includes(framework)
         )
       );
-    } else if (comparison_filter === "unique") {
+    } else if (comparison.filter === "unique") {
       filteredComponents = filteredComponents.filter((component) => {
         return componentFrameworkMap[component].length === 1;
       });
@@ -237,7 +253,7 @@ const UIComponentExplorerCombined = () => {
       filteredComponents,
       stats,
     };
-  }, [componentData, comparison.filter, comparison.show_equivalent_components]);
+  }, [component_data, comparison.filter, comparison.show_equivalent_components]);
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
@@ -320,7 +336,7 @@ const UIComponentExplorerCombined = () => {
                 onChange={(e) => explorer.selected_framework = e.target.value}
               >
                 <option value="all">All Frameworks</option>
-                {componentData.vendors.map((vendor) => (
+                {component_data.vendors.map((vendor) => (
                   <option key={vendor.name} value={vendor.name}>
                     {vendor.name}
                   </option>
@@ -347,7 +363,7 @@ const UIComponentExplorerCombined = () => {
                       ? "bg-blue-50 border-blue-300"
                       : ""
                   }`}
-                  onClick={() => explorer.selected_component(component)}
+                  onClick={() => explorer.selected_component = component}
                 >
                   <div className="flex justify-between">
                     <h3 className="font-medium">{component.name}</h3>
@@ -534,7 +550,7 @@ const UIComponentExplorerCombined = () => {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="p-2 border text-left w-60">Component</th>
-                  {componentData.vendors.map((vendor) => (
+                  {component_data.vendors.map((vendor) => (
                     <th key={vendor.name} className="p-2 border">
                       {vendor.name}
                     </th>
@@ -579,7 +595,7 @@ const UIComponentExplorerCombined = () => {
                               </span>
                             )}
                           </td>
-                          {componentData.vendors.map((vendor) => (
+                          {component_data.vendors.map((vendor) => (
                             <td
                               key={vendor.name}
                               className="p-2 border text-center"
@@ -601,7 +617,7 @@ const UIComponentExplorerCombined = () => {
                   : (
                     <tr>
                       <td
-                        colSpan={componentData.vendors.length + 1}
+                        colSpan={component_data.vendors.length + 1}
                         className="p-4 text-center text-gray-500"
                       >
                         No components match the current filters

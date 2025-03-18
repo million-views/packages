@@ -5,7 +5,7 @@ import { ActivatedContent } from "@components/ui/ActivatedContent";
 import TodoExampleContent from "@components/todo-list.jsx";
 import BasicExampleContent from "@components/basic-examples.jsx";
 import AdvExampleContent from "@components/advanced-examples.jsx";
-import UIComponents from "@components/UiComponents.jsx";
+import UIComponents from "@components/UiComponents-wds.jsx";
 
 // Page content components
 const DashboardContent = () => (
