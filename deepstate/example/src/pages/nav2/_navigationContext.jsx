@@ -44,9 +44,13 @@ export function NavigationProvider({ children }) {
   const [activeSubView, setActiveSubView] = useState(null);
   const [currentPage, setCurrentPage] = useState(null);
   const providerRef = useRef(null);
+  const initDone = useRef(false);
 
   // Parse URL on initial load to set navigation state
   useEffect(() => {
+    // Skip if we've already initialized
+    if (initDone.current) return;
+
     try {
       // Initial state setup from URL
       const url = new URL(window.location.href);
@@ -81,6 +85,9 @@ export function NavigationProvider({ children }) {
         if (subview) {
           setActiveSubView(subview);
         }
+
+        // Mark initialization as complete
+        initDone.current = true;
       };
 
       window.addEventListener("initNavigationState", handleInitState);

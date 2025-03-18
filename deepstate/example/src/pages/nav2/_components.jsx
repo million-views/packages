@@ -2,16 +2,19 @@ import { cloneElement, toChildArray } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 import clsx from "clsx";
 
-export function Button(p) {
-  const {
+export function Button(
+  {
+    innerRef,
     className,
     variant = "default",
     size = "default",
     children,
     onClick,
     ...rest
-  } = p;
-  const ref = useRef(null);
+  },
+) {
+  const localRef = useRef(null);
+  const combinedRef = innerRef || localRef;
   const variants = {
     default: "btn-primary",
     destructive: "btn-error",
@@ -27,18 +30,17 @@ export function Button(p) {
     icon: "btn-square",
   };
   useEffect(function () {
-    if (ref.current && onClick) {
-      ref.current.addEventListener("click", onClick);
+    const el = combinedRef.current;
+    if (el && onClick) {
+      el.addEventListener("click", onClick);
       return function () {
-        if (ref.current) {
-          ref.current.removeEventListener("click", onClick);
-        }
+        el.removeEventListener("click", onClick);
       };
     }
   }, [onClick]);
   return (
     <button
-      ref={ref}
+      ref={combinedRef}
       className={clsx("btn", variants[variant], sizes[size], className)}
       {...rest}
     >
@@ -47,31 +49,33 @@ export function Button(p) {
   );
 }
 
-// Sheet (Drawer in DaisyUI) with clean SSR pattern
+// Sheet (Drawer in DaisyUI)
 export function Sheet({ children, open, onOpenChange }) {
   const ref = useRef(null);
 
   // Update open state on the client only
   useEffect(() => {
-    if (ref.current) {
-      const checkbox = ref.current.querySelector(".drawer-toggle");
-      if (checkbox) {
-        checkbox.checked = open;
-      }
+    const element = ref.current;
+    if (!element) return;
+
+    const checkbox = element.querySelector(".drawer-toggle");
+    if (checkbox) {
+      checkbox.checked = open;
     }
   }, [open]);
 
   // Add change event listener on client-side only
   useEffect(() => {
-    if (ref.current && onOpenChange) {
-      const checkbox = ref.current.querySelector(".drawer-toggle");
-      if (checkbox) {
-        const handleChange = (e) => onOpenChange(e.target.checked);
-        checkbox.addEventListener("change", handleChange);
-        return () => {
-          checkbox.removeEventListener("change", handleChange);
-        };
-      }
+    const element = ref.current;
+    if (!element || !onOpenChange) return;
+
+    const checkbox = element.querySelector(".drawer-toggle");
+    if (checkbox) {
+      const handleChange = (e) => onOpenChange(e.target.checked);
+      checkbox.addEventListener("change", handleChange);
+      return () => {
+        checkbox.removeEventListener("change", handleChange);
+      };
     }
   }, [onOpenChange]);
 
@@ -92,26 +96,27 @@ export function SheetContent({ children, side = "left", className }) {
 
   // Add overlay click event on client only
   useEffect(() => {
-    if (ref.current) {
-      const overlay = ref.current.querySelector(".drawer-overlay");
-      if (overlay) {
-        const handleClick = () => {
-          const drawer = ref.current.closest(".drawer");
-          if (drawer) {
-            const checkbox = drawer.querySelector(".drawer-toggle");
-            if (checkbox) {
-              checkbox.checked = false;
-              // Dispatch change event
-              checkbox.dispatchEvent(new Event("change"));
-            }
-          }
-        };
+    const element = ref.current;
+    if (!element) return;
 
-        overlay.addEventListener("click", handleClick);
-        return () => {
-          overlay.removeEventListener("click", handleClick);
-        };
-      }
+    const overlay = element.querySelector(".drawer-overlay");
+    if (overlay) {
+      const handleClick = () => {
+        const drawer = element.closest(".drawer");
+        if (drawer) {
+          const checkbox = drawer.querySelector(".drawer-toggle");
+          if (checkbox) {
+            checkbox.checked = false;
+            // Dispatch change event
+            checkbox.dispatchEvent(new Event("change"));
+          }
+        }
+      };
+
+      overlay.addEventListener("click", handleClick);
+      return () => {
+        overlay.removeEventListener("click", handleClick);
+      };
     }
   }, []);
 
@@ -125,44 +130,35 @@ export function SheetContent({ children, side = "left", className }) {
   );
 }
 
-export function SheetHeader({ className, children }) {
-  return <div className={clsx("mb-4", className)}>{children}</div>;
-}
-
-export function SheetTitle({ className, children }) {
-  return <h3 className={clsx("text-lg font-bold", className)}>{children}</h3>;
-}
-
 export function SheetClose({ className, children, onClick, ...props }) {
   const ref = useRef(null);
 
   // Add click event listener on client-side only
   useEffect(() => {
-    if (ref.current) {
-      const handleClick = (e) => {
-        if (onClick) {
-          onClick(e);
-        }
+    const element = ref.current;
+    if (!element) return;
 
-        // Close the drawer
-        const drawer = ref.current.closest(".drawer");
-        if (drawer) {
-          const checkbox = drawer.querySelector(".drawer-toggle");
-          if (checkbox) {
-            checkbox.checked = false;
-            // Dispatch change event
-            checkbox.dispatchEvent(new Event("change"));
-          }
-        }
-      };
+    const handleClick = (e) => {
+      if (onClick) {
+        onClick(e);
+      }
 
-      ref.current.addEventListener("click", handleClick);
-      return () => {
-        if (ref.current) {
-          ref.current.removeEventListener("click", handleClick);
+      // Close the drawer
+      const drawer = element.closest(".drawer");
+      if (drawer) {
+        const checkbox = drawer.querySelector(".drawer-toggle");
+        if (checkbox) {
+          checkbox.checked = false;
+          // Dispatch change event
+          checkbox.dispatchEvent(new Event("change"));
         }
-      };
-    }
+      }
+    };
+
+    element.addEventListener("click", handleClick);
+    return () => {
+      element.removeEventListener("click", handleClick);
+    };
   }, [onClick]);
 
   return (
@@ -176,18 +172,26 @@ export function SheetClose({ className, children, onClick, ...props }) {
   );
 }
 
-// Updated dropdown menu
+export function SheetHeader({ className, children }) {
+  return <div className={clsx("mb-4", className)}>{children}</div>;
+}
+
+export function SheetTitle({ className, children }) {
+  return <h3 className={clsx("text-lg font-bold", className)}>{children}</h3>;
+}
+
 export function DropdownMenu({ open, onOpenChange, children }) {
   const ref = useRef(null);
 
   // Update class to toggle the dropdown visibility on client side
   useEffect(() => {
-    if (ref.current) {
-      if (open) {
-        ref.current.classList.add("dropdown-open");
-      } else {
-        ref.current.classList.remove("dropdown-open");
-      }
+    const element = ref.current;
+    if (!element) return;
+
+    if (open) {
+      element.classList.add("dropdown-open");
+    } else {
+      element.classList.remove("dropdown-open");
     }
   }, [open]);
 
@@ -205,36 +209,65 @@ export function DropdownMenu({ open, onOpenChange, children }) {
 
 export function DropdownMenuTrigger({ asChild, children, open, onOpenChange }) {
   const ref = useRef(null);
-
-  // Add click listener on client side only
-  useEffect(() => {
-    if (ref.current && onOpenChange) {
-      const handleClick = (e) => {
-        e.preventDefault();
-        onOpenChange(!open);
-      };
-
-      ref.current.addEventListener("click", handleClick);
-      return () => {
-        if (ref.current) {
-          ref.current.removeEventListener("click", handleClick);
-        }
-      };
+  useEffect(function () {
+    const el = ref.current;
+    if (!el || !onOpenChange) return;
+    function handleClick(e) {
+      e.preventDefault();
+      onOpenChange(!open);
     }
+    el.addEventListener("click", handleClick);
+    return function () {
+      el.removeEventListener("click", handleClick);
+    };
   }, [open, onOpenChange]);
-
   if (asChild) {
     const child = toChildArray(children)[0];
-    return cloneElement(child, { ref });
+    return cloneElement(child, { innerRef: ref });
   }
-
   return (
-    <button
-      ref={ref}
-      className="btn"
-    >
+    <button ref={ref} className="btn">
       {children}
     </button>
+  );
+}
+
+export function DropdownMenuItem({ className, onClick, children }) {
+  const ref = useRef(null);
+
+  // Add click event listener on client side only
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    if (onClick) {
+      const handleClick = (e) => {
+        e.preventDefault();
+        onClick(e);
+
+        // Close the dropdown
+        const dropdown = element.closest(".dropdown");
+        if (dropdown) {
+          dropdown.classList.remove("dropdown-open");
+        }
+      };
+
+      element.addEventListener("click", handleClick);
+      return () => {
+        element.removeEventListener("click", handleClick);
+      };
+    }
+  }, [onClick]);
+
+  return (
+    <li>
+      <a
+        ref={ref}
+        className={clsx("", className)}
+      >
+        {children}
+      </a>
+    </li>
   );
 }
 
@@ -255,44 +288,6 @@ export function DropdownMenuContent({ align = "center", className, children }) {
     >
       {children}
     </ul>
-  );
-}
-
-export function DropdownMenuItem({ className, onClick, children }) {
-  const ref = useRef(null);
-
-  // Add click event listener on client side only
-  useEffect(() => {
-    if (ref.current && onClick) {
-      const handleClick = (e) => {
-        e.preventDefault();
-        onClick(e);
-
-        // Close the dropdown
-        const dropdown = ref.current.closest(".dropdown");
-        if (dropdown) {
-          dropdown.classList.remove("dropdown-open");
-        }
-      };
-
-      ref.current.addEventListener("click", handleClick);
-      return () => {
-        if (ref.current) {
-          ref.current.removeEventListener("click", handleClick);
-        }
-      };
-    }
-  }, [onClick]);
-
-  return (
-    <li>
-      <a
-        ref={ref}
-        className={clsx("", className)}
-      >
-        {children}
-      </a>
-    </li>
   );
 }
 

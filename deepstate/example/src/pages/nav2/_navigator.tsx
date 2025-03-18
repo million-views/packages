@@ -1,5 +1,11 @@
 import clsx from "clsx";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "preact/hooks";
 import {
   ChevronDown,
   ChevronRight,
@@ -77,7 +83,7 @@ export default function ResponsiveNavigator({
   defaultSubView,
   showViewIndicators = false,
   primaryTasks = [],
-}: ResponsiveNavigatorProps) {
+}) {
   const {
     activeView,
     activeSubView,
@@ -90,19 +96,22 @@ export default function ResponsiveNavigator({
 
   // Refs for key elements
   const navigatorRef = useRef(null);
-  const taskContainerRef = useRef<HTMLDivElement>(null);
+  const taskContainerRef = useRef(null);
 
   // State management for UI
   const [pathname, setPathname] = useState("/");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTaskMenuOpen, setIsTaskMenuOpen] = useState(false);
-  const [deviceType, setDeviceType] = useState<DeviceType>("desktop");
-  const [visibleTasks, setVisibleTasks] = useState<NavTask[]>([]);
-  const [overflowTasks, setOverflowTasks] = useState<NavTask[]>([]);
+  const [deviceType, setDeviceType] = useState("desktop");
+  const [visibleTasks, setVisibleTasks] = useState([]);
+  const [overflowTasks, setOverflowTasks] = useState([]);
+  const resizeTimeoutRef = useRef(null);
 
   // Set pathname from context after mount
   useEffect(() => {
-    setPathname(currentPage || window.location.pathname);
+    if (currentPage) {
+      setPathname(currentPage);
+    }
   }, [currentPage]);
 
   // Find the current active page
@@ -121,29 +130,47 @@ export default function ResponsiveNavigator({
     [activePage, activeView],
   );
 
-  // Determine device type based on viewport width
+  // Determine device type based on viewport width with debounce
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 640) {
-        setDeviceType("mobile");
-      } else if (width < 1024) {
-        setDeviceType("tablet");
-      } else {
-        setDeviceType("desktop");
+      // Clear existing timeout
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
       }
 
-      // Recalculate visible and overflow tasks
-      calculateTasksVisibility();
+      // Set new timeout for debounce
+      resizeTimeoutRef.current = setTimeout(() => {
+        const width = window.innerWidth;
+        if (width < 640) {
+          setDeviceType("mobile");
+        } else if (width < 1024) {
+          setDeviceType("tablet");
+        } else {
+          setDeviceType("desktop");
+        }
+
+        // Calculate tasks visibility after device type is set
+        calculateTasksVisibility();
+      }, 150); // 150ms debounce
     };
 
-    handleResize(); // Initial check
+    // Initial check on mount
+    handleResize();
+
+    // Add event listener
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Calculate which tasks should be visible and which should go in overflow menu
-  const calculateTasksVisibility = () => {
+  const calculateTasksVisibility = useCallback(() => {
     if (!taskContainerRef.current) return;
 
     const containerWidth = taskContainerRef.current.offsetWidth;
@@ -164,12 +191,12 @@ export default function ResponsiveNavigator({
       setVisibleTasks(allTasks.slice(0, maxVisibleTasks));
       setOverflowTasks(allTasks.slice(maxVisibleTasks));
     }
-  };
+  }, [activePage, currentView, primaryTasks]);
 
   // Recalculate tasks when the active page or view changes
   useEffect(() => {
     calculateTasksVisibility();
-  }, [activePage, currentView, primaryTasks]);
+  }, [activePage, currentView, primaryTasks, calculateTasksVisibility]);
 
   // Set default view for the active page if available
   useEffect(() => {
@@ -184,11 +211,18 @@ export default function ResponsiveNavigator({
   }, [activePage, activeView, handleViewChange, handleSubViewChange]);
 
   // Handler for task actions
-  const onTaskAction = (task: NavTask) => {
-    handleTaskAction(task.id, task.action);
-    // Close task menu if open
-    setIsTaskMenuOpen(false);
-  };
+  const onTaskAction = useCallback((task) => {
+    if (task && task.id) {
+      handleTaskAction(task.id, task.action);
+      // Close task menu if open
+      setIsTaskMenuOpen(false);
+    }
+  }, [handleTaskAction]);
+
+  // Handler for mobile menu button
+  const handleMobileMenuToggle = useCallback(() => {
+    setIsSidebarOpen((prev) => !prev);
+  }, []);
 
   // Render breadcrumb for mobile/tablet
   const renderBreadcrumb = () => {
@@ -319,7 +353,7 @@ export default function ResponsiveNavigator({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsSidebarOpen(true)}
+                  onClick={handleMobileMenuToggle}
                   className="md:hidden h-9 w-9"
                   aria-label="Open menu"
                 >
@@ -522,7 +556,7 @@ export default function ResponsiveNavigator({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={handleMobileMenuToggle}
                 className="h-9 w-9"
                 aria-label="Open menu"
               >
@@ -590,8 +624,13 @@ export default function ResponsiveNavigator({
                             "w-full justify-start text-left px-3 py-2 rounded-md text-sm",
                             activeView === view.id && activeClassName,
                           )}
-                          onClick={() =>
-                            handleViewChange(view.id, activePage.href)}
+                          onClick={() => {
+                            handleViewChange(view.id, activePage.href);
+                            // Close mobile menu after selection
+                            if (deviceType === "mobile") {
+                              setIsSidebarOpen(false);
+                            }
+                          }}
                         >
                           {view.icon && (
                             <span className="mr-2">{view.icon}</span>
@@ -613,7 +652,13 @@ export default function ResponsiveNavigator({
                                   activeSubView === subView.id &&
                                     activeClassName,
                                 )}
-                                onClick={() => handleSubViewChange(subView.id)}
+                                onClick={() => {
+                                  handleSubViewChange(subView.id);
+                                  // Close mobile menu after selection
+                                  if (deviceType === "mobile") {
+                                    setIsSidebarOpen(false);
+                                  }
+                                }}
                               >
                                 {subView.icon && (
                                   <span className="mr-2">{subView.icon}</span>
