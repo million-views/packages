@@ -1,11 +1,11 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect } from "preact/hooks";
 import { ArrowRight } from "lucide-preact";
 import { Card, CardContent, CardHeader, CardTitle } from "./_components";
 import { useNavigation } from "./_navigationContext";
 
 // Dashboard content component
 function DashboardContent() {
-  // Use the navigation context directly instead of local state
+  // Use the navigation context directly
   const {
     activeView,
     activeSubView,
@@ -16,7 +16,7 @@ function DashboardContent() {
 
   // On initial render, set default view and subview if not already set
   useEffect(() => {
-    if (!activeView && currentPage === "/dashboard") {
+    if (!activeView && currentPage && currentPage.includes("/dashboard")) {
       // Set initial view to "overview" if not already set
       handleViewChange("overview");
 
@@ -204,9 +204,7 @@ function DashboardContent() {
   );
 }
 
-// Wrapper component to use NavigationProvider
+// The Dashboard component
 export default function Dashboard() {
-  // Note: We're not wrapping with NavigationProvider here as it's already
-  // provided by the layout component
   return <DashboardContent />;
 }

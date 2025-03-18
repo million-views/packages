@@ -1,18 +1,18 @@
-import clsx from "clsx";
 import { cloneElement, toChildArray } from "preact";
+import { useEffect, useRef } from "preact/hooks";
+import clsx from "clsx";
 
-export const Button = (props) => {
+export function Button(p) {
   const {
     className,
     variant = "default",
     size = "default",
     children,
-    ref,
-    ...restProps
-  } = props;
-
-  // Map variants to daisyUI classes
-  const variantClasses = {
+    onClick,
+    ...rest
+  } = p;
+  const ref = useRef(null);
+  const variants = {
     default: "btn-primary",
     destructive: "btn-error",
     outline: "btn-outline",
@@ -20,56 +20,104 @@ export const Button = (props) => {
     ghost: "btn-ghost",
     link: "btn-link",
   };
-
-  // Map sizes to daisyUI classes
-  const sizeClasses = {
+  const sizes = {
     default: "",
     sm: "btn-sm",
     lg: "btn-lg",
-    icon: "btn-square", // For icon buttons
+    icon: "btn-square",
   };
-
-  // Special case for icon buttons to maintain sizing
-  const isIconButton = size === "icon";
-
+  useEffect(function () {
+    if (ref.current && onClick) {
+      ref.current.addEventListener("click", onClick);
+      return function () {
+        if (ref.current) {
+          ref.current.removeEventListener("click", onClick);
+        }
+      };
+    }
+  }, [onClick]);
   return (
     <button
-      className={clsx(
-        "btn",
-        variantClasses[variant],
-        sizeClasses[size],
-        className,
-      )}
       ref={ref}
-      {...restProps}
+      className={clsx("btn", variants[variant], sizes[size], className)}
+      {...rest}
     >
       {children}
     </button>
   );
-};
+}
 
-// Sheet (Drawer in DaisyUI)
+// Sheet (Drawer in DaisyUI) with clean SSR pattern
 export function Sheet({ children, open, onOpenChange }) {
+  const ref = useRef(null);
+
+  // Update open state on the client only
+  useEffect(() => {
+    if (ref.current) {
+      const checkbox = ref.current.querySelector(".drawer-toggle");
+      if (checkbox) {
+        checkbox.checked = open;
+      }
+    }
+  }, [open]);
+
+  // Add change event listener on client-side only
+  useEffect(() => {
+    if (ref.current && onOpenChange) {
+      const checkbox = ref.current.querySelector(".drawer-toggle");
+      if (checkbox) {
+        const handleChange = (e) => onOpenChange(e.target.checked);
+        checkbox.addEventListener("change", handleChange);
+        return () => {
+          checkbox.removeEventListener("change", handleChange);
+        };
+      }
+    }
+  }, [onOpenChange]);
+
   return (
-    <div className={clsx("drawer", open && "drawer-open")}>
+    <div ref={ref} className="drawer">
       <input
         type="checkbox"
         className="drawer-toggle"
-        checked={open}
-        onChange={(e) => onOpenChange?.(e.target.checked)}
       />
       {children}
     </div>
   );
 }
 
-export function SheetContent({ children, side = "right", className }) {
+export function SheetContent({ children, side = "left", className }) {
+  const ref = useRef(null);
   const sideClass = side === "left" ? "drawer-side" : "drawer-end drawer-side";
 
+  // Add overlay click event on client only
+  useEffect(() => {
+    if (ref.current) {
+      const overlay = ref.current.querySelector(".drawer-overlay");
+      if (overlay) {
+        const handleClick = () => {
+          const drawer = ref.current.closest(".drawer");
+          if (drawer) {
+            const checkbox = drawer.querySelector(".drawer-toggle");
+            if (checkbox) {
+              checkbox.checked = false;
+              // Dispatch change event
+              checkbox.dispatchEvent(new Event("change"));
+            }
+          }
+        };
+
+        overlay.addEventListener("click", handleClick);
+        return () => {
+          overlay.removeEventListener("click", handleClick);
+        };
+      }
+    }
+  }, []);
+
   return (
-    <div className={clsx(sideClass, className)}>
-      <div className="drawer-overlay" onClick={() => onOpenChange?.(false)}>
-      </div>
+    <div ref={ref} className={clsx(sideClass, className)}>
+      <div className="drawer-overlay"></div>
       <div className="min-h-full bg-base-100 p-4 shadow-lg">
         {children}
       </div>
@@ -85,9 +133,44 @@ export function SheetTitle({ className, children }) {
   return <h3 className={clsx("text-lg font-bold", className)}>{children}</h3>;
 }
 
-export function SheetClose({ className, children, ...props }) {
+export function SheetClose({ className, children, onClick, ...props }) {
+  const ref = useRef(null);
+
+  // Add click event listener on client-side only
+  useEffect(() => {
+    if (ref.current) {
+      const handleClick = (e) => {
+        if (onClick) {
+          onClick(e);
+        }
+
+        // Close the drawer
+        const drawer = ref.current.closest(".drawer");
+        if (drawer) {
+          const checkbox = drawer.querySelector(".drawer-toggle");
+          if (checkbox) {
+            checkbox.checked = false;
+            // Dispatch change event
+            checkbox.dispatchEvent(new Event("change"));
+          }
+        }
+      };
+
+      ref.current.addEventListener("click", handleClick);
+      return () => {
+        if (ref.current) {
+          ref.current.removeEventListener("click", handleClick);
+        }
+      };
+    }
+  }, [onClick]);
+
   return (
-    <button className={clsx("btn btn-ghost btn-sm", className)} {...props}>
+    <button
+      ref={ref}
+      className={clsx("btn btn-ghost btn-sm", className)}
+      {...props}
+    >
       {children}
     </button>
   );
@@ -95,10 +178,23 @@ export function SheetClose({ className, children, ...props }) {
 
 // Updated dropdown menu
 export function DropdownMenu({ open, onOpenChange, children }) {
+  const ref = useRef(null);
+
+  // Update class to toggle the dropdown visibility on client side
+  useEffect(() => {
+    if (ref.current) {
+      if (open) {
+        ref.current.classList.add("dropdown-open");
+      } else {
+        ref.current.classList.remove("dropdown-open");
+      }
+    }
+  }, [open]);
+
   return (
-    <div className="dropdown">
+    <div ref={ref} className="dropdown">
       {toChildArray(children).map((child) => {
-        if (child.type === DropdownMenuTrigger) {
+        if (child?.type === DropdownMenuTrigger) {
           return cloneElement(child, { open, onOpenChange });
         }
         return child;
@@ -108,23 +204,34 @@ export function DropdownMenu({ open, onOpenChange, children }) {
 }
 
 export function DropdownMenuTrigger({ asChild, children, open, onOpenChange }) {
-  const handleClick = (e) => {
-    e.preventDefault();
-    onOpenChange?.(!open);
-  };
+  const ref = useRef(null);
+
+  // Add click listener on client side only
+  useEffect(() => {
+    if (ref.current && onOpenChange) {
+      const handleClick = (e) => {
+        e.preventDefault();
+        onOpenChange(!open);
+      };
+
+      ref.current.addEventListener("click", handleClick);
+      return () => {
+        if (ref.current) {
+          ref.current.removeEventListener("click", handleClick);
+        }
+      };
+    }
+  }, [open, onOpenChange]);
 
   if (asChild) {
-    return cloneElement(toChildArray(children)[0], {
-      onClick: handleClick,
-      "data-dropdown-open": open ? "true" : "false",
-    });
+    const child = toChildArray(children)[0];
+    return cloneElement(child, { ref });
   }
 
   return (
     <button
+      ref={ref}
       className="btn"
-      onClick={handleClick}
-      data-dropdown-open={open ? "true" : "false"}
     >
       {children}
     </button>
@@ -152,14 +259,36 @@ export function DropdownMenuContent({ align = "center", className, children }) {
 }
 
 export function DropdownMenuItem({ className, onClick, children }) {
+  const ref = useRef(null);
+
+  // Add click event listener on client side only
+  useEffect(() => {
+    if (ref.current && onClick) {
+      const handleClick = (e) => {
+        e.preventDefault();
+        onClick(e);
+
+        // Close the dropdown
+        const dropdown = ref.current.closest(".dropdown");
+        if (dropdown) {
+          dropdown.classList.remove("dropdown-open");
+        }
+      };
+
+      ref.current.addEventListener("click", handleClick);
+      return () => {
+        if (ref.current) {
+          ref.current.removeEventListener("click", handleClick);
+        }
+      };
+    }
+  }, [onClick]);
+
   return (
     <li>
       <a
+        ref={ref}
         className={clsx("", className)}
-        onClick={(e) => {
-          e.preventDefault();
-          onClick?.(e);
-        }}
       >
         {children}
       </a>
@@ -167,7 +296,7 @@ export function DropdownMenuItem({ className, onClick, children }) {
   );
 }
 
-// Tooltip
+// Tooltip with clean SSR pattern
 export function TooltipProvider({ children }) {
   return <>{children}</>;
 }
@@ -193,7 +322,7 @@ export function TooltipContent({ className, children }) {
   );
 }
 
-// Updated Card components to use DaisyUI
+// Card components (no event handling needed)
 export function Card({ className, children, ref, ...props }) {
   return (
     <div

@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
   ChevronDown,
   ChevronRight,
@@ -67,9 +67,6 @@ interface ResponsiveNavigatorProps {
 
 type DeviceType = "mobile" | "tablet" | "desktop";
 
-// Safe check for browser environment
-const isBrowser = typeof window !== "undefined";
-
 export default function ResponsiveNavigator({
   items,
   className,
@@ -91,29 +88,41 @@ export default function ResponsiveNavigator({
     handleTaskAction,
   } = useNavigation();
 
-  // Safely determine pathname (only access window in the browser)
-  const pathname = currentPage || (isBrowser ? window.location.pathname : "/");
+  // Refs for key elements
+  const navigatorRef = useRef(null);
+  const taskContainerRef = useRef<HTMLDivElement>(null);
 
+  // State management for UI
+  const [pathname, setPathname] = useState("/");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTaskMenuOpen, setIsTaskMenuOpen] = useState(false);
   const [deviceType, setDeviceType] = useState<DeviceType>("desktop");
   const [visibleTasks, setVisibleTasks] = useState<NavTask[]>([]);
   const [overflowTasks, setOverflowTasks] = useState<NavTask[]>([]);
-  const taskContainerRef = useRef<HTMLDivElement>(null);
+
+  // Set pathname from context after mount
+  useEffect(() => {
+    setPathname(currentPage || window.location.pathname);
+  }, [currentPage]);
 
   // Find the current active page
-  const activePage = items.find((item) =>
-    pathname === item.href ||
-    (pathname.startsWith(`${item.href}/`) && item.href !== "/")
+  const activePage = useMemo(
+    () =>
+      items.find((item) =>
+        pathname === item.href ||
+        (pathname.startsWith(`${item.href}/`) && item.href !== "/")
+      ),
+    [items, pathname],
   );
+
   // Find the current active view
-  const currentView = activePage?.views?.find((view) => view.id === activeView);
+  const currentView = useMemo(
+    () => activePage?.views?.find((view) => view.id === activeView),
+    [activePage, activeView],
+  );
 
   // Determine device type based on viewport width
   useEffect(() => {
-    // Skip this effect during server-side rendering
-    if (!isBrowser) return;
-
     const handleResize = () => {
       const width = window.innerWidth;
       if (width < 640) {
@@ -159,17 +168,11 @@ export default function ResponsiveNavigator({
 
   // Recalculate tasks when the active page or view changes
   useEffect(() => {
-    // Skip this effect during server-side rendering
-    if (!isBrowser) return;
-
     calculateTasksVisibility();
   }, [activePage, currentView, primaryTasks]);
 
   // Set default view for the active page if available
   useEffect(() => {
-    // Skip this effect during server-side rendering
-    if (!isBrowser) return;
-
     if (activePage?.views?.length && !activeView) {
       handleViewChange(activePage.views[0].id);
 
@@ -178,12 +181,11 @@ export default function ResponsiveNavigator({
         handleSubViewChange(activePage.views[0].subViews[0].id);
       }
     }
-  }, [activePage, activeView]);
+  }, [activePage, activeView, handleViewChange, handleSubViewChange]);
 
-  // Handle task action
+  // Handler for task actions
   const onTaskAction = (task: NavTask) => {
     handleTaskAction(task.id, task.action);
-
     // Close task menu if open
     setIsTaskMenuOpen(false);
   };
@@ -663,48 +665,8 @@ export default function ResponsiveNavigator({
     );
   };
 
-  // If we're server-side rendering, return minimal skeleton
-  if (!isBrowser) {
-    return (
-      <header className="sticky top-0 z-50 w-full">
-        <nav className={clsx("w-full bg-base-100 border-b", className)}>
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  className="font-bold text-xl"
-                >
-                  <Home className="h-5 w-5 mr-2" />
-                  App
-                </Button>
-              </div>
-              <div className="hidden md:flex space-x-1">
-                {items.map((item) => (
-                  <Button
-                    key={item.href}
-                    variant="ghost"
-                    className="px-3 py-2 rounded-md text-sm"
-                  >
-                    {item.icon && <span className="mr-2">{item.icon}</span>}
-                    {item.title}
-                  </Button>
-                ))}
-              </div>
-              <div className="flex items-center space-x-1"></div>
-            </div>
-          </div>
-        </nav>
-        <div className="w-full bg-base-200 border-b h-12">
-          <div className="container mx-auto px-4 h-full" aria-hidden="true">
-          </div>
-        </div>
-      </header>
-    );
-  }
-
   return (
-    <header className="sticky top-0 z-50 w-full">
+    <header className="sticky top-0 z-50 w-full" ref={navigatorRef}>
       {deviceType === "mobile"
         ? renderMobileNavigation()
         : renderDesktopNavigation()}

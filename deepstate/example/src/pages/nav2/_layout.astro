@@ -6,16 +6,21 @@ const pathname = Astro.url.pathname;
 const searchParams = Astro.url.searchParams;
 const viewParam = searchParams.get('view');
 const subviewParam = searchParams.get('subview');
+
+// Ensure we have a clean path without trailing slashes for consistent matching
+const cleanPath = pathname.endsWith('/') && pathname !== '/' 
+  ? pathname.slice(0, -1) 
+  : pathname;
 ---
 
 <BaseLayout>
   <div class="min-h-screen flex flex-col">
-    <!-- Pass URL parameters as props to ensure consistent state -->
-    <NavigatorWithRouter client:only="preact" />
+    <!-- Server-side render the navigator but hydrate it on the client -->
+    <NavigatorWithRouter client:load />
     
     <!-- Hidden metadata to ensure state persists across page loads -->
     <script id="nav-state" type="application/json" set:html={JSON.stringify({
-      pathname,
+      pathname: cleanPath,
       view: viewParam,
       subview: subviewParam
     })}>
@@ -30,14 +35,30 @@ const subviewParam = searchParams.get('subview');
           if (stateElement) {
             const state = JSON.parse(stateElement.textContent || '{}');
             
-            // Dispatch event to initialize navigation state
-            window.dispatchEvent(new CustomEvent('initNavigationState', { 
-              detail: state 
-            }));
+            // Delay slightly to ensure components are mounted
+            setTimeout(() => {
+              // Dispatch event to initialize navigation state
+              window.dispatchEvent(new CustomEvent('initNavigationState', { 
+                detail: state 
+              }));
+            }, 100);
           }
         } catch (error) {
           console.error('Error initializing navigation state:', error);
         }
+      });
+
+      // Debug navigation events
+      window.addEventListener('viewChange', (e) => {
+        console.log('View change event:', e.detail);
+      });
+      
+      window.addEventListener('subViewChange', (e) => {
+        console.log('SubView change event:', e.detail);
+      });
+      
+      window.addEventListener('navigationStateChange', (e) => {
+        console.log('Navigation state change:', e.detail);
       });
     </script>
     

@@ -1,8 +1,11 @@
 import { createContext } from "preact";
-import { useContext, useEffect, useState } from "preact/hooks";
-
-// Safe check for browser environment
-const isBrowser = typeof window !== "undefined";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "preact/hooks";
 
 // Create a context for navigation state
 export const NavigationContext = createContext({
@@ -35,17 +38,15 @@ export function useNavigation() {
 }
 
 export function NavigationProvider({ children }) {
-  // Initialize state based on URL parameters
+  // Initialize state based on basic defaults
+  // We'll update from URL in useEffect
   const [activeView, setActiveView] = useState(null);
   const [activeSubView, setActiveSubView] = useState(null);
   const [currentPage, setCurrentPage] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const providerRef = useRef(null);
 
   // Parse URL on initial load to set navigation state
   useEffect(() => {
-    // Skip this effect during server-side rendering
-    if (!isBrowser) return;
-
     try {
       // Initial state setup from URL
       const url = new URL(window.location.href);
@@ -80,34 +81,23 @@ export function NavigationProvider({ children }) {
         if (subview) {
           setActiveSubView(subview);
         }
-
-        setIsInitialized(true);
       };
 
       window.addEventListener("initNavigationState", handleInitState);
 
-      // If we didn't get an initialization event within a short time,
-      // mark as initialized anyway to allow default behavior
-      const timeoutId = setTimeout(() => {
-        setIsInitialized(true);
-      }, 500);
-
       return () => {
         window.removeEventListener("initNavigationState", handleInitState);
-        clearTimeout(timeoutId);
       };
     } catch (error) {
       console.error("Error initializing navigation state:", error);
-      setIsInitialized(true); // Ensure we don't block rendering on error
     }
   }, []);
 
   // Update URL when navigation state changes
   useEffect(() => {
-    // Skip this effect during server-side rendering or before initialization
-    if (!isBrowser || !isInitialized || !currentPage) return;
-
     try {
+      if (!currentPage) return;
+
       const url = new URL(window.location.href);
 
       if (activeView) {
@@ -156,13 +146,10 @@ export function NavigationProvider({ children }) {
     } catch (error) {
       console.error("Error updating URL:", error);
     }
-  }, [activeView, activeSubView, currentPage, isInitialized]);
+  }, [activeView, activeSubView, currentPage]);
 
-  // Navigate to a page
-  const navigateTo = (href, viewId = null, subViewId = null) => {
-    // Skip this function during server-side rendering
-    if (!isBrowser) return;
-
+  // Navigate to a page - memoize to avoid recreating on every render
+  const navigateTo = useCallback((href, viewId = null, subViewId = null) => {
     try {
       // If it's the same page, just update the view states
       if (href === currentPage) {
@@ -212,13 +199,10 @@ export function NavigationProvider({ children }) {
     } catch (error) {
       console.error("Error navigating:", error);
     }
-  };
+  }, [currentPage, activeView]);
 
-  // Handle view change
-  const handleViewChange = (viewId, pageHref = null) => {
-    // Skip this function during server-side rendering
-    if (!isBrowser) return;
-
+  // Handle view change - memoize to avoid recreating on every render
+  const handleViewChange = useCallback((viewId, pageHref = null) => {
     setActiveView(viewId);
 
     // If changing to a different page
@@ -236,13 +220,10 @@ export function NavigationProvider({ children }) {
       },
     });
     window.dispatchEvent(viewEvent);
-  };
+  }, [navigateTo, currentPage, activeSubView]);
 
-  // Handle subview change
-  const handleSubViewChange = (subViewId) => {
-    // Skip this function during server-side rendering
-    if (!isBrowser) return;
-
+  // Handle subview change - memoize to avoid recreating on every render
+  const handleSubViewChange = useCallback((subViewId) => {
     setActiveSubView(subViewId);
 
     // Dispatch subview change event
@@ -254,13 +235,10 @@ export function NavigationProvider({ children }) {
       },
     });
     window.dispatchEvent(subViewEvent);
-  };
+  }, [activeView, currentPage]);
 
-  // Handle task action
-  const handleTaskAction = (taskId, action) => {
-    // Skip this function during server-side rendering
-    if (!isBrowser) return;
-
+  // Handle task action - memoize to avoid recreating on every render
+  const handleTaskAction = useCallback((taskId, action) => {
     if (action) {
       try {
         action();
@@ -278,7 +256,7 @@ export function NavigationProvider({ children }) {
     } catch (error) {
       console.error("Error dispatching task action event:", error);
     }
-  };
+  }, [activeView, activeSubView, currentPage]);
 
   // Value to be provided by the context
   const value = {
@@ -292,7 +270,7 @@ export function NavigationProvider({ children }) {
   };
 
   return (
-    <NavigationContext.Provider value={value}>
+    <NavigationContext.Provider value={value} ref={providerRef}>
       {children}
     </NavigationContext.Provider>
   );
