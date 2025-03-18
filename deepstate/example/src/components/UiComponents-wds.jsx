@@ -2,8 +2,7 @@ import { useMemo, useState } from "preact/hooks";
 import { reify } from "@m5nv/deepstate";
 
 const UIComponentExplorerCombined = () => {
-  // View mode state
-  // const [viewMode, setViewMode] = useState("explorer");
+
   const [{state: explorer}] = useState(() => 
     reify(
       { view_mode: "explorer",
@@ -14,11 +13,12 @@ const UIComponentExplorerCombined = () => {
       }
     ));
 
-  // Comparison view state
-  const [comparisonFilter, setComparisonFilter] = useState("all");
-  const [showEquivalentComponents, setShowEquivalentComponents] = useState(
-    true,
-  );
+  const [{state: comparison}] = useState(() =>
+    reify(
+      { filter: "all",
+        show_equivalent_components: true
+      }
+    ));
 
   // Simple version of the data - you'll replace this with file loading
   const componentData = useMemo(() => {
@@ -188,7 +188,7 @@ const UIComponentExplorerCombined = () => {
           }
 
           // Group match (if this component is part of an equivalence group)
-          if (group && showEquivalentComponents) {
+          if (group && comparison.show_equivalent_components) {
             const groupComponents = componentEquivalenceGroups[group];
             return normalizedFrameworkData[framework].some((frameworkComp) =>
               groupComponents.some((groupComp) =>
@@ -204,13 +204,13 @@ const UIComponentExplorerCombined = () => {
     // Filter components for comparison view
     let filteredComponents = [...allComponents];
 
-    if (comparisonFilter === "common") {
+    if (comparison.filter === "common") {
       filteredComponents = filteredComponents.filter((component) =>
         Object.keys(normalizedFrameworkData).every((framework) =>
           componentFrameworkMap[component].includes(framework)
         )
       );
-    } else if (comparisonFilter === "unique") {
+    } else if (comparison_filter === "unique") {
       filteredComponents = filteredComponents.filter((component) => {
         return componentFrameworkMap[component].length === 1;
       });
@@ -237,7 +237,7 @@ const UIComponentExplorerCombined = () => {
       filteredComponents,
       stats,
     };
-  }, [componentData, comparisonFilter, showEquivalentComponents]);
+  }, [componentData, comparison.filter, comparison.show_equivalent_components]);
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
@@ -480,31 +480,31 @@ const UIComponentExplorerCombined = () => {
             <div>
               <button
                 className={`px-3 py-1 rounded ${
-                  comparisonFilter === "all"
+                  comparison.filter === "all"
                     ? "bg-blue-500 text-white"
                     : "bg-gray-200"
                 }`}
-                onClick={() => setComparisonFilter("all")}
+                onClick={() => comparison.filter = "all"}
               >
                 All
               </button>
               <button
                 className={`px-3 py-1 rounded ml-2 ${
-                  comparisonFilter === "common"
+                  comparison.filter === "common"
                     ? "bg-green-500 text-white"
                     : "bg-gray-200"
                 }`}
-                onClick={() => setComparisonFilter("common")}
+                onClick={() => comparison.filter ="common"}
               >
                 Common
               </button>
               <button
                 className={`px-3 py-1 rounded ml-2 ${
-                  comparisonFilter === "unique"
+                  comparison.filter === "unique"
                     ? "bg-purple-500 text-white"
                     : "bg-gray-200"
                 }`}
-                onClick={() => setComparisonFilter("unique")}
+                onClick={() => comparison.filter ="unique"}
               >
                 Unique
               </button>
@@ -515,9 +515,9 @@ const UIComponentExplorerCombined = () => {
                 <input
                   type="checkbox"
                   className="sr-only peer"
-                  checked={showEquivalentComponents}
+                  checked={comparison.show_equivalent_components}
                   onChange={() =>
-                    setShowEquivalentComponents(!showEquivalentComponents)}
+                    comparison.show_equivalent_components = !comparison.show_equivalent_components}
                 />
                 <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
                 </div>
@@ -550,7 +550,7 @@ const UIComponentExplorerCombined = () => {
                         .getEquivalenceGroup(component);
 
                       // Skip some group members when grouped
-                      if (showEquivalentComponents && equivalentGroup) {
+                      if (comparison.show_equivalent_components && equivalentGroup) {
                         const components =
                           componentEquivalenceGroups[equivalentGroup];
                         const matchingComponents = comparisonData
@@ -566,14 +566,14 @@ const UIComponentExplorerCombined = () => {
                         <tr
                           key={component}
                           className={`hover:bg-gray-50 ${
-                            equivalentGroup && showEquivalentComponents
+                            equivalentGroup && comparison.show_equivalent_components
                               ? "bg-yellow-50"
                               : ""
                           }`}
                         >
                           <td className="p-2 border font-medium">
                             {comparisonData.displayNameMap[component]}
-                            {equivalentGroup && showEquivalentComponents && (
+                            {equivalentGroup && comparison.show_equivalent_components && (
                               <span className="text-xs text-gray-500 block">
                                 ({equivalentGroup} group)
                               </span>
