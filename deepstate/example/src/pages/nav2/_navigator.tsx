@@ -1,11 +1,5 @@
 import clsx from "clsx";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
   ChevronDown,
   ChevronRight,
@@ -83,7 +77,7 @@ export default function ResponsiveNavigator({
   defaultSubView,
   showViewIndicators = false,
   primaryTasks = [],
-}) {
+}: ResponsiveNavigatorProps) {
   const {
     activeView,
     activeSubView,
@@ -102,10 +96,9 @@ export default function ResponsiveNavigator({
   const [pathname, setPathname] = useState("/");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTaskMenuOpen, setIsTaskMenuOpen] = useState(false);
-  const [deviceType, setDeviceType] = useState("desktop");
-  const [visibleTasks, setVisibleTasks] = useState([]);
-  const [overflowTasks, setOverflowTasks] = useState([]);
-  const resizeTimeoutRef = useRef(null);
+  const [deviceType, setDeviceType] = useState<DeviceType>("desktop");
+  const [visibleTasks, setVisibleTasks] = useState<NavTask[]>([]);
+  const [overflowTasks, setOverflowTasks] = useState<NavTask[]>([]);
 
   // Set pathname from context after mount
   useEffect(() => {
@@ -130,47 +123,79 @@ export default function ResponsiveNavigator({
     [activePage, activeView],
   );
 
-  // Determine device type based on viewport width with debounce
+  // Debug navigation state - MOVED AFTER activePage and currentView are defined
+  useEffect(() => {
+    console.log("Navigation debug info:", {
+      deviceType,
+      pathname,
+      activePage: activePage?.title,
+      views: activePage?.views?.map((v) => v.title),
+      activeView,
+      currentView: currentView?.title,
+      subViews: currentView?.subViews?.map((sv) => sv.title),
+      activeSubView,
+    });
+  }, [
+    deviceType,
+    pathname,
+    activePage,
+    activeView,
+    currentView,
+    activeSubView,
+  ]);
+
+  // Determine device type based on viewport width
   useEffect(() => {
     const handleResize = () => {
-      // Clear existing timeout
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
+      const width = window.innerWidth;
+      if (width < 640) {
+        setDeviceType("mobile");
+      } else if (width < 1024) {
+        setDeviceType("tablet");
+      } else {
+        setDeviceType("desktop");
       }
 
-      // Set new timeout for debounce
-      resizeTimeoutRef.current = setTimeout(() => {
-        const width = window.innerWidth;
-        if (width < 640) {
-          setDeviceType("mobile");
-        } else if (width < 1024) {
-          setDeviceType("tablet");
-        } else {
-          setDeviceType("desktop");
-        }
-
-        // Calculate tasks visibility after device type is set
-        calculateTasksVisibility();
-      }, 150); // 150ms debounce
+      // Recalculate visible and overflow tasks
+      calculateTasksVisibility();
     };
 
-    // Initial check on mount
-    handleResize();
-
-    // Add event listener
+    handleResize(); // Initial check
     window.addEventListener("resize", handleResize);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-    };
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Initialize views/subviews if on dashboard page
+  useEffect(() => {
+    // Check if we're on the dashboard page
+    const isDashboardPage = pathname && pathname.includes("/dashboard");
+    if (isDashboardPage) {
+      console.log("Dashboard page detected in navigator");
+
+      // Set default view if not already set
+      if (!activeView) {
+        console.log("Setting default view to 'overview'");
+        handleViewChange("overview");
+
+        // Set default subview (with a slight delay to ensure view is set first)
+        setTimeout(() => {
+          if (!activeSubView) {
+            console.log("Setting default subview to 'summary'");
+            handleSubViewChange("summary");
+          }
+        }, 50);
+      }
+    }
+  }, [
+    pathname,
+    activeView,
+    activeSubView,
+    handleViewChange,
+    handleSubViewChange,
+  ]);
+
   // Calculate which tasks should be visible and which should go in overflow menu
-  const calculateTasksVisibility = useCallback(() => {
+  const calculateTasksVisibility = () => {
     if (!taskContainerRef.current) return;
 
     const containerWidth = taskContainerRef.current.offsetWidth;
@@ -191,12 +216,12 @@ export default function ResponsiveNavigator({
       setVisibleTasks(allTasks.slice(0, maxVisibleTasks));
       setOverflowTasks(allTasks.slice(maxVisibleTasks));
     }
-  }, [activePage, currentView, primaryTasks]);
+  };
 
   // Recalculate tasks when the active page or view changes
   useEffect(() => {
     calculateTasksVisibility();
-  }, [activePage, currentView, primaryTasks, calculateTasksVisibility]);
+  }, [activePage, currentView, primaryTasks]);
 
   // Set default view for the active page if available
   useEffect(() => {
@@ -211,18 +236,11 @@ export default function ResponsiveNavigator({
   }, [activePage, activeView, handleViewChange, handleSubViewChange]);
 
   // Handler for task actions
-  const onTaskAction = useCallback((task) => {
-    if (task && task.id) {
-      handleTaskAction(task.id, task.action);
-      // Close task menu if open
-      setIsTaskMenuOpen(false);
-    }
-  }, [handleTaskAction]);
-
-  // Handler for mobile menu button
-  const handleMobileMenuToggle = useCallback(() => {
-    setIsSidebarOpen((prev) => !prev);
-  }, []);
+  const onTaskAction = (task: NavTask) => {
+    handleTaskAction(task.id, task.action);
+    // Close task menu if open
+    setIsTaskMenuOpen(false);
+  };
 
   // Render breadcrumb for mobile/tablet
   const renderBreadcrumb = () => {
@@ -353,7 +371,7 @@ export default function ResponsiveNavigator({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleMobileMenuToggle}
+                  onClick={() => setIsSidebarOpen(true)}
                   className="md:hidden h-9 w-9"
                   aria-label="Open menu"
                 >
@@ -364,99 +382,95 @@ export default function ResponsiveNavigator({
           </div>
         </nav>
 
-        {/* Second Row for SPA Views - Only on desktop/tablet */}
-        {deviceType !== "mobile" && (
-          <div className="w-full bg-base-200 border-b h-12">
-            {activePage?.views && activePage.views.length > 0
-              ? (
-                <div className="container mx-auto px-4 h-full">
-                  <div className="flex items-center h-full overflow-x-auto">
-                    {activePage.views.map((view) => (
-                      <div key={view.id} className="relative group h-full">
-                        {view.subViews && view.subViews.length > 0
-                          ? (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={clsx(
-                                    "h-full rounded-none border-b-2 border-transparent",
-                                    activeView === view.id &&
-                                      "border-primary text-primary font-medium",
-                                  )}
-                                >
-                                  {view.icon && (
-                                    <span className="mr-1">{view.icon}</span>
-                                  )}
-                                  {view.title}
-                                  <ChevronDown className="ml-1 h-3 w-3" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="start"
-                                className="w-48"
+        {/* Second Row for SPA Views - Always render this row */}
+        <div className="w-full bg-base-200 border-b h-12">
+          {activePage?.views && activePage.views.length > 0
+            ? (
+              <div className="container mx-auto px-4 h-full">
+                <div className="flex items-center h-full overflow-x-auto">
+                  {activePage.views.map((view) => (
+                    <div key={view.id} className="relative group h-full">
+                      {view.subViews && view.subViews.length > 0
+                        ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={clsx(
+                                  "h-full rounded-none border-b-2 border-transparent",
+                                  activeView === view.id &&
+                                    "border-primary text-primary font-medium",
+                                )}
                               >
-                                {view.subViews.map((subView) => (
-                                  <DropdownMenuItem
-                                    key={subView.id}
-                                    className={clsx(
-                                      activeSubView === subView.id &&
-                                        "bg-primary/10 text-primary font-medium",
-                                    )}
-                                    onClick={() => {
-                                      handleViewChange(view.id);
-                                      handleSubViewChange(subView.id);
-                                    }}
-                                  >
-                                    {subView.icon && (
-                                      <span className="mr-2">
-                                        {subView.icon}
-                                      </span>
-                                    )}
-                                    {subView.title}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )
-                          : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={clsx(
-                                "h-full rounded-none border-b-2 border-transparent",
-                                activeView === view.id &&
-                                  "border-primary text-primary font-medium",
-                              )}
-                              onClick={() =>
-                                handleViewChange(view.id, activePage.href)}
+                                {view.icon && (
+                                  <span className="mr-1">{view.icon}</span>
+                                )}
+                                {view.title}
+                                <ChevronDown className="ml-1 h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="start"
+                              className="w-48"
                             >
-                              {view.icon && (
-                                <span className="mr-1">{view.icon}</span>
-                              )}
-                              {view.title}
-                            </Button>
-                          )}
-                      </div>
-                    ))}
-                  </div>
+                              {view.subViews.map((subView) => (
+                                <DropdownMenuItem
+                                  key={subView.id}
+                                  className={clsx(
+                                    activeSubView === subView.id &&
+                                      "bg-primary/10 text-primary font-medium",
+                                  )}
+                                  onClick={() => {
+                                    handleViewChange(view.id);
+                                    handleSubViewChange(subView.id);
+                                  }}
+                                >
+                                  {subView.icon && (
+                                    <span className="mr-2">
+                                      {subView.icon}
+                                    </span>
+                                  )}
+                                  {subView.title}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )
+                        : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={clsx(
+                              "h-full rounded-none border-b-2 border-transparent",
+                              activeView === view.id &&
+                                "border-primary text-primary font-medium",
+                            )}
+                            onClick={() => handleViewChange(view.id)}
+                          >
+                            {view.icon && (
+                              <span className="mr-1">{view.icon}</span>
+                            )}
+                            {view.title}
+                          </Button>
+                        )}
+                    </div>
+                  ))}
                 </div>
-              )
-              : (
-                // Empty placeholder to maintain consistent layout
-                <div
-                  className="container mx-auto px-4 h-full"
-                  aria-hidden="true"
-                >
-                </div>
-              )}
-          </div>
-        )}
+              </div>
+            )
+            : (
+              // Empty placeholder to maintain consistent layout
+              <div
+                className="container mx-auto px-4 h-full"
+                aria-hidden="true"
+              >
+              </div>
+            )}
+        </div>
 
-        {/* Third Row for Sub-Views (only shown when the active view has sub-views) - Only on desktop/tablet */}
-        {deviceType !== "mobile" && currentView?.subViews &&
-          currentView.subViews.length > 0 && (
+        {/* Third Row for Sub-Views - Always render if there are subviews */}
+        {currentView?.subViews && currentView.subViews.length > 0 && (
           <div className="w-full bg-base-100 border-b h-10">
             <div className="container mx-auto px-4 h-full">
               <div className="flex items-center h-full overflow-x-auto">
@@ -556,7 +570,7 @@ export default function ResponsiveNavigator({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleMobileMenuToggle}
+                onClick={() => setIsSidebarOpen(true)}
                 className="h-9 w-9"
                 aria-label="Open menu"
               >
@@ -625,11 +639,8 @@ export default function ResponsiveNavigator({
                             activeView === view.id && activeClassName,
                           )}
                           onClick={() => {
-                            handleViewChange(view.id, activePage.href);
-                            // Close mobile menu after selection
-                            if (deviceType === "mobile") {
-                              setIsSidebarOpen(false);
-                            }
+                            handleViewChange(view.id);
+                            // Don't close mobile menu after selection
                           }}
                         >
                           {view.icon && (
@@ -654,10 +665,7 @@ export default function ResponsiveNavigator({
                                 )}
                                 onClick={() => {
                                   handleSubViewChange(subView.id);
-                                  // Close mobile menu after selection
-                                  if (deviceType === "mobile") {
-                                    setIsSidebarOpen(false);
-                                  }
+                                  setIsSidebarOpen(false);
                                 }}
                               >
                                 {subView.icon && (
@@ -712,9 +720,8 @@ export default function ResponsiveNavigator({
 
   return (
     <header className="sticky top-0 z-50 w-full" ref={navigatorRef}>
-      {deviceType === "mobile"
-        ? renderMobileNavigation()
-        : renderDesktopNavigation()}
+      {/* Always render desktop navigation for debugging */}
+      {renderDesktopNavigation()}
     </header>
   );
 }

@@ -11,6 +11,13 @@ const subviewParam = searchParams.get('subview');
 const cleanPath = pathname.endsWith('/') && pathname !== '/' 
   ? pathname.slice(0, -1) 
   : pathname;
+
+// Determine if this is the dashboard page for default values
+const isDashboard = pathname.includes('/dashboard');
+const defaultView = isDashboard && !viewParam ? 'overview' : viewParam;
+const defaultSubview = isDashboard && (defaultView === 'overview' || !defaultView) && !subviewParam 
+  ? 'summary' 
+  : subviewParam;
 ---
 
 <BaseLayout>
@@ -21,8 +28,8 @@ const cleanPath = pathname.endsWith('/') && pathname !== '/'
     <!-- Hidden metadata to ensure state persists across page loads -->
     <script id="nav-state" type="application/json" set:html={JSON.stringify({
       pathname: cleanPath,
-      view: viewParam,
-      subview: subviewParam
+      view: defaultView,
+      subview: defaultSubview
     })}>
     </script>
     
@@ -34,6 +41,7 @@ const cleanPath = pathname.endsWith('/') && pathname !== '/'
           const stateElement = document.getElementById('nav-state');
           if (stateElement) {
             const state = JSON.parse(stateElement.textContent || '{}');
+            console.log("Initializing navigation from _layout.astro with state:", state);
             
             // Delay slightly to ensure components are mounted
             setTimeout(() => {
@@ -41,6 +49,28 @@ const cleanPath = pathname.endsWith('/') && pathname !== '/'
               window.dispatchEvent(new CustomEvent('initNavigationState', { 
                 detail: state 
               }));
+              
+              // If on dashboard page, ensure default view and subview are set
+              const isDashboard = window.location.pathname.includes('/dashboard');
+              if (isDashboard) {
+                // Update URL if needed
+                const url = new URL(window.location.href);
+                let needsUpdate = false;
+                
+                if (!url.searchParams.get('view') && state.view) {
+                  url.searchParams.set('view', state.view);
+                  needsUpdate = true;
+                }
+                
+                if (!url.searchParams.get('subview') && state.subview) {
+                  url.searchParams.set('subview', state.subview);
+                  needsUpdate = true;
+                }
+                
+                if (needsUpdate) {
+                  window.history.replaceState({}, "", url.toString());
+                }
+              }
             }, 100);
           }
         } catch (error) {

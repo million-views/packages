@@ -43,28 +43,46 @@ export function NavigationProvider({ children }) {
   const [activeView, setActiveView] = useState(null);
   const [activeSubView, setActiveSubView] = useState(null);
   const [currentPage, setCurrentPage] = useState(null);
-  const providerRef = useRef(null);
-  const initDone = useRef(false);
+  const initRef = useRef(false);
 
   // Parse URL on initial load to set navigation state
   useEffect(() => {
     // Skip if we've already initialized
-    if (initDone.current) return;
+    if (initRef.current) return;
 
     try {
+      // Set initialization flag
+      initRef.current = true;
+
       // Initial state setup from URL
       const url = new URL(window.location.href);
       const viewParam = url.searchParams.get("view");
       const subViewParam = url.searchParams.get("subview");
       const pathname = url.pathname;
 
+      console.log("Initializing navigation state:", {
+        pathname,
+        viewParam,
+        subViewParam,
+      });
+
       setCurrentPage(pathname);
 
-      if (viewParam) {
+      // For dashboard page, set default view if not provided
+      const isDashboard = pathname.includes("/dashboard");
+      if (isDashboard && !viewParam) {
+        setActiveView("overview");
+      } else if (viewParam) {
         setActiveView(viewParam);
       }
 
-      if (subViewParam) {
+      // For overview view, set default subview if not provided
+      if (
+        (isDashboard && !viewParam && !subViewParam) ||
+        (viewParam === "overview" && !subViewParam)
+      ) {
+        setActiveSubView("summary");
+      } else if (subViewParam) {
         setActiveSubView(subViewParam);
       }
 
@@ -73,6 +91,11 @@ export function NavigationProvider({ children }) {
         if (!event || !event.detail) return;
 
         const { pathname, view, subview } = event.detail;
+        console.log("Received init navigation state:", {
+          pathname,
+          view,
+          subview,
+        });
 
         if (pathname) {
           setCurrentPage(pathname);
@@ -85,9 +108,6 @@ export function NavigationProvider({ children }) {
         if (subview) {
           setActiveSubView(subview);
         }
-
-        // Mark initialization as complete
-        initDone.current = true;
       };
 
       window.addEventListener("initNavigationState", handleInitState);
@@ -150,6 +170,12 @@ export function NavigationProvider({ children }) {
         detail: { activeView, activeSubView, currentPage },
       });
       window.dispatchEvent(stateEvent);
+
+      console.log("Navigation state updated:", {
+        activeView,
+        activeSubView,
+        currentPage,
+      });
     } catch (error) {
       console.error("Error updating URL:", error);
     }
@@ -210,6 +236,7 @@ export function NavigationProvider({ children }) {
 
   // Handle view change - memoize to avoid recreating on every render
   const handleViewChange = useCallback((viewId, pageHref = null) => {
+    console.log("Changing view to:", viewId);
     setActiveView(viewId);
 
     // If changing to a different page
@@ -231,6 +258,7 @@ export function NavigationProvider({ children }) {
 
   // Handle subview change - memoize to avoid recreating on every render
   const handleSubViewChange = useCallback((subViewId) => {
+    console.log("Changing subview to:", subViewId);
     setActiveSubView(subViewId);
 
     // Dispatch subview change event
@@ -277,7 +305,7 @@ export function NavigationProvider({ children }) {
   };
 
   return (
-    <NavigationContext.Provider value={value} ref={providerRef}>
+    <NavigationContext.Provider value={value}>
       {children}
     </NavigationContext.Provider>
   );
