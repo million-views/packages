@@ -2,6 +2,7 @@ import { cloneElement, toChildArray } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 import clsx from "clsx";
 
+// Button component with SSR-safe behavior and custom innerRef
 export function Button(
   {
     innerRef,
@@ -29,6 +30,7 @@ export function Button(
     lg: "btn-lg",
     icon: "btn-square",
   };
+
   useEffect(function () {
     const el = combinedRef.current;
     if (el && onClick) {
@@ -38,6 +40,7 @@ export function Button(
       };
     }
   }, [onClick]);
+
   return (
     <button
       ref={combinedRef}
@@ -53,27 +56,25 @@ export function Button(
 export function Sheet({ children, open, onOpenChange }) {
   const ref = useRef(null);
 
-  // Update open state on the client only
-  useEffect(() => {
+  useEffect(function () {
     const element = ref.current;
     if (!element) return;
-
     const checkbox = element.querySelector(".drawer-toggle");
     if (checkbox) {
       checkbox.checked = open;
     }
   }, [open]);
 
-  // Add change event listener on client-side only
-  useEffect(() => {
+  useEffect(function () {
     const element = ref.current;
     if (!element || !onOpenChange) return;
-
     const checkbox = element.querySelector(".drawer-toggle");
     if (checkbox) {
-      const handleChange = (e) => onOpenChange(e.target.checked);
+      function handleChange(e) {
+        onOpenChange(e.target.checked);
+      }
       checkbox.addEventListener("change", handleChange);
-      return () => {
+      return function () {
         checkbox.removeEventListener("change", handleChange);
       };
     }
@@ -81,40 +82,34 @@ export function Sheet({ children, open, onOpenChange }) {
 
   return (
     <div ref={ref} className="drawer">
-      <input
-        type="checkbox"
-        className="drawer-toggle"
-      />
+      <input type="checkbox" className="drawer-toggle" />
       {children}
     </div>
   );
 }
 
+// SheetContent component that manages the drawer overlay
 export function SheetContent({ children, side = "left", className }) {
   const ref = useRef(null);
   const sideClass = side === "left" ? "drawer-side" : "drawer-end drawer-side";
 
-  // Add overlay click event on client only
-  useEffect(() => {
+  useEffect(function () {
     const element = ref.current;
     if (!element) return;
-
     const overlay = element.querySelector(".drawer-overlay");
     if (overlay) {
-      const handleClick = () => {
+      function handleClick() {
         const drawer = element.closest(".drawer");
         if (drawer) {
           const checkbox = drawer.querySelector(".drawer-toggle");
           if (checkbox) {
             checkbox.checked = false;
-            // Dispatch change event
             checkbox.dispatchEvent(new Event("change"));
           }
         }
-      };
-
+      }
       overlay.addEventListener("click", handleClick);
-      return () => {
+      return function () {
         overlay.removeEventListener("click", handleClick);
       };
     }
@@ -130,33 +125,28 @@ export function SheetContent({ children, side = "left", className }) {
   );
 }
 
+// SheetClose: Closes the drawer on click
 export function SheetClose({ className, children, onClick, ...props }) {
   const ref = useRef(null);
 
-  // Add click event listener on client-side only
-  useEffect(() => {
+  useEffect(function () {
     const element = ref.current;
     if (!element) return;
-
-    const handleClick = (e) => {
+    function handleClick(e) {
       if (onClick) {
         onClick(e);
       }
-
-      // Close the drawer
       const drawer = element.closest(".drawer");
       if (drawer) {
         const checkbox = drawer.querySelector(".drawer-toggle");
         if (checkbox) {
           checkbox.checked = false;
-          // Dispatch change event
           checkbox.dispatchEvent(new Event("change"));
         }
       }
-    };
-
+    }
     element.addEventListener("click", handleClick);
-    return () => {
+    return function () {
       element.removeEventListener("click", handleClick);
     };
   }, [onClick]);
@@ -172,6 +162,7 @@ export function SheetClose({ className, children, onClick, ...props }) {
   );
 }
 
+// Simple presentation components for Sheet
 export function SheetHeader({ className, children }) {
   return <div className={clsx("mb-4", className)}>{children}</div>;
 }
@@ -180,14 +171,13 @@ export function SheetTitle({ className, children }) {
   return <h3 className={clsx("text-lg font-bold", className)}>{children}</h3>;
 }
 
+// DropdownMenu: Manages dropdown open state
 export function DropdownMenu({ open, onOpenChange, children }) {
   const ref = useRef(null);
 
-  // Update class to toggle the dropdown visibility on client side
-  useEffect(() => {
+  useEffect(function () {
     const element = ref.current;
     if (!element) return;
-
     if (open) {
       element.classList.add("dropdown-open");
     } else {
@@ -197,7 +187,7 @@ export function DropdownMenu({ open, onOpenChange, children }) {
 
   return (
     <div ref={ref} className="dropdown">
-      {toChildArray(children).map((child) => {
+      {toChildArray(children).map(function (child) {
         if (child?.type === DropdownMenuTrigger) {
           return cloneElement(child, { open, onOpenChange });
         }
@@ -207,6 +197,7 @@ export function DropdownMenu({ open, onOpenChange, children }) {
   );
 }
 
+// DropdownMenuTrigger: Toggles the dropdown; supports asChild
 export function DropdownMenuTrigger({ asChild, children, open, onOpenChange }) {
   const ref = useRef(null);
   useEffect(function () {
@@ -221,6 +212,7 @@ export function DropdownMenuTrigger({ asChild, children, open, onOpenChange }) {
       el.removeEventListener("click", handleClick);
     };
   }, [open, onOpenChange]);
+
   if (asChild) {
     const child = toChildArray(children)[0];
     return cloneElement(child, { innerRef: ref });
@@ -232,45 +224,37 @@ export function DropdownMenuTrigger({ asChild, children, open, onOpenChange }) {
   );
 }
 
+// DropdownMenuItem: Represents an item within the dropdown menu
 export function DropdownMenuItem({ className, onClick, children }) {
   const ref = useRef(null);
 
-  // Add click event listener on client side only
-  useEffect(() => {
+  useEffect(function () {
     const element = ref.current;
-    if (!element) return;
-
-    if (onClick) {
-      const handleClick = (e) => {
-        e.preventDefault();
-        onClick(e);
-
-        // Close the dropdown
-        const dropdown = element.closest(".dropdown");
-        if (dropdown) {
-          dropdown.classList.remove("dropdown-open");
-        }
-      };
-
-      element.addEventListener("click", handleClick);
-      return () => {
-        element.removeEventListener("click", handleClick);
-      };
+    if (!element || !onClick) return;
+    function handleClick(e) {
+      e.preventDefault();
+      onClick(e);
+      const dropdown = element.closest(".dropdown");
+      if (dropdown) {
+        dropdown.classList.remove("dropdown-open");
+      }
     }
+    element.addEventListener("click", handleClick);
+    return function () {
+      element.removeEventListener("click", handleClick);
+    };
   }, [onClick]);
 
   return (
     <li>
-      <a
-        ref={ref}
-        className={clsx("", className)}
-      >
+      <a ref={ref} className={clsx("", className)}>
         {children}
       </a>
     </li>
   );
 }
 
+// DropdownMenuContent: The dropdown's content container
 export function DropdownMenuContent({ align = "center", className, children }) {
   const alignClass = {
     start: "dropdown-start",
@@ -291,7 +275,7 @@ export function DropdownMenuContent({ align = "center", className, children }) {
   );
 }
 
-// Tooltip with clean SSR pattern
+// Tooltip components using a clean SSR pattern
 export function TooltipProvider({ children }) {
   return <>{children}</>;
 }
@@ -302,22 +286,16 @@ export function Tooltip({ children }) {
 
 export function TooltipTrigger({ asChild, children }) {
   if (asChild) {
-    return cloneElement(toChildArray(children)[0], {
-      "data-tip": true,
-    });
+    return cloneElement(toChildArray(children)[0], { "data-tip": true });
   }
   return <span data-tip={true}>{children}</span>;
 }
 
 export function TooltipContent({ className, children }) {
-  return (
-    <div className={clsx("tooltip-content", className)}>
-      {children}
-    </div>
-  );
+  return <div className={clsx("tooltip-content", className)}>{children}</div>;
 }
 
-// Card components (no event handling needed)
+// Card components – simple presentation components
 export function Card({ className, children, ref, ...props }) {
   return (
     <div
