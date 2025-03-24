@@ -145,6 +145,10 @@ state.user.name = "Sam";
 console.log(state.greeting); // "Hello, Sam"
 ```
 
+## References
+
+- https://medium.com/better-programming/zustand-vs-signals-e664bff2ce4a
+
 ---
 ## License
 

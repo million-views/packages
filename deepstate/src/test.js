@@ -1,5 +1,5 @@
-import { effect } from "@preact/signals";
-import { reify } from "@m5nv/deepstate";
+import { effect } from "@preact/signals-core";
+import { reify } from "@m5nv/deepstate/core";
 
 const { state: counter } = reify(
   { count: 0 },

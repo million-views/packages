@@ -1,6 +1,18 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
-## v1.3.1 - 10 MAR 2025
+## v1.4.1 - 25MAR2025
+
+- Refactor internals to remove direct import from @preact/signals
+- Create entry file corresponding to core, signals and react packages
+- Maintain compatibility by keeping the default entry point be to
+  @preact/signals
+- Split SSR and SPA tests
+- Add a hack to allow deepstate to work with SSR
+- Update README with copious notes on how to use with React and guide developers
+  to not shy away from using $-prefix in render code in all runtimes (i.e.,
+  Preact, React, Svelte).
+
+## v1.3.1 - 10MAR2025
 
 - **Array Handling Improvements:**
   - Added an internal version counter to deep arrays to ensure in-place

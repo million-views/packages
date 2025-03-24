@@ -4,6 +4,7 @@ package-lock.json
 .netlify
 .astro
 .dist
+.react-router
 **/coverage
 **/*.db*
 
