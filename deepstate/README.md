@@ -4,14 +4,10 @@
 
 ## Introduction
 
-@m5nv/deepstate is a tiny reactive state management library built on top of
-[@preact/signals](https://github.com/preactjs/signals).
-
 @m5nv/deepstate is a tiny, reactive state management library built on top of
 [@preact/signals][preact/signals]. It transforms plain JavaScript objects into
-reactive _stores_. It makes working with `@preact/signals` natural and
-intuitive, offering a refined API that respects the original signals model while
-improving the developer experience (we think).
+reactive _stores_, offering an intuitive and refined API that respects the
+original signals model while improving the developer experience (we think).
 
 [preact/signals]: https://github.com/preactjs/signals
 
