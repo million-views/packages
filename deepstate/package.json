@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/deepstate",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A better DX for using signals in a framework agnostic manner",
   "type": "module",
   "main": "src/preact-entry.js",
