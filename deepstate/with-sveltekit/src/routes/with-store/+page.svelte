@@ -1,6 +1,6 @@
 <script module>
   import { writable } from 'svelte/store';
-  import { reify } from '@m5nv/deepstate/core'; // for Svelte/CLI environment
+  import { reify } from '@m5nv/deepstate/svelte'; // for Svelte/CLI environment
 
   export function createDeepStateStore(
     initial,
@@ -42,9 +42,21 @@
   });
 </script>
 
-<h1>Welcome to SvelteKit</h1>
+<h2>Naive Svelte Store</h2>
 <!-- Bind the store's value to an input. Svelte reactivity works via $deepStore -->
 <input type="number" bind:value={$deepStore.count} />
 <button on:click={deepStore.actions.on_click}>count</button>
 <h3>Is it working?</h3>
 <code>{$deepStore.count} * 2 = {$deepStore.double}</code>
+
+<p>
+  Mutations that happen using deepstate's actions do not trigger reactivity in
+  svelte (for complex reasons in how Svelte itself tries to do reactivity). This
+  is a naive attempt to get back reactivity by wrapping deepstate in a writable
+  to make Svelte understand that an action mutated the state.
+</p>
+<hr />
+<ul>
+  <li>Notice that two way binding doesn't work.</li>
+  <li>Don't use this - it's broken.</li>
+</ul>

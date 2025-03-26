@@ -1,5 +1,12 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
+## v1.5.0 - 26MAR2025
+
+- Refactor to support Svelte (new entry point that sets escape hatch to `_`
+  instead of `$`)
+- Added `with-sveltekit` sample code for reference
+- Update documentation with notes on how to use with Svelte
+
 ## v1.4.1 - 25MAR2025
 
 - Refactor internals to remove direct import from @preact/signals

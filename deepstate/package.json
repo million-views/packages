@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/deepstate",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "A better DX for using signals in a framework agnostic manner",
   "type": "module",
   "main": "src/preact-entry.js",
@@ -21,13 +21,17 @@
     },
     "./react": {
       "import": "./src/react-entry.js"
+    },
+    "./svelte": {
+      "import": "./src/svelte-entry.js"
     }
   },
   "files": [
     "src/common.js",
     "src/core-entry.js",
     "src/preact-entry.js",
-    "src/react-entry.js"
+    "src/react-entry.js",
+    "src/svelte-entry.js"
   ],
   "bugs": {
     "url": "https://github.com/million-views/packages/issues"

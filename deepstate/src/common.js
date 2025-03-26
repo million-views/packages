@@ -38,7 +38,7 @@ const SSRComputed = (fn) => ({
   },
 });
 
-export function createDeepStateAPI({ signal, computed, untracked }) {
+export function createDeepStateAPI({ signal, computed, untracked }, esc = "$") {
   // DEEPSTATE_MODE can be "SPA" or "SSR"
   // If not set, default to checking window.
   const mode = typeof process === "undefined"
@@ -66,12 +66,17 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
     return should_proxy(val) ? deep_proxy(val, permissive) : val;
   }
   function init_signals(obj, permissive) {
-    // console.log("init_signals: ", obj);
+    // Always add a top-level __version signal, so we can subscribe to coarse changes.
     const s = {};
     for (const k in obj) {
       s[k] = safeSignal(deep_wrap(obj[k], permissive));
     }
-    if (Array.isArray(obj)) s.__version = safeSignal(0);
+    // s.__version = safeSignal(0);
+    // For arrays, we track a version so that repeated changes to indices
+    // can cause multiple re-renders if not batched (matching old behavior).
+    if (Array.isArray(obj)) {
+      s.__version = signal(0);
+    }
     return s;
   }
   function create_handler(permissive, signals, computedMap = {}, extra = {}) {
@@ -79,7 +84,7 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
       get(t, prop, receiver) {
         // console.log("get", { t, prop, receiver });
         if (prop in extra) return extra[prop];
-        if (typeof prop === "string" && prop.startsWith("$")) {
+        if (typeof prop === "string" && prop.startsWith(esc)) {
           const key = prop.slice(1);
           if (key in computedMap) {
             return isSSR ? computedMap[key].value : computedMap[key];
@@ -89,28 +94,28 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
           }
           return isSSR ? signals[key].value : signals[key];
         }
+        /// use __version to trigger reactivity on array access
+        /// the top level __version is reserved for coarse reactivity
         if (Array.isArray(t) && signals.__version) {
           signals.__version.value;
         }
+
         if (prop in signals) return signals[prop].value;
         if (prop in computedMap) return computedMap[prop].value;
         return Reflect.get(t, prop, receiver);
       },
       set(t, prop, value) {
         // console.log("set", { t, prop, value });
-
         if (Array.isArray(t) && prop === "length") {
           t[prop] = value;
-          if (signals.__version) signals.__version.value++;
+          signals.__version.value++;
           return true;
         }
-        if (typeof prop === "string" && prop.startsWith("$")) {
+        if (typeof prop === "string" && prop.startsWith(esc)) {
           const key = prop.slice(1);
           if (Array.isArray(t[key])) {
             signals[key].value = deep_wrap(value, permissive);
-            if (Array.isArray(t) && signals.__version) {
-              signals.__version.value++;
-            }
+            // signals.__version.value++;
             return true;
           }
           throw Error(
@@ -123,13 +128,13 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
           !t[prop][IS_SHALLOW]
         ) {
           throw Error(
-            "Whole array replacement is disallowed for deep arrays. Use the '$' escape hatch.",
+            `Whole array replacement is disallowed for deep arrays. Use the '${esc}' escape hatch.`,
           );
         }
         if (Array.isArray(t) && Number.isInteger(Number(prop))) {
           t[prop] = value;
           signals[prop] = safeSignal(deep_wrap(value, permissive));
-          if (signals.__version) signals.__version.value++;
+          signals.__version.value++;
           return true;
         }
         if (typeof value === "function") {
@@ -139,7 +144,8 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
         }
         if (prop in signals) {
           signals[prop].value = deep_wrap(value, permissive);
-          if (Array.isArray(t) && signals.__version) signals.__version.value++;
+          /// needed for svelte store adapter to work
+          if (signals.__version) signals.__version.value++;
           return true;
         }
         if (!permissive) {
@@ -147,14 +153,14 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
         }
         signals[prop] = safeSignal(deep_wrap(value, permissive));
         t[prop] = value;
-        if (Array.isArray(t) && signals.__version) signals.__version.value++;
+        if (signals.__version) signals.__version.value++;
         return true;
       },
       deleteProperty(t, prop) {
         if (Array.isArray(t) && Number.isInteger(Number(prop))) {
           const result = Reflect.deleteProperty(t, prop);
           if (signals[prop]) signals[prop].value = undefined;
-          if (signals.__version) signals.__version.value++;
+          signals.__version.value++;
           return result;
         }
         const result = Reflect.deleteProperty(t, prop);
@@ -188,12 +194,15 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
       );
     }
     const signals = init_signals(initial, permissive);
+    // Always add a top-level __version signal, so we can subscribe to coarse changes.
+    signals.__version = safeSignal(0);
+
     const computed_signals = {};
     const snapshot = (for_json = false) => {
       return safeUntracked(() => {
         const plain = {};
         for (const key in signals) {
-          if (key.startsWith("$") || key === "__version") continue;
+          if (key.startsWith(esc) || key === "__version") continue;
           const val = signals[key].value;
           if (typeof val !== "function") plain[key] = val;
         }
@@ -220,7 +229,11 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
     return { proxy: state_proxy, signals, computed_signals };
   }
   function reify(initial, computed_fns = {}, permissive = false) {
-    const { proxy } = create_deepstate(initial, computed_fns, permissive);
+    const { proxy, signals } = create_deepstate(
+      initial,
+      computed_fns,
+      permissive,
+    );
     function attach(actions = {}) {
       store.actions = Object.fromEntries(
         Object.entries(actions).map(([name, fn]) => [
@@ -232,6 +245,7 @@ export function createDeepStateAPI({ signal, computed, untracked }) {
     }
     const store = {
       state: proxy,
+      __version: signals.__version,
       attach,
       toJSON: () => proxy.toJSON(),
     };
