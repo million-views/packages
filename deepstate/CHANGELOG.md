@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
+## v1.5.1 - 26MAR2025
+
+- Doc fix: add install instruction, duh!
+
 ## v1.5.0 - 26MAR2025
 
 - Refactor to support Svelte (new entry point that sets escape hatch to `_`

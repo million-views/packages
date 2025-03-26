@@ -84,9 +84,23 @@ While immutability has its advantages, DeepState’s approach leverages modern
 JavaScript features (proxies and signals) to deliver an intuitive and performant
 experience for most UI applications.
 
-## Import Variants
+## Installation
 
-DeepState is distributed in three variants to suit different frameworks:
+Install via npm:
+
+```sh
+npm install @m5nv/deepstate
+```
+
+> **Note**: @m5nv/deepstate declares @preact/signals-* as a peer dependency. You
+> are responsible for installing the correct peer dependency to go with the
+> import variant you plan on using.
+
+### Import Variants
+
+DeepState supports use with different frameworks in a single installation by
+utilizing peer dependency and variant import paths. The import paths and the
+peer dependency is listed below:
 
 1. **For Preact:**
    ```js
