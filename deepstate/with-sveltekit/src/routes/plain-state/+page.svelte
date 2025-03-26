@@ -1,18 +1,16 @@
 <script>
-  import { reify } from '@m5nv/deepstate/core';
-
-  const store = reify({ count: 0 }, { double: (state) => state.count * 2 });
-  const { _count, _double } = store.state;
-  const { state } = store;
+  const state = {
+    count: 0,
+    double: (state) => state.count * 2,
+  };
 </script>
 
 <h1>Welcome to SvelteKit</h1>
 <input type="number" value={state.count} />
 <button onclick={() => (state.count += 1)}>count</button>
 <h3>Is it working?</h3>
-<code>{state.count} * 2 = {state.double}</code>
+<code>{state.count} * 2 = {state.double(state)}</code>
 <br />
-<code>{_count.value} * 2 = {_double.value}</code>
 
 <p>
   Visit <a href="https://www.npmjs.com/package/@m5nv/deepstate"
