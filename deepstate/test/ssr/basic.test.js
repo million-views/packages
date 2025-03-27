@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { batch, effect } from "@preact/signals-react";
-import { reify, shallow } from "@m5nv/deepstate/react";
+import { batch, effect } from "@preact/signals";
+import { computedProp, reify, shallow } from "@m5nv/deepstate";
 
 // Force SSR mode
 const originalWindow = global.window;
@@ -11,9 +11,9 @@ afterAll(() => {
   global.window = originalWindow;
 });
 
-describe("deepstate reify() SSR Core Behavior", () => {
+describe("DeepState Basic SSR reify() Core Behavior", () => {
   it("handles empty initial state", () => {
-    const { state } = reify({}, {}, false);
+    const { state } = reify({});
     expect(Object.keys(state)).toEqual([]);
     expect(state.toJSON()).toEqual({});
     expect(JSON.stringify(state)).toBe("{}");
@@ -21,9 +21,10 @@ describe("deepstate reify() SSR Core Behavior", () => {
 
   it("creates reactive state and computed properties", () => {
     const { state } = reify(
-      { count: 0 },
-      { double: (s) => s.count * 2 },
-      false,
+      {
+        count: 0,
+        double: computedProp((s) => s.count * 2),
+      },
     );
     expect(state.count).toBe(0);
     expect(state.double).toBe(0);
@@ -33,7 +34,7 @@ describe("deepstate reify() SSR Core Behavior", () => {
 
   it("computed property is lazy until accessed", () => {
     const spy = vi.fn((s) => s.count * 2);
-    const { state } = reify({ count: 0 }, { double: spy }, false);
+    const { state } = reify({ count: 0, double: computedProp(spy) });
     expect(spy).not.toHaveBeenCalled();
     state.count = 1;
     expect(spy).not.toHaveBeenCalled(); // still lazy until access
@@ -45,10 +46,11 @@ describe("deepstate reify() SSR Core Behavior", () => {
   });
 
   it("supports chained computed properties", () => {
-    const { state } = reify({ count: 2 }, {
-      double: (s) => s.count * 2,
-      quadruple: (s) => s.double * 2,
-    }, false);
+    const { state } = reify({
+      count: 2,
+      double: computedProp((s) => s.count * 2),
+      quadruple: computedProp((s) => s.double * 2),
+    });
     expect(state.quadruple).toBe(8);
     state.count = 3;
     expect(state.quadruple).toBe(12);
@@ -56,9 +58,10 @@ describe("deepstate reify() SSR Core Behavior", () => {
 
   it("handles nested objects and computed properties", () => {
     const { state } = reify(
-      { user: { first: "John", last: "Doe", name: "Jane" } },
-      { fullName: (s) => s.user.first + " " + s.user.last },
-      false,
+      {
+        user: { first: "John", last: "Doe", name: "Jane" },
+        fullName: computedProp((s) => s.user.first + " " + s.user.last),
+      },
     );
     expect(state.user.first).toBe("John");
     state.user.first = "Jane";
@@ -69,9 +72,7 @@ describe("deepstate reify() SSR Core Behavior", () => {
 
   it("exposes computed signals via $ properties as unwrapped primitives", () => {
     const { state } = reify(
-      { count: 0 },
-      { double: (s) => s.count * 2 },
-      false,
+      { count: 0, double: computedProp((s) => s.count * 2) },
     );
     // In SSR mode, accessing $double returns a primitive.
     expect(state.$double).toBe(0);
@@ -80,27 +81,27 @@ describe("deepstate reify() SSR Core Behavior", () => {
   });
 });
 
-describe("deepstate reify() SSR Strict vs Permissive Modes", () => {
+describe("DeepState Basic SSR reify() Strict vs Permissive Modes", () => {
   it("blocks new properties in strict mode", () => {
-    const { state } = reify({ count: 0 }, {}, false);
+    const { state } = reify({ count: 0 });
     expect(() => (state.newProp = "fail"))
       .toThrow("Cannot add new property 'newProp' in strict mode.");
   });
 
   it("allows new properties in permissive mode", () => {
-    const { state } = reify({ count: 0 }, {}, true);
+    const { state } = reify({ count: 0 }, { permissive: true });
     state.newProp = "Hello";
     expect(state.newProp).toBe("Hello");
   });
 
   it("allows new nested properties in permissive mode", () => {
-    const { state } = reify({ user: {} }, {}, true);
+    const { state } = reify({ user: {} }, { permissive: true });
     state.user.age = 30;
     expect(state.user.age).toBe(30);
   });
 
   it("rejects direct assignment of $ properties", () => {
-    const { state } = reify({ count: 0 }, {}, false);
+    const { state } = reify({ count: 0 });
     expect(() => {
       state.$count = { value: 99 };
     }).toThrow(
@@ -109,19 +110,20 @@ describe("deepstate reify() SSR Strict vs Permissive Modes", () => {
   });
 });
 
-describe("deepstate reify() SSR Shallow Object Handling", () => {
+describe("DeepState Basic SSR reify() Shallow Object Handling", () => {
   it("confirms shallow object mutations persist", () => {
     const staticObj = { id: 1, nested: { value: 42 } };
-    const { state } = reify({ data: shallow(staticObj) }, {}, false);
+    const { state } = reify({ data: shallow(staticObj) });
     state.data.nested.value = 100;
     expect(state.data.nested.value).toBe(100);
   });
   it("shallow objects do not trigger computed updates", () => {
     const staticObj = { id: 1, nested: { value: 42 } };
     const { state } = reify(
-      { data: shallow(staticObj) },
-      { nestedValue: (s) => s.data.nested.value },
-      false,
+      {
+        data: shallow(staticObj),
+        nestedValue: computedProp((s) => s.data.nested.value),
+      },
     );
     expect(state.data).toBe(staticObj);
     expect(state.nestedValue).toBe(42);
@@ -134,12 +136,10 @@ describe("deepstate reify() SSR Shallow Object Handling", () => {
   });
 });
 
-describe("deepstate reify() SSR Nested State Handling", () => {
+describe("DeepState Basic SSR reify() Nested State Handling", () => {
   it("handles nested objects", () => {
     const { state } = reify(
       { user: { name: "John", address: { city: "Hobbiton", zip: "12345" } } },
-      {},
-      false,
     );
     expect(state.user.name).toBe("John");
     expect(state.user.address.city).toBe("Hobbiton");
@@ -149,9 +149,10 @@ describe("deepstate reify() SSR Nested State Handling", () => {
 
   it("supports computed properties across nested objects", () => {
     const { state } = reify(
-      { user: { first: "John", last: "Doe" } },
-      { fullName: (s) => s.user.first + " " + s.user.last },
-      false,
+      {
+        user: { first: "John", last: "Doe" },
+        fullName: computedProp((s) => s.user.first + " " + s.user.last),
+      },
     );
     expect(state.fullName).toBe("John Doe");
     state.user.first = "Jane";
@@ -159,9 +160,9 @@ describe("deepstate reify() SSR Nested State Handling", () => {
   });
 });
 
-describe("deepstate reify() SSR Actions & Attach", () => {
+describe("DeepState Basic SSR reify().attach() Actions", () => {
   it("supports attach() to bind actions", () => {
-    const store = reify({ count: 0 }, {}, false).attach({
+    const store = reify({ count: 0 }).attach({
       increment(s) {
         s.count++;
       },
@@ -177,7 +178,7 @@ describe("deepstate reify() SSR Actions & Attach", () => {
   });
 
   it("throws if accessing undefined actions", () => {
-    const store = reify({ count: 0 }, {}, false).attach({
+    const store = reify({ count: 0 }).attach({
       increment(s) {
         s.count++;
       },
@@ -189,7 +190,7 @@ describe("deepstate reify() SSR Actions & Attach", () => {
   });
 });
 
-describe("deepstate reify() SSR Async Actions", () => {
+describe("DeepState Basic SSR reify().attach() Async Actions", () => {
   it("supports async actions that update state", async () => {
     const store = reify({ count: 0 }).attach({
       async fetchCount(s) {
@@ -212,12 +213,10 @@ describe("deepstate reify() SSR Async Actions", () => {
   });
 });
 
-describe("deepstate reify() SSR Serialization", () => {
+describe("DeepState Basic SSR reify() Serialization", () => {
   it("toJSON omits $ properties and computed properties", () => {
     const { state } = reify(
-      { count: 0 },
-      { double: (s) => s.count * 2 },
-      false,
+      { count: 0, double: computedProp((s) => s.count * 2) },
     );
     expect(JSON.stringify(state)).toBe('{"count":0}');
     state.count = 5;
@@ -225,14 +224,14 @@ describe("deepstate reify() SSR Serialization", () => {
   });
 
   it("does not allow direct mutation of toJSON", () => {
-    const { state } = reify({ count: 0 }, {}, false);
+    const { state } = reify({ count: 0 });
     expect(() => {
       state.toJSON = 42;
     }).toThrow();
   });
 });
 
-describe("deepstate reify() SSR Array Handling", () => {
+describe("DeepState Basic SSR reify() Array Handling", () => {
   it("updates array length correctly when splice is called", () => {
     const { state } = reify({ todos: [1, 2, 3, 4] });
     expect(state.todos.length).toBe(4);
@@ -276,7 +275,7 @@ describe("deepstate reify() SSR Array Handling", () => {
   });
 });
 
-describe("deepstate reify() SSR Array Handling - Mutative Methods with Batching", () => {
+describe("DeepState Basic SSR reify() Array Handling - Mutative Methods with Batching", () => {
   it("allows push with batching", () => {
     const { state } = reify({ todos: [{ text: "Task", completed: false }] });
     const initialLength = state.todos.length;
@@ -336,7 +335,7 @@ describe("deepstate reify() SSR Array Handling - Mutative Methods with Batching"
   });
 });
 
-describe("deepstate reify() SSR Array Handling - Unshift & Reverse", () => {
+describe("DeepState Basic SSR reify() Array Handling - Unshift & Reverse", () => {
   it("allows unshift with batching", () => {
     const { state } = reify({ todos: [2, 3] });
     batch(() => {

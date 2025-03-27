@@ -1,255 +1,766 @@
+// common.js - Core implementation of DeepState with improved API
+// This implementation supports:
+// 1. Unified state and computed definitions
+// 2. Cross-reference support through self/root context
+// 3. Seamless SSR compatibility
+// 4. Deep reactivity with proper reference handling
+
+// Symbol for marking objects as shallow (non-deep reactive)
 const IS_SHALLOW = Symbol("@m5nv/deepstate/is-shallow");
 
-// In SSR mode, we want a mutable signal that stores its value.
-const SSRSignal = (init) => {
-  let _v = init;
+// Symbol for identifying computed properties vs regular methods
+const IS_COMPUTED = Symbol("@m5nv/deepstate/is-computed");
+
+// Symbol for tracking parent references in the state tree
+const PARENT_REF = Symbol("@m5nv/deepstate/parent-ref");
+
+// Symbol for tracking root references in the state tree
+const ROOT_REF = Symbol("@m5nv/deepstate/root-ref");
+
+// SSR-compatible signal implementation for server rendering
+function createSSRSignal(initialValue) {
+  let value = initialValue;
+
   return {
     get value() {
-      return _v;
+      return value;
     },
-    set value(x) {
-      _v = x;
+    set value(newValue) {
+      value = newValue;
     },
+    // These methods ensure proper string coercion during SSR
     toString() {
-      return "" + _v;
+      return String(value);
     },
     valueOf() {
-      return _v;
+      return value;
     },
     [Symbol.toPrimitive]() {
-      return _v;
+      return value;
     },
   };
-};
+}
 
-// In SSR mode, computed values are re-evaluated on each access.
-const SSRComputed = (fn) => ({
-  get value() {
-    return fn();
-  },
-  toString() {
-    return "" + fn();
-  },
-  valueOf() {
-    return fn();
-  },
-  [Symbol.toPrimitive]() {
-    return fn();
-  },
-});
+// SSR-compatible computed implementation
+function createSSRComputed(computeFn, self, root) {
+  return {
+    get value() {
+      try {
+        return computeFn(self, root);
+      } catch (error) {
+        console.error("Error in computed property:", error);
+        return undefined;
+      }
+    },
+    toString() {
+      try {
+        return String(computeFn(self, root));
+      } catch (error) {
+        console.error("Error stringifying computed property:", error);
+        return "";
+      }
+    },
+    valueOf() {
+      try {
+        return computeFn(self, root);
+      } catch (error) {
+        console.error("Error in computed valueOf:", error);
+        return undefined;
+      }
+    },
+    [Symbol.toPrimitive]() {
+      try {
+        return computeFn(self, root);
+      } catch (error) {
+        console.error("Error in computed toPrimitive:", error);
+        return undefined;
+      }
+    },
+  };
+}
 
-export function createDeepStateAPI({ signal, computed, untracked }, esc = "$") {
-  // DEEPSTATE_MODE can be "SPA" or "SSR"
-  // If not set, default to checking window.
-  const mode = typeof process === "undefined"
-    ? "SPA"
-    : process.env.DEEPSTATE_MODE;
-  const isSSR = mode ? mode === "SSR" : (typeof window === "undefined");
-  // console.log({ mode, isSSR });
-  const safeSignal = isSSR ? SSRSignal : signal;
-  const safeComputed = isSSR ? SSRComputed : computed;
+// The main factory function to create DeepState APIs for different signal libraries
+export function createDeepStateAPI(
+  { signal, computed, untracked },
+  escapeHatchPrefix = "$",
+) {
+  // Determine if we're in SSR mode
+  const isSSR = typeof process !== "undefined"
+    ? process.env.DEEPSTATE_MODE === "SSR"
+    : typeof window === "undefined";
+
+  // Use appropriate signal implementation based on environment
+  const createSignal = isSSR ? createSSRSignal : signal;
+  const createComputed = isSSR ? createSSRComputed : computed;
   const safeUntracked = isSSR ? ((fn) => fn()) : untracked;
 
+  // Mark an object for shallow wrapping (non-recursive reactivity)
   function shallow(obj) {
-    obj[IS_SHALLOW] = true;
+    if (obj && typeof obj === "object") {
+      obj[IS_SHALLOW] = true;
+    }
     return obj;
   }
-  function should_proxy(val) {
+
+  // Mark a function as a computed property
+  function computedProp(fn) {
+    fn[IS_COMPUTED] = true;
+    return fn;
+  }
+
+  // Determine if a value should be proxied for reactivity
+  function shouldProxy(value) {
     return (
-      val &&
-      typeof val === "object" &&
-      !val[IS_SHALLOW] &&
-      (val.constructor === Object || Array.isArray(val))
+      value &&
+      typeof value === "object" &&
+      !value[IS_SHALLOW] &&
+      (Array.isArray(value) || value.constructor === Object)
     );
   }
-  function deep_wrap(val, permissive) {
-    return should_proxy(val) ? deep_proxy(val, permissive) : val;
-  }
-  function init_signals(obj, permissive) {
-    // Always add a top-level __version signal, so we can subscribe to coarse changes.
-    const s = {};
-    for (const k in obj) {
-      s[k] = safeSignal(deep_wrap(obj[k], permissive));
+
+  // Process initial state object to identify and separate computed properties
+  function processInitialState(
+    initialState,
+    permissive,
+    parentObj = null,
+    rootObj = null,
+  ) {
+    // Skip processing for shallow or non-object values
+    if (
+      !initialState || typeof initialState !== "object" ||
+      initialState[IS_SHALLOW]
+    ) {
+      return { plainState: initialState, computedDefs: {} };
     }
-    // s.__version = safeSignal(0);
-    // For arrays, we track a version so that repeated changes to indices
-    // can cause multiple re-renders if not batched (matching old behavior).
-    if (Array.isArray(obj)) {
-      s.__version = signal(0);
+
+    const plainState = Array.isArray(initialState) ? [] : {};
+    const computedDefs = {};
+
+    // For internal tracking - set parent and root references
+    if (parentObj) {
+      Object.defineProperty(plainState, PARENT_REF, {
+        value: parentObj,
+        enumerable: false,
+        configurable: true,
+      });
     }
-    return s;
-  }
-  function create_handler(permissive, signals, computedMap = {}, extra = {}) {
-    return {
-      get(t, prop, receiver) {
-        // console.log("get", { t, prop, receiver });
-        if (prop in extra) return extra[prop];
-        if (typeof prop === "string" && prop.startsWith(esc)) {
-          const key = prop.slice(1);
-          if (key in computedMap) {
-            return isSSR ? computedMap[key].value : computedMap[key];
-          }
-          if (!(key in signals) && permissive) {
-            signals[key] = safeSignal(deep_wrap(t[key], permissive));
-          }
-          return isSSR ? signals[key].value : signals[key];
+
+    if (rootObj) {
+      Object.defineProperty(plainState, ROOT_REF, {
+        value: rootObj,
+        enumerable: false,
+        configurable: true,
+      });
+    }
+
+    // Process each property in the initial state
+    for (const [key, value] of Object.entries(initialState)) {
+      // Skip symbol properties
+      if (typeof key === "symbol") continue;
+
+      // Identify computed properties (functions marked with IS_COMPUTED or all functions if we want that behavior)
+      if (
+        typeof value === "function" &&
+        (value[IS_COMPUTED] || key.startsWith("get"))
+      ) {
+        computedDefs[key] = value;
+        continue;
+      }
+
+      // Process nested objects and arrays recursively
+      if (shouldProxy(value)) {
+        const rootReference = rootObj || plainState;
+        const { plainState: nestedPlain, computedDefs: nestedComputed } =
+          processInitialState(
+            value,
+            permissive,
+            plainState,
+            rootReference,
+          );
+
+        plainState[key] = nestedPlain;
+
+        // Add nested computed properties with their full paths
+        for (const [nestedKey, nestedFn] of Object.entries(nestedComputed)) {
+          computedDefs[`${key}.${nestedKey}`] = nestedFn;
         }
-        /// use __version to trigger reactivity on array access
-        /// the top level __version is reserved for coarse reactivity
-        if (Array.isArray(t) && signals.__version) {
-          signals.__version.value;
+      } else {
+        // Direct assignment for primitive values or shallow objects
+        plainState[key] = value;
+      }
+    }
+
+    return { plainState, computedDefs };
+  }
+
+  // Create signals for all properties in the state object
+  function createStateSignals(stateObj, permissive) {
+    const signals = {};
+
+    // Always include a version signal for tracking changes
+    signals.__version = createSignal(0);
+
+    // Create signals for all properties
+    for (const key in stateObj) {
+      if (Object.prototype.hasOwnProperty.call(stateObj, key)) {
+        // Deeply wrap nested objects/arrays unless marked as shallow
+        const value = stateObj[key];
+        const wrappedValue = shouldProxy(value)
+          ? createDeepProxy(
+            value,
+            permissive,
+            undefined,
+            stateObj,
+            getRootObject(stateObj),
+          )
+          : value;
+
+        signals[key] = createSignal(wrappedValue);
+      }
+    }
+
+    return signals;
+  }
+
+  // Get the root object from a nested object using the ROOT_REF symbol
+  function getRootObject(obj) {
+    if (!obj || typeof obj !== "object") return undefined;
+    if (obj[ROOT_REF]) return obj[ROOT_REF];
+    return obj;
+  }
+
+  // Register computed properties with their contexts
+  function registerComputedProperties(
+    stateObj,
+    signals,
+    computedDefs,
+    rootObj,
+  ) {
+    const computedSignals = {};
+
+    // First pass: create all computed signals
+    for (const [path, computeFn] of Object.entries(computedDefs)) {
+      const pathParts = path.split(".");
+      const propName = pathParts[pathParts.length - 1];
+
+      // Find target object for this computed property
+      let target = stateObj;
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const part = pathParts[i];
+        if (/^\d+$/.test(part) && Array.isArray(target)) {
+          target = target[parseInt(part, 10)];
+        } else {
+          target = target[part];
         }
 
-        if (prop in signals) return signals[prop].value;
-        if (prop in computedMap) return computedMap[prop].value;
-        return Reflect.get(t, prop, receiver);
-      },
-      set(t, prop, value) {
-        // console.log("set", { t, prop, value });
-        if (Array.isArray(t) && prop === "length") {
-          t[prop] = value;
-          signals.__version.value++;
-          return true;
+        if (!target) {
+          console.error(`Cannot find target for computed property: ${path}`);
+          break;
         }
-        if (typeof prop === "string" && prop.startsWith(esc)) {
-          const key = prop.slice(1);
-          if (Array.isArray(t[key])) {
-            signals[key].value = deep_wrap(value, permissive);
-            // signals.__version.value++;
+      }
+
+      // Skip if target is not found
+      if (!target) continue;
+
+      // Create a proxy-wrapped version of the state object
+      // This ensures computed properties can access other computed properties
+      const stateProxy = new Proxy(stateObj, {
+        get(t, p) {
+          // First check if it's a computed property
+          if (p in computedSignals) {
+            return computedSignals[p].value;
+          }
+          // Then check regular properties
+          if (p in signals) {
+            return signals[p].value;
+          }
+          // Default behavior for anything else
+          return Reflect.get(t, p);
+        },
+      });
+
+      // Create computed with access to the proxy that can resolve other computed properties
+      const signal = isSSR
+        ? createSSRComputed(
+          () => computeFn.call(target, stateProxy, stateProxy),
+          target,
+          rootObj || stateObj,
+        )
+        : createComputed(() => computeFn.call(target, stateProxy, stateProxy));
+
+      // Store computed signal
+      if (pathParts.length === 1) {
+        computedSignals[propName] = signal;
+      } else {
+        const nestedPath = pathParts.slice(0, -1).join(".");
+        computedSignals[`${nestedPath}.${propName}`] = signal;
+      }
+    }
+
+    return computedSignals;
+  }
+
+  // Create a proxy handler for reactive state
+  function createProxyHandler(
+    stateObj,
+    signals,
+    computedSignals,
+    permissive,
+    parentObj,
+    rootObj,
+  ) {
+    return {
+      get(target, prop, receiver) {
+        // Handle special symbols
+        if (prop === Symbol.toStringTag || prop === Symbol.iterator) {
+          return Reflect.get(target, prop, receiver);
+        }
+
+        // Handle escape hatch access to signals
+        if (typeof prop === "string" && prop.startsWith(escapeHatchPrefix)) {
+          const key = prop.slice(escapeHatchPrefix.length);
+
+          // Access to computed signal
+          if (key in computedSignals) {
+            // In SSR mode, return the unwrapped value directly
+            return isSSR ? computedSignals[key].value : computedSignals[key];
+          }
+
+          // Direct access to regular signal
+          if (key in signals) {
+            // In SSR mode, return the unwrapped value directly
+            return isSSR ? signals[key].value : signals[key];
+          }
+
+          // Handle nested computed properties
+          for (const path in computedSignals) {
+            if (path.endsWith(`.${key}`)) {
+              return isSSR
+                ? computedSignals[path].value
+                : computedSignals[path];
+            }
+          }
+
+          // No signal found
+          if (!permissive) {
+            console.warn(`No signal found for escape hatch property: ${key}`);
+          }
+
+          return undefined;
+        }
+
+        // For non-escape-hatch access:
+
+        // 1. Handle special built-in methods
+        if (prop === "toJSON") {
+          return function () {
+            return toJSON(target, signals, computedSignals);
+          };
+        }
+
+        // For arrays, track access via __version to ensure reactivity
+        if (Array.isArray(target) && signals.__version) {
+          signals.__version.value; // Read to establish dependency
+        }
+
+        // 2. Handle computed property access
+        if (prop in computedSignals) {
+          return computedSignals[prop].value;
+        }
+
+        // 3. Handle signal access - return the current value
+        if (prop in signals) {
+          return signals[prop].value;
+        }
+
+        // Handle nested computed properties
+        for (const path in computedSignals) {
+          if (path.endsWith(`.${prop}`)) {
+            return computedSignals[path].value;
+          }
+        }
+
+        // 4. Handle parent/root references
+        if (prop === PARENT_REF) {
+          return parentObj;
+        }
+
+        if (prop === ROOT_REF) {
+          return rootObj || target;
+        }
+
+        // 5. Default property access
+        return Reflect.get(target, prop, receiver);
+      },
+
+      set(target, prop, value, receiver) {
+        // Handle escape hatch property assignment in SSR mode
+        if (typeof prop === "string" && prop.startsWith(escapeHatchPrefix)) {
+          const key = prop.slice(escapeHatchPrefix.length);
+
+          // In SSR mode, allow direct assignment of primitive values or arrays to the signal value
+          if (isSSR && key in signals) {
+            // If trying to assign an object with a value property, reject it
+            // This catches attempts to directly assign to the signal object
+            if (value && typeof value === "object" && "value" in value) {
+              throw new Error(
+                `Cannot directly set '${prop}'. Use the signal's 'value' property.`,
+              );
+            }
+
+            // Otherwise, allow direct value assignments in SSR mode
+            const wrappedValue = shouldProxy(value)
+              ? createDeepProxy(
+                value,
+                permissive,
+                undefined,
+                target,
+                rootObj || target,
+              )
+              : value;
+
+            signals[key].value = wrappedValue;
+            target[key] = value;
+
+            // Increment version
+            if (signals.__version) {
+              signals.__version.value++;
+            }
+
             return true;
           }
-          throw Error(
+
+          // In non-SSR mode, throw error to enforce .value usage
+          throw new Error(
             `Cannot directly set '${prop}'. Use the signal's 'value' property.`,
           );
         }
-        if (
-          Array.isArray(t[prop]) &&
-          Array.isArray(value) &&
-          !t[prop][IS_SHALLOW]
-        ) {
-          throw Error(
-            `Whole array replacement is disallowed for deep arrays. Use the '${esc}' escape hatch.`,
-          );
-        }
-        if (Array.isArray(t) && Number.isInteger(Number(prop))) {
-          t[prop] = value;
-          signals[prop] = safeSignal(deep_wrap(value, permissive));
-          signals.__version.value++;
-          return true;
-        }
-        if (typeof value === "function") {
-          throw Error(
-            "Functions are not allowed as state properties in DeepState.",
-          );
-        }
-        if (prop in signals) {
-          signals[prop].value = deep_wrap(value, permissive);
-          /// needed for svelte store adapter to work
-          if (signals.__version) signals.__version.value++;
-          return true;
-        }
-        if (!permissive) {
-          throw Error(`Cannot add new property '${prop}' in strict mode.`);
-        }
-        signals[prop] = safeSignal(deep_wrap(value, permissive));
-        t[prop] = value;
-        if (signals.__version) signals.__version.value++;
-        return true;
-      },
-      deleteProperty(t, prop) {
-        if (Array.isArray(t) && Number.isInteger(Number(prop))) {
-          const result = Reflect.deleteProperty(t, prop);
-          if (signals[prop]) signals[prop].value = undefined;
-          signals.__version.value++;
+
+        // Special handling for array length
+        if (Array.isArray(target) && prop === "length") {
+          const result = Reflect.set(target, prop, value, receiver);
+          if (signals.__version) {
+            signals.__version.value++;
+          }
           return result;
         }
-        const result = Reflect.deleteProperty(t, prop);
-        if (signals[prop]) signals[prop].value = undefined;
+
+        // Prevent array replacement for deep arrays
+        if (
+          Array.isArray(target[prop]) &&
+          Array.isArray(value) &&
+          !target[prop][IS_SHALLOW]
+        ) {
+          throw new Error(
+            `Whole array replacement is disallowed for deep arrays. Use the '${escapeHatchPrefix}' escape hatch.`,
+          );
+        }
+
+        // Handle array element updates
+        if (
+          Array.isArray(target) && typeof prop === "string" &&
+          /^\d+$/.test(prop)
+        ) {
+          const index = parseInt(prop, 10);
+
+          // Wrap the value if it's a complex object
+          const wrappedValue = shouldProxy(value)
+            ? createDeepProxy(
+              value,
+              permissive,
+              undefined,
+              target,
+              rootObj || target,
+            )
+            : value;
+
+          // Update or create signal for this index
+          if (index in signals) {
+            signals[index].value = wrappedValue;
+          } else {
+            signals[index] = createSignal(wrappedValue);
+          }
+
+          // Update target
+          target[index] = value;
+
+          // Increment version to trigger reactivity
+          if (signals.__version) {
+            signals.__version.value++;
+          }
+
+          return true;
+        }
+
+        // Reject function assignments
+        if (typeof value === "function" && !value[IS_COMPUTED]) {
+          throw new Error(
+            "Functions are not allowed as state properties in DeepState. Use computedProp() to mark computed properties.",
+          );
+        }
+
+        // Add this block for computed property assignments
+        if (typeof value === "function" && value[IS_COMPUTED]) {
+          // Handle dynamic computed property assignment
+          const computedSignal = isSSR
+            ? createSSRComputed(
+              () => value.call(target, receiver, rootObj || target),
+              target,
+              rootObj || target,
+            )
+            : createComputed(() =>
+              value.call(target, receiver, rootObj || target)
+            );
+
+          // Store in computedSignals
+          computedSignals[prop] = computedSignal;
+
+          // Don't store the function itself in the target
+          // Just store a placeholder so the property exists
+          target[prop] = { [IS_COMPUTED]: true };
+
+          // Increment version for coarse-grained reactivity
+          if (signals.__version) {
+            signals.__version.value++;
+          }
+
+          return true;
+        }
+
+        // Handle existing property updates
+        if (prop in signals) {
+          const wrappedValue = shouldProxy(value)
+            ? createDeepProxy(
+              value,
+              permissive,
+              undefined,
+              target,
+              rootObj || target,
+            )
+            : value;
+
+          signals[prop].value = wrappedValue;
+
+          // Still update the underlying object for consistency
+          target[prop] = value;
+
+          // Increment version for coarse-grained reactivity
+          if (signals.__version) {
+            signals.__version.value++;
+          }
+
+          return true;
+        }
+
+        // Handle new property addition
+        if (!permissive && !(prop in target)) {
+          throw new Error(`Cannot add new property '${prop}' in strict mode.`);
+        }
+
+        // Create new signal for property
+        const wrappedValue = shouldProxy(value)
+          ? createDeepProxy(
+            value,
+            permissive,
+            undefined,
+            target,
+            rootObj || target,
+          )
+          : value;
+
+        signals[prop] = createSignal(wrappedValue);
+        target[prop] = value;
+
+        // Increment version
+        if (signals.__version) {
+          signals.__version.value++;
+        }
+
+        return true;
+      },
+
+      deleteProperty(target, prop) {
+        // Handle array element deletion
+        if (
+          Array.isArray(target) && typeof prop === "string" &&
+          /^\d+$/.test(prop)
+        ) {
+          const result = Reflect.deleteProperty(target, prop);
+
+          if (signals[prop]) {
+            signals[prop].value = undefined;
+          }
+
+          // Increment version
+          if (signals.__version) {
+            signals.__version.value++;
+          }
+
+          return result;
+        }
+
+        // Handle regular property deletion
+        const result = Reflect.deleteProperty(target, prop);
+
+        if (signals[prop]) {
+          signals[prop].value = undefined;
+        }
+
         return result;
       },
-      ownKeys(t) {
-        let keys = Reflect.ownKeys(t);
-        if (Object.keys(computedMap).length > 0) {
-          keys = keys.concat(Object.keys(computedMap))
-            .filter((k) => k !== "toJSON" && k !== "snapshot");
-        }
-        return keys;
-      },
-      getOwnPropertyDescriptor(t, prop) {
-        const desc = Reflect.getOwnPropertyDescriptor(t, prop);
-        return desc !== undefined
-          ? desc
-          : { enumerable: true, configurable: true };
-      },
-    };
-  }
-  function deep_proxy(obj, permissive) {
-    const signals = init_signals(obj, permissive);
-    return new Proxy(obj, create_handler(permissive, signals));
-  }
-  function create_deepstate(initial, derived = {}, permissive = false) {
-    if (typeof initial !== "object" || initial === null) {
-      throw TypeError(
-        "'initial' must be a non-null object. Use signal(...) for simple types.",
-      );
-    }
-    const signals = init_signals(initial, permissive);
-    // Always add a top-level __version signal, so we can subscribe to coarse changes.
-    signals.__version = safeSignal(0);
 
-    const computed_signals = {};
-    const snapshot = (for_json = false) => {
-      return safeUntracked(() => {
-        const plain = {};
-        for (const key in signals) {
-          if (key.startsWith(esc) || key === "__version") continue;
-          const val = signals[key].value;
-          if (typeof val !== "function") plain[key] = val;
-        }
-        if (!for_json) {
-          for (const ckey in computed_signals) {
-            const cval = computed_signals[ckey].value;
-            if (typeof cval !== "function") plain[ckey] = cval;
+      ownKeys(target) {
+        // Include computed properties in keys
+        let keys = Reflect.ownKeys(target);
+
+        // Add computed property keys
+        for (const key in computedSignals) {
+          if (!key.includes(".")) { // Only top-level computed properties
+            keys.push(key);
           }
         }
-        return plain;
-      });
+
+        // Filter out internal props
+        return keys.filter((k) =>
+          k !== "toJSON" &&
+          k !== PARENT_REF &&
+          k !== ROOT_REF &&
+          k !== "__version"
+        );
+      },
+
+      getOwnPropertyDescriptor(target, prop) {
+        // Check if it's a computed property
+        if (prop in computedSignals && !prop.includes(".")) {
+          return {
+            enumerable: true,
+            configurable: true,
+            get: () => computedSignals[prop].value,
+          };
+        }
+
+        return Reflect.getOwnPropertyDescriptor(target, prop);
+      },
     };
-    const to_json = () => snapshot(true);
-    const state_proxy = new Proxy(
-      initial,
-      create_handler(permissive, signals, computed_signals, {
-        toJSON: to_json,
-        snapshot,
-      }),
-    );
-    Object.keys(derived).forEach((key) => {
-      computed_signals[key] = safeComputed(() => derived[key](state_proxy));
-    });
-    return { proxy: state_proxy, signals, computed_signals };
   }
-  function reify(initial, computed_fns = {}, permissive = false) {
-    const { proxy, signals } = create_deepstate(
-      initial,
-      computed_fns,
+
+  // Create JSON representation of the state
+  function toJSON(target, signals, computedSignals) {
+    return safeUntracked(() => {
+      const result = {};
+
+      // Process regular properties
+      for (const key in signals) {
+        if (
+          key !== "__version" &&
+          !key.startsWith(escapeHatchPrefix) &&
+          typeof signals[key].value !== "function"
+        ) {
+          result[key] = signals[key].value;
+        }
+      }
+
+      return result;
+    });
+  }
+
+  // Create a deep proxy for an object
+  function createDeepProxy(obj, permissive, signalStore, parentObj, rootObj) {
+    // Skip for shallow objects
+    if (obj && obj[IS_SHALLOW]) {
+      return obj;
+    }
+
+    // Process the object and extract computed properties
+    const { plainState, computedDefs } = processInitialState(
+      obj,
+      permissive,
+      parentObj,
+      rootObj,
+    );
+
+    // Create signals for the state
+    const signals = signalStore || createStateSignals(plainState, permissive);
+
+    // Register computed properties
+    const computedSignals = registerComputedProperties(
+      plainState,
+      signals,
+      computedDefs,
+      rootObj || plainState,
+    );
+
+    // Create and return the proxy
+    return new Proxy(
+      plainState,
+      createProxyHandler(
+        plainState,
+        signals,
+        computedSignals,
+        permissive,
+        parentObj,
+        rootObj,
+      ),
+    );
+  }
+
+  // The main reify function - creates a reactive state store
+  function reify(initialState, options = { permissive: false }) {
+    if (!initialState || typeof initialState !== "object") {
+      throw new TypeError(
+        "initialState must be a non-null object. Use signal(...) for simple types.",
+      );
+    }
+    const { permissive } = options;
+    // Process initial state and computed properties
+    const { plainState, computedDefs } = processInitialState(
+      initialState,
       permissive,
     );
-    function attach(actions = {}) {
-      store.actions = Object.fromEntries(
-        Object.entries(actions).map(([name, fn]) => [
-          name,
-          (...args) => fn(store.state, ...args),
-        ]),
-      );
-      return store;
-    }
+
+    // Create signals for state properties
+    const signals = createStateSignals(plainState, permissive);
+
+    // Register computed properties
+    const computedSignals = registerComputedProperties(
+      plainState,
+      signals,
+      computedDefs,
+    );
+
+    // Create the state proxy
+    const stateProxy = new Proxy(
+      plainState,
+      createProxyHandler(plainState, signals, computedSignals, permissive),
+    );
+
+    // Create the store object
     const store = {
-      state: proxy,
+      state: stateProxy,
       __version: signals.__version,
-      attach,
-      toJSON: () => proxy.toJSON(),
+      toJSON: () => stateProxy.toJSON(),
     };
+
+    // Method to attach actions to the store
+    store.attach = function (actions = {}) {
+      const boundActions = {};
+
+      // Bind each action to the state
+      for (const [name, fn] of Object.entries(actions)) {
+        boundActions[name] = (...args) => fn(store.state, ...args);
+      }
+
+      store.actions = boundActions;
+      return store;
+    };
+
     return store;
   }
-  return { shallow, reify };
+
+  // Return the public API
+  return {
+    shallow,
+    computedProp,
+    reify,
+  };
 }
