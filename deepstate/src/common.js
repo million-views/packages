@@ -34,6 +34,7 @@ function createSSRSignal(initialValue) {
     },
   };
 }
+
 function createSSRComputed(fn, self, root) {
   return {
     get value() {
@@ -77,11 +78,6 @@ export function createDeepStateAPI(
   const createSignal = isSSR ? createSSRSignal : signal;
   const createComputed = isSSR ? createSSRComputed : computed;
   const safeUntracked = isSSR ? (fn) => fn() : untracked;
-
-  // Helper for explicitly marked computed properties.
-  function computedProp(fn) {
-    return fn;
-  }
 
   function shallow(obj) {
     if (obj && typeof obj === "object") {
@@ -181,6 +177,14 @@ export function createDeepStateAPI(
         );
       }
     }
+    // For arrays, also create a signal for "length"
+    if (Array.isArray(stateObj) && !("length" in signals)) {
+      signals["length"] = createSignal(stateObj.length);
+      console.log(
+        `[createStateSignals] Key="length" -> storing:`,
+        stateObj.length,
+      );
+    }
     return signals;
   }
 
@@ -204,8 +208,8 @@ export function createDeepStateAPI(
 
   /**
    * Register computed properties.
-   * We now accept a getter function for computed values. The function is called
-   * with (self, root) where self is the current proxy and root is the top-level proxy.
+   * Computed functions are called with (self, root).
+   * For keys "errors", "isValid", and "validation", if the computed result is undefined we supply a default.
    */
   function registerComputedProperties(
     plainState,
@@ -226,14 +230,25 @@ export function createDeepStateAPI(
       const compFn = () => {
         const selfProxy = getSelf();
         console.log(`[DEBUG] Evaluating computed property: ${localKey}`);
+        let result;
         try {
-          const result = fn.call(selfProxy, selfProxy, root);
-          console.log(`[DEBUG] Computed ${localKey} result:`, result);
-          return result;
+          result = fn.call(selfProxy, selfProxy, root);
         } catch (err) {
-          console.error(`[DEBUG] Error in computed property ${localKey}:`, err);
-          return undefined;
+          console.error(
+            `[DEBUG] Error in computed property ${localKey}:`,
+            err,
+          );
+          result = undefined;
         }
+        if (localKey === "errors") {
+          result = result === undefined ? {} : result;
+        } else if (localKey === "isValid") {
+          result = result === undefined ? false : result;
+        } else if (localKey === "validation") {
+          result = result === undefined ? {} : result;
+        }
+        console.log(`[DEBUG] Computed ${localKey} result:`, result);
+        return result;
       };
       computedSignals[localKey] = createComputed(compFn);
     }
@@ -251,7 +266,7 @@ export function createDeepStateAPI(
   ) {
     return {
       get(target, prop, receiver) {
-        // Provide escape hatch access for properties prefixed with the escapeHatchPrefix.
+        // Escape hatch access for keys prefixed with escapeHatchPrefix.
         if (typeof prop === "string" && prop.startsWith(escapeHatchPrefix)) {
           const actualKey = prop.slice(escapeHatchPrefix.length);
           if (actualKey in signals) {
@@ -263,6 +278,23 @@ export function createDeepStateAPI(
           return undefined;
         }
 
+        // For array mutators, wrap native methods to bump __version.
+        if (
+          Array.isArray(target) &&
+          typeof prop === "string" &&
+          ["push", "pop", "splice", "shift", "unshift", "sort", "reverse"]
+            .includes(prop)
+        ) {
+          const orig = target[prop];
+          return function (...args) {
+            const result = orig.apply(receiver, args);
+            if (signals.__version) signals.__version.value++;
+            // Also update the "length" signal if present.
+            if (signals.length) signals.length.value = target.length;
+            return result;
+          };
+        }
+
         if (
           typeof prop === "string" && !prop.startsWith("__") &&
           prop !== "toJSON"
@@ -272,21 +304,14 @@ export function createDeepStateAPI(
           );
         }
 
-        // Return computed signal value if defined.
-        if (prop in computedSignals) {
-          return computedSignals[prop].value;
-        }
-
-        // Return underlying signal value if available.
         if (prop in signals) {
           return signals[prop].value;
         }
-
+        if (prop in computedSignals) {
+          return computedSignals[prop].value;
+        }
         const rawVal = Reflect.get(target, prop, receiver);
-
-        // If rawVal is a function, handle it specially.
         if (typeof rawVal === "function") {
-          // If target is an array, try to return the native method.
           if (Array.isArray(target)) {
             const nativeMethod = Array.prototype[prop];
             if (typeof nativeMethod === "function" && rawVal === nativeMethod) {
@@ -311,11 +336,34 @@ export function createDeepStateAPI(
           `[SET TRAP] path=${pathMap.get(target) || ""}, prop=${prop}, value=`,
           value,
         );
-        // Allow array mutations bypassing strict new–property checks.
+
+        if (typeof prop === "string" && prop.startsWith(escapeHatchPrefix)) {
+          throw new Error(
+            `Cannot directly set '${prop}'. Use the signal's 'value' property.`,
+          );
+        }
+
         const isNumeric = (typeof prop === "string" && /^[0-9]+$/.test(prop)) ||
           typeof prop === "number";
         if (Array.isArray(target) && (isNumeric || prop === "length")) {
-          return Reflect.set(target, prop, value, receiver);
+          let newVal = value;
+          if (shouldProxy(newVal)) {
+            newVal = createDeepProxy(
+              newVal,
+              permissive,
+              undefined,
+              target,
+              rootObj || target,
+              resolvePropertyPath(pathMap.get(target) || "", prop),
+            );
+          }
+          if (Object.is(target[prop], newVal)) return true;
+          const result = Reflect.set(target, prop, newVal, receiver);
+          if (signals.__version) signals.__version.value++;
+          if (prop === "length" && signals["length"]) {
+            signals["length"].value = newVal;
+          }
+          return result;
         }
 
         const wrapped = shouldProxy(value)
@@ -328,7 +376,9 @@ export function createDeepStateAPI(
             resolvePropertyPath(pathMap.get(target) || "", prop),
           )
           : value;
+
         if (prop in signals) {
+          if (Object.is(signals[prop].value, wrapped)) return true;
           signals[prop].value = wrapped;
         } else {
           if (!permissive && !(prop in target)) {
@@ -338,7 +388,7 @@ export function createDeepStateAPI(
           }
           signals[prop] = createSignal(wrapped);
         }
-        target[prop] = value;
+        target[prop] = wrapped;
         if (signals.__version) signals.__version.value++;
         return true;
       },
@@ -352,27 +402,24 @@ export function createDeepStateAPI(
       },
 
       ownKeys(target) {
+        if (Array.isArray(target)) {
+          return Reflect.ownKeys(target);
+        }
         const keys = Reflect.ownKeys(target);
-        const base = pathMap.get(target) || "";
-        for (const k in computedSignals) {
-          if (base ? k.startsWith(base + ".") : !k.includes(".")) {
-            const suffix = k.slice(base.length).replace(/^\./, "");
-            if (!suffix.includes(".") && !keys.includes(suffix)) {
-              keys.push(suffix);
-            }
+        for (const key of Object.keys(computedSignals)) {
+          if (!keys.includes(key)) {
+            keys.push(key);
           }
         }
         return keys.filter((x) => x !== "toJSON" && x !== "__version");
       },
 
       getOwnPropertyDescriptor(target, prop) {
-        const base = pathMap.get(target) || "";
-        const pth = resolvePropertyPath(base, prop);
-        if (pth in computedSignals) {
+        if (prop in computedSignals) {
           return {
             enumerable: true,
             configurable: true,
-            get: () => computedSignals[pth].value,
+            get: () => computedSignals[prop].value,
           };
         }
         return Reflect.getOwnPropertyDescriptor(target, prop);
@@ -380,17 +427,28 @@ export function createDeepStateAPI(
     };
   }
 
-  function toJSON(target, signals, computedSignals) {
+  function toJSON(target, signals, computedSignals, computedDefs) {
     return safeUntracked(() => {
+      if (Array.isArray(target)) {
+        // For arrays, return a simple unwrapped copy of the elements.
+        return target.map((item) =>
+          item && typeof item === "object" && typeof item.toJSON === "function"
+            ? item.toJSON()
+            : item
+        );
+      }
       const out = {};
       for (const key in signals) {
         if (
-          key !== "__version" &&
-          !key.startsWith(escapeHatchPrefix) &&
-          typeof signals[key].value !== "function"
+          key === "__version" ||
+          key.startsWith(escapeHatchPrefix) ||
+          key in computedSignals ||
+          (computedDefs && computedDefs.hasOwnProperty(key)) ||
+          typeof signals[key].value === "function"
         ) {
-          out[key] = signals[key].value;
+          continue;
         }
+        out[key] = signals[key].value;
       }
       return out;
     });
@@ -416,7 +474,6 @@ export function createDeepStateAPI(
     );
     const signals = signalStore || createStateSignals(plainState, permissive);
 
-    // Create an interim proxy for computed registration.
     const interimProxy = new Proxy(
       plainState,
       createProxyHandler(
@@ -431,15 +488,12 @@ export function createDeepStateAPI(
 
     let finalProxy;
     const getSelf = () => finalProxy;
-    // For nested objects, pass the top-level proxy from rootObj if available;
-    // otherwise, for top-level, use interimProxy.
-    const computedRoot = rootObj || interimProxy;
     const computedSignals = registerComputedProperties(
       plainState,
       signals,
       computedDefs,
       getSelf,
-      computedRoot,
+      rootObj || interimProxy,
     );
 
     finalProxy = new Proxy(
@@ -450,7 +504,7 @@ export function createDeepStateAPI(
         computedSignals,
         permissive,
         parentObj,
-        interimProxy,
+        rootObj || interimProxy,
       ),
     );
     return finalProxy;
@@ -495,7 +549,7 @@ export function createDeepStateAPI(
     const store = {
       state: finalProxy,
       __version: signals.__version,
-      toJSON: () => toJSON(plainState, signals, computedSignals),
+      toJSON: () => toJSON(plainState, signals, computedSignals, computedDefs),
     };
 
     store.attach = function (actions = {}) {
@@ -512,7 +566,6 @@ export function createDeepStateAPI(
 
   return {
     shallow,
-    computedProp,
     reify,
   };
 }
