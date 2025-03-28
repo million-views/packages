@@ -204,9 +204,8 @@ export function createDeepStateAPI(
 
   /**
    * Register computed properties.
-   * We now accept a getter function getSelf() for the current proxy
-   * and a 'root' parameter (the top-level proxy) so that computed functions
-   * get the correct self and root.
+   * We now accept a getter function for computed values. The function is called
+   * with (self, root) where self is the current proxy and root is the top-level proxy.
    */
   function registerComputedProperties(
     plainState,
@@ -228,15 +227,11 @@ export function createDeepStateAPI(
         const selfProxy = getSelf();
         console.log(`[DEBUG] Evaluating computed property: ${localKey}`);
         try {
-          // Pass self as the current proxy and root as the top-level state.
           const result = fn.call(selfProxy, selfProxy, root);
           console.log(`[DEBUG] Computed ${localKey} result:`, result);
           return result;
         } catch (err) {
-          console.error(
-            `[DEBUG] Error in computed property ${localKey}:`,
-            err,
-          );
+          console.error(`[DEBUG] Error in computed property ${localKey}:`, err);
           return undefined;
         }
       };
@@ -256,9 +251,20 @@ export function createDeepStateAPI(
   ) {
     return {
       get(target, prop, receiver) {
+        // Provide escape hatch access for properties prefixed with the escapeHatchPrefix.
+        if (typeof prop === "string" && prop.startsWith(escapeHatchPrefix)) {
+          const actualKey = prop.slice(escapeHatchPrefix.length);
+          if (actualKey in signals) {
+            return signals[actualKey];
+          }
+          if (actualKey in computedSignals) {
+            return computedSignals[actualKey];
+          }
+          return undefined;
+        }
+
         if (
-          typeof prop === "string" &&
-          !prop.startsWith("__") &&
+          typeof prop === "string" && !prop.startsWith("__") &&
           prop !== "toJSON"
         ) {
           console.log(
@@ -278,9 +284,9 @@ export function createDeepStateAPI(
 
         const rawVal = Reflect.get(target, prop, receiver);
 
-        // If rawVal is a function, decide how to handle it.
+        // If rawVal is a function, handle it specially.
         if (typeof rawVal === "function") {
-          // If target is an array, check if a native method exists on Array.prototype.
+          // If target is an array, try to return the native method.
           if (Array.isArray(target)) {
             const nativeMethod = Array.prototype[prop];
             if (typeof nativeMethod === "function" && rawVal === nativeMethod) {
@@ -299,11 +305,19 @@ export function createDeepStateAPI(
         }
         return rawVal;
       },
-      set(target, prop, value) {
+
+      set(target, prop, value, receiver) {
         console.log(
           `[SET TRAP] path=${pathMap.get(target) || ""}, prop=${prop}, value=`,
           value,
         );
+        // Allow array mutations bypassing strict new–property checks.
+        const isNumeric = (typeof prop === "string" && /^[0-9]+$/.test(prop)) ||
+          typeof prop === "number";
+        if (Array.isArray(target) && (isNumeric || prop === "length")) {
+          return Reflect.set(target, prop, value, receiver);
+        }
+
         const wrapped = shouldProxy(value)
           ? createDeepProxy(
             value,
@@ -328,6 +342,7 @@ export function createDeepStateAPI(
         if (signals.__version) signals.__version.value++;
         return true;
       },
+
       deleteProperty(target, prop) {
         console.log("[DELETE TRAP]", prop, "on", pathMap.get(target));
         const r = Reflect.deleteProperty(target, prop);
@@ -335,6 +350,7 @@ export function createDeepStateAPI(
         if (signals.__version) signals.__version.value++;
         return r;
       },
+
       ownKeys(target) {
         const keys = Reflect.ownKeys(target);
         const base = pathMap.get(target) || "";
@@ -348,6 +364,7 @@ export function createDeepStateAPI(
         }
         return keys.filter((x) => x !== "toJSON" && x !== "__version");
       },
+
       getOwnPropertyDescriptor(target, prop) {
         const base = pathMap.get(target) || "";
         const pth = resolvePropertyPath(base, prop);
@@ -478,7 +495,7 @@ export function createDeepStateAPI(
     const store = {
       state: finalProxy,
       __version: signals.__version,
-      toJSON: () => finalProxy.toJSON(),
+      toJSON: () => toJSON(plainState, signals, computedSignals),
     };
 
     store.attach = function (actions = {}) {
