@@ -97,7 +97,7 @@ export function createDeepStateAPI(
 
   /**
    * Process the initial state:
-   * - Auto-detect any function with 1 or 2 arguments as a computed property.
+   * - Treat every function property as a computed property.
    * - Immediately proxy nested objects/arrays.
    */
   function processInitialState(
@@ -135,18 +135,18 @@ export function createDeepStateAPI(
     pathMap.set(plainState, parentPath);
 
     for (const [key, val] of Object.entries(initialState)) {
-      if (typeof key === "symbol") continue;
-      const propPath = parentPath ? `${parentPath}.${key}` : key;
-
-      if (typeof val === "function" && (val.length === 1 || val.length === 2)) {
+      if (typeof val === "function") {
         console.log(
-          `[DEBUG] Auto-detected computed property: ${key} (path: ${propPath})`,
+          `[DEBUG] Auto-detected computed property: ${key} (path: ${
+            parentPath ? `${parentPath}.${key}` : key
+          })`,
         );
         computedDefs[key] = val;
         continue;
       }
 
       if (shouldProxy(val)) {
+        const propPath = parentPath ? `${parentPath}.${key}` : key;
         console.log(`[DEBUG] Creating nested proxy for path: ${propPath}`);
         const proxied = createDeepProxy(
           val,
@@ -177,7 +177,6 @@ export function createDeepStateAPI(
         );
       }
     }
-    // For arrays, also create a signal for "length"
     if (Array.isArray(stateObj) && !("length" in signals)) {
       signals["length"] = createSignal(stateObj.length);
       console.log(
@@ -194,23 +193,7 @@ export function createDeepStateAPI(
     return obj;
   }
 
-  // Walk a dot-delimited path from the root.
-  function getProxyForPath(rootProxy, path) {
-    if (!path) return rootProxy;
-    const segs = path.split(".");
-    let cur = rootProxy;
-    for (const s of segs) {
-      if (cur == null) break;
-      cur = cur[s];
-    }
-    return cur;
-  }
-
-  /**
-   * Register computed properties.
-   * Computed functions are called with (self, root).
-   * For keys "errors", "isValid", and "validation", if the computed result is undefined we supply a default.
-   */
+  // Register computed properties. Now we accept a "root" parameter.
   function registerComputedProperties(
     plainState,
     signals,
@@ -266,6 +249,20 @@ export function createDeepStateAPI(
   ) {
     return {
       get(target, prop, receiver) {
+        // For array numeric indices, return the raw element.
+        if (
+          Array.isArray(target) &&
+          typeof prop === "string" &&
+          /^\d+$/.test(prop)
+        ) {
+          return Reflect.get(target, prop, receiver);
+        }
+
+        // Do not log if property is "toJSON"
+        if (prop === "toJSON") {
+          return Reflect.get(target, prop, receiver);
+        }
+
         // Escape hatch access for keys prefixed with escapeHatchPrefix.
         if (typeof prop === "string" && prop.startsWith(escapeHatchPrefix)) {
           const actualKey = prop.slice(escapeHatchPrefix.length);
@@ -278,18 +275,19 @@ export function createDeepStateAPI(
           return undefined;
         }
 
-        // For array mutators, wrap native methods to bump __version.
+        // For array mutators, wrap native methods.
         if (
           Array.isArray(target) &&
           typeof prop === "string" &&
           ["push", "pop", "splice", "shift", "unshift", "sort", "reverse"]
-            .includes(prop)
+            .includes(
+              prop,
+            )
         ) {
           const orig = target[prop];
           return function (...args) {
             const result = orig.apply(receiver, args);
             if (signals.__version) signals.__version.value++;
-            // Also update the "length" signal if present.
             if (signals.length) signals.length.value = target.length;
             return result;
           };
@@ -361,9 +359,22 @@ export function createDeepStateAPI(
           const result = Reflect.set(target, prop, newVal, receiver);
           if (signals.__version) signals.__version.value++;
           if (prop === "length" && signals["length"]) {
-            signals["length"].value = newVal;
+            signals["length"].value = target.length;
           }
           return result;
+        }
+
+        // Prevent whole array replacement for deep arrays.
+        if (
+          prop in target &&
+          Array.isArray(target[prop]) &&
+          !target[prop][IS_SHALLOW] &&
+          Array.isArray(value) &&
+          value !== target[prop]
+        ) {
+          throw new Error(
+            "Whole array replacement is disallowed for deep arrays",
+          );
         }
 
         const wrapped = shouldProxy(value)
@@ -406,7 +417,7 @@ export function createDeepStateAPI(
           return Reflect.ownKeys(target);
         }
         const keys = Reflect.ownKeys(target);
-        for (const key of Object.keys(computedSignals)) {
+        for (const key of Object.keys(computedSignals || {})) {
           if (!keys.includes(key)) {
             keys.push(key);
           }
@@ -415,7 +426,7 @@ export function createDeepStateAPI(
       },
 
       getOwnPropertyDescriptor(target, prop) {
-        if (prop in computedSignals) {
+        if (computedSignals && prop in computedSignals) {
           return {
             enumerable: true,
             configurable: true,
@@ -430,7 +441,6 @@ export function createDeepStateAPI(
   function toJSON(target, signals, computedSignals, computedDefs) {
     return safeUntracked(() => {
       if (Array.isArray(target)) {
-        // For arrays, return a simple unwrapped copy of the elements.
         return target.map((item) =>
           item && typeof item === "object" && typeof item.toJSON === "function"
             ? item.toJSON()
@@ -488,6 +498,7 @@ export function createDeepStateAPI(
 
     let finalProxy;
     const getSelf = () => finalProxy;
+    // Pass the top-level root (or interim proxy if none) for nested computed properties.
     const computedSignals = registerComputedProperties(
       plainState,
       signals,
@@ -545,6 +556,14 @@ export function createDeepStateAPI(
         rootProxy,
       ),
     );
+
+    // Attach custom toJSON directly on the target (plainState) so it’s visible to JSON.stringify.
+    Object.defineProperty(plainState, "toJSON", {
+      value: () => toJSON(plainState, signals, computedSignals, computedDefs),
+      enumerable: false,
+      configurable: true,
+      writable: false,
+    });
 
     const store = {
       state: finalProxy,
