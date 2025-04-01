@@ -1,11 +1,9 @@
 <script>
-  // import { reify } from '@m5nv/deepstate/svelte';
-  import { simpleDeepProxy } from '$lib';
+  import { reify } from '@m5nv/deepstate/svelte';
   import Task from './task.svelte';
   import rawTasks from './tasks.js';
 
   const isEnabled = (self, root) => {
-    // console.log("Computing isEnabled for task", self.id, "state:", self.state);
     if (!self.requirements || self.requirements.length === 0) return true;
     return self.requirements.every((req) => {
       const requiredTask = root.tasks.find((t) => t.id === req.requiredTaskId);
@@ -22,11 +20,11 @@
     isEnabled,
   }));
 
-  const store = simpleDeepProxy({ tasks: tasksWithState }, true, '_');
+  const store = reify({ tasks: tasksWithState });
 </script>
 
 <ol>
-  {#each store.tasks as task (task.id)}
+  {#each store.state.tasks as task (task.id)}
     <Task {task} />
   {/each}
 </ol>

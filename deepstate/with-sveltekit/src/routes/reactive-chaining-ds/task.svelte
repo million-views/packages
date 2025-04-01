@@ -9,11 +9,6 @@
     ongoing: 'lightblue',
     completed: 'lightgreen',
   };
-  effect(() => {
-    // This effect subscribes to task.state, and works!
-    // it also works if we console log _state.value!!
-    console.log('Svelte Effect: state changed to', state.value);
-  });
 </script>
 
 <li

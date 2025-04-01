@@ -1,5 +1,5 @@
 // src/core.js uses @preact/signals-core
-import { computed, signal, untracked } from "@preact/signals-core";
+import { batch, computed, signal, untracked } from "@preact/signals-core";
 import { createDeepStateAPIv2 } from "./common.js";
 
 const { shallow, reify } = createDeepStateAPIv2({
@@ -7,7 +7,7 @@ const { shallow, reify } = createDeepStateAPIv2({
   computed,
   untracked,
   batch,
-});
+}, "_");
 
 // Re-export them
 export { reify, shallow };
