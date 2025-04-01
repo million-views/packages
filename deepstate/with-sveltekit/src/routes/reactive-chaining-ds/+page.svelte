@@ -1,42 +1,32 @@
 <script>
-  import { reify } from '@m5nv/deepstate/svelte';
+  // import { reify } from '@m5nv/deepstate/svelte';
+  import { simpleDeepProxy } from '$lib';
   import Task from './task.svelte';
   import rawTasks from './tasks.js';
-  // Extend raw tasks with initial state (DeepState will wrap values as signals).
+
+  const isEnabled = (self, root) => {
+    // console.log("Computing isEnabled for task", self.id, "state:", self.state);
+    if (!self.requirements || self.requirements.length === 0) return true;
+    return self.requirements.every((req) => {
+      const requiredTask = root.tasks.find((t) => t.id === req.requiredTaskId);
+      return (
+        requiredTask &&
+        [req.requiredState, 'completed'].includes(requiredTask.state)
+      );
+    });
+  };
+
   const tasksWithState = rawTasks.map((task) => ({
     ...task,
-    state: 'pending',
+    state: task.state || 'pending',
+    isEnabled,
   }));
 
-  // Create a DeepState store with computed "isEnabled" for each task.
-  const store = reify(
-    { tasks: tasksWithState },
-    {
-      computedTasks: (s) =>
-        s.tasks.map((task) => ({
-          ...task,
-          // Compute enabled status based on requirements.
-          isEnabled: (() => {
-            console.log('in isEnabled');
-            if (!task.requirements || task.requirements.length === 0)
-              return true;
-            return task.requirements.every((req) => {
-              const requiredTask = s.tasks.find(
-                (t) => t.id === req.requiredTaskId,
-              );
-              return [req.requiredState, 'completed'].includes(
-                requiredTask.state,
-              );
-            });
-          })(),
-        })),
-    },
-    false,
-  );
+  const store = simpleDeepProxy({ tasks: tasksWithState }, true, '_');
 </script>
 
 <ol>
-  {#each store.state.tasks as task (task.id)}
+  {#each store.tasks as task (task.id)}
     <Task {task} />
   {/each}
 </ol>

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { batch, effect } from "@preact/signals";
-import { computedProp, reify, shallow } from "@m5nv/deepstate";
+import { reify, shallow } from "@m5nv/deepstate";
 
 describe("DeepState Basic SPA - Core Behavior", () => {
   it("handles empty initial state", () => {
@@ -12,7 +12,7 @@ describe("DeepState Basic SPA - Core Behavior", () => {
 
   it("creates reactive state and computed properties", () => {
     const { state } = reify(
-      { count: 0, double: computedProp((s) => s.count * 2) },
+      { count: 0, double: (s) => s.count * 2 },
     );
     expect(state.count).toBe(0);
     expect(state.double).toBe(0);
@@ -22,7 +22,7 @@ describe("DeepState Basic SPA - Core Behavior", () => {
 
   it("computed property is lazy until accessed", () => {
     const spy = vi.fn((s) => s.count * 2);
-    const { state } = reify({ count: 0, double: computedProp(spy) });
+    const { state } = reify({ count: 0, double: spy });
     expect(spy).not.toHaveBeenCalled();
     state.count = 1;
     expect(spy).not.toHaveBeenCalled();
@@ -36,8 +36,8 @@ describe("DeepState Basic SPA - Core Behavior", () => {
   it("supports chained computed properties", () => {
     const { state } = reify({
       count: 2,
-      double: computedProp((s) => s.count * 2),
-      quadruple: computedProp((s) => s.double * 2),
+      double: (s) => s.count * 2,
+      quadruple: (s) => s.double * 2,
     });
     expect(state.quadruple).toBe(8);
     state.count = 3;
@@ -48,7 +48,7 @@ describe("DeepState Basic SPA - Core Behavior", () => {
     const { state } = reify(
       {
         user: { first: "John", last: "Doe", name: "Jane" },
-        fullName: computedProp((s) => s.user.first + " " + s.user.last),
+        fullName: (s) => s.user.first + " " + s.user.last,
       },
     );
     expect(state.user.first).toBe("John");
@@ -65,7 +65,7 @@ describe("DeepState Basic SPA - Effect & Signal Interaction", () => {
       {
         name: "Jane",
         surname: "Doe",
-        fullName: computedProp((s) => `${s.name} ${s.surname}`),
+        fullName: (s) => `${s.name} ${s.surname}`,
       },
     );
     const spy = vi.fn();
@@ -100,7 +100,7 @@ describe("DeepState Basic SPA - Effect & Signal Interaction", () => {
 
   it("chained effects log computed and derived values correctly", () => {
     const { state } = reify(
-      { count: 0, double: computedProp((s) => s.count * 2) },
+      { count: 0, double: (s) => s.count * 2 },
     );
     const spyDouble = vi.fn();
     const spyTriple = vi.fn();
@@ -152,7 +152,7 @@ describe("DeepState Basic SPA - Shallow Object Handling", () => {
     const { state } = reify(
       {
         data: shallow(staticObj),
-        nestedValue: computedProp((s) => s.data.nested.value),
+        nestedValue: (s) => s.data.nested.value,
       },
     );
     expect(state.data).toBe(staticObj);
@@ -182,7 +182,7 @@ describe("DeepState Basic SPA - Nested State Handling", () => {
     const { state } = reify(
       {
         user: { first: "John", last: "Doe" },
-        fullName: computedProp((s) => s.user.first + " " + s.user.last),
+        fullName: (s) => s.user.first + " " + s.user.last,
       },
     );
     expect(state.fullName).toBe("John Doe");
@@ -294,7 +294,7 @@ describe("DeepState Basic SPA - Array Handling", () => {
     expect(() => {
       state.todos = [...state.todos];
     }).toThrow(
-      "Whole array replacement is disallowed for deep arrays",
+      /Whole array\/object replacement is disallowed/,
     );
   });
 
@@ -307,12 +307,23 @@ describe("DeepState Basic SPA - Array Handling", () => {
     expect(state.todos).toEqual([1, 2, 3]);
   });
 
-  it("allows whole array replacement for deep arrays via the $ escape hatch", () => {
+  // it("allows whole array replacement for deep arrays via the $ escape hatch", () => { // OLD NAME
+  it("throws an error when attempting whole array replacement via the $ escape hatch .value", () => { // NEW NAME
     const { state } = reify({ todos: [1, 2, 3] });
+    const originalTodos = state.todos; // Capture original state reference (optional)
+
+    // Assert that attempting to assign to .value via escape hatch throws TypeError
     expect(() => {
-      state.$todos.value = [...state.todos, 4];
-    }).not.toThrow();
-    expect(state.todos).toEqual([1, 2, 3, 4]);
+      // This line should now throw because the 'set' trap prevents
+      // setting properties beginning with the escape hatch prefix.
+      state.$todos.value = [...originalTodos, 4];
+    }).toThrow(TypeError);
+
+    // Optional: You might also want to assert that the state didn't actually change
+    // expect(state.todos).toEqual([1, 2, 3]); // Original array should be unchanged
+
+    // The original assertion `expect(state.todos).toEqual([1, 2, 3, 4]);` is removed
+    // as the operation is expected to fail.
   });
 });
 

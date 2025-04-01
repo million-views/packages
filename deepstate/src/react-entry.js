@@ -1,9 +1,13 @@
 // src/react-entry.js
 import { computed, signal, untracked } from "@preact/signals-react";
-import { createDeepStateAPI } from "./common.js";
-const { shallow, reify, computedProp } = createDeepStateAPI({
+import { createDeepStateAPIv2 } from "./common.js";
+
+const { shallow, reify } = createDeepStateAPIv2({
   signal,
   computed,
   untracked,
+  batch,
 });
-export { computedProp, reify, shallow };
+
+// Re-export them
+export { reify, shallow };

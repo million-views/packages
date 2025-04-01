@@ -1,10 +1,15 @@
 import { effect } from "@preact/signals-core";
 import { reify } from "@m5nv/deepstate/core";
 
+/// Quick Sanity Test
+/// Run as:
+/// 1. DEEPSTATE_MODE=SPA node src/test.js
+/// 2. DEEPSTATE_MODE=SSR node src/test.js
+///
+/// The behaviours are different in each mode. Read the README.md
+/// for more details.
 const { state: counter } = reify(
-  { count: 0 },
-  { double: (state) => state.count * 2 },
-  false,
+  { count: 0, double: (self) => self.count * 2 },
 );
 
 // check that we received a reified state
@@ -31,9 +36,11 @@ counter.count += 1;
 
 //--------
 const { state: demo } = reify(
-  { name: "Jane", surname: "Doe" },
-  { fullName: (state) => `${state.name} ${state.surname}` },
-  false,
+  {
+    name: "Jane",
+    surname: "Doe",
+    fullName: (self) => `${self.name} ${self.surname}`,
+  },
 );
 
 // Logs name every time it changes:

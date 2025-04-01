@@ -1,10 +1,13 @@
 // src/preact-entry.js
-import { computed, signal, untracked } from "@preact/signals";
-import { createDeepStateAPI } from "./common.js";
+import { batch, computed, signal, untracked } from "@preact/signals";
+import { createDeepStateAPIv2 } from "./common.js";
 
-const { shallow, reify, computedProp } = createDeepStateAPI({
+const { shallow, reify } = createDeepStateAPIv2({
   signal,
   computed,
   untracked,
+  batch,
 });
-export { computedProp, reify, shallow };
+
+// Re-export them
+export { reify, shallow };
