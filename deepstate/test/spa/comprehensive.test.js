@@ -1115,4 +1115,158 @@ describe("DeepState v2 Complex Use Cases (SPA Mode)", () => {
       expect(Object.keys(store.state.errors).length).toBe(0);
     });
   });
+
+  describe("DeepState V2 - deleteProperty Trap & Permissive Mode", () => {
+    // --- Strict Mode Tests (permissive: false) ---
+
+    it("should prevent deleting existing non-index, non-computed properties in strict mode", () => {
+      const { state } = reify(
+        {
+          user: { name: "Test" }, // Nested object
+          items: [10, 20], // Array
+          topLevel: "value", // Primitive signal
+        },
+        { permissive: false }, // STRICT mode
+      );
+
+      // Should throw for object property
+      expect(() => {
+        delete state.user;
+      }).toThrow(TypeError);
+      expect(state.user).toBeDefined(); // Verify it wasn't deleted
+
+      // Should throw for array property itself
+      expect(() => {
+        delete state.items;
+      }).toThrow(TypeError);
+      expect(state.items).toBeDefined(); // Verify it wasn't deleted
+
+      // Should throw for top-level primitive signal property
+      expect(() => {
+        delete state.topLevel;
+      }).toThrow(TypeError);
+      expect(state.topLevel).toBeDefined(); // Verify it wasn't deleted
+    });
+
+    it("should ALLOW deleting array indices in strict mode", () => {
+      const { state } = reify(
+        { items: [10, 20, 30] },
+        { permissive: false }, // STRICT mode
+      );
+      expect(state.items).toHaveLength(3);
+      const versionSignal = state.$items.__version; // Get version signal
+      const initialVersion = versionSignal.peek();
+
+      // Should NOT throw for array index
+      expect(() => {
+        delete state.items[1]; // Delete item '20'
+      }).not.toThrow();
+
+      // Array becomes sparse, verify state and version increment
+      expect(state.items).toHaveLength(3); // Length doesn't change on delete
+      expect(state.items[1]).toBeUndefined();
+      expect(1 in state.items).toBe(false); // Index 1 no longer exists
+      // Check content excluding sparse entries
+      expect(state.items.filter((item) => item !== undefined)).toEqual([
+        10,
+        30,
+      ]);
+      // Check version signal incremented
+      expect(versionSignal.value).toBe(initialVersion + 1);
+    });
+
+    it("should ALLOW deleting computed property definitions in strict mode", () => {
+      const { state } = reify(
+        {
+          count: 0,
+          double: (self) => self.count * 2,
+        },
+        { permissive: false }, // STRICT mode
+      );
+
+      expect(state.double).toBe(0); // Access to ensure it's defined
+      expect("double" in state).toBe(true); // Check via 'has' trap
+
+      // Should NOT throw for computed property definition
+      expect(() => {
+        delete state.double; // Deletes the function definition internally
+      }).not.toThrow();
+
+      // Check it's gone via 'has' trap
+      expect("double" in state).toBe(false);
+      // Accessing should now return undefined
+      expect(state.double).toBeUndefined();
+    });
+
+    // --- Permissive Mode Tests (permissive: true) ---
+
+    it("should allow deleting any existing property in permissive mode", () => {
+      const { state } = reify(
+        {
+          user: { name: "Test" },
+          items: [10, 20],
+          myComputed: (self) => self.items.length,
+          topLevel: "value",
+        },
+        { permissive: true }, // PERMISSIVE mode
+      );
+
+      // Ensure computed is accessed first if needed by test logic
+      expect(state.myComputed).toBe(2);
+
+      // Should allow deleting object property
+      expect(() => {
+        delete state.user;
+      }).not.toThrow();
+      expect(state.user).toBeUndefined();
+
+      // Should allow deleting array property itself
+      expect(() => {
+        delete state.items;
+      }).not.toThrow();
+      expect(state.items).toBeUndefined();
+
+      // Should allow deleting primitive signal property
+      expect(() => {
+        delete state.topLevel;
+      }).not.toThrow();
+      expect(state.topLevel).toBeUndefined();
+
+      // Should allow deleting computed property definition
+      expect(() => {
+        delete state.myComputed;
+      }).not.toThrow();
+      expect("myComputed" in state).toBe(false);
+      expect(state.myComputed).toBeUndefined();
+    });
+
+    // --- General Delete Behavior ---
+
+    it("should handle deleting non-existent properties gracefully in strict mode", () => {
+      const { state } = reify({ a: 1 }, { permissive: false });
+      expect(() => {
+        delete state.b; // Property 'b' doesn't exist
+      }).not.toThrow();
+      // The delete operator returns true if deletion possible, false otherwise.
+      // We mainly care that no error is thrown by the trap.
+      expect("b" in state).toBe(false);
+    });
+
+    it("should handle deleting non-existent properties gracefully in permissive mode", () => {
+      const { state } = reify({ a: 1 }, { permissive: true });
+      expect(() => {
+        delete state.b; // Property 'b' doesn't exist
+      }).not.toThrow();
+      expect("b" in state).toBe(false);
+    });
+
+    it("should prevent deleting via escape hatch", () => {
+      const { state } = reify({ a: 1 }, { permissive: true }); // Mode doesn't matter here
+      expect(() => {
+        delete state.$a;
+      }).not.toThrow(); // The trap returns false, doesn't throw
+      expect(state.a).toBe(1); // Property still exists
+      expect(state.$a).toBeDefined(); // Underlying signal still exists
+    });
+  });
 });
