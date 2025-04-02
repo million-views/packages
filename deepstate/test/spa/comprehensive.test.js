@@ -1154,7 +1154,9 @@ describe("DeepState v2 Complex Use Cases (SPA Mode)", () => {
         { permissive: false }, // STRICT mode
       );
       expect(state.items).toHaveLength(3);
-      const versionSignal = state.$items.__version; // Get version signal
+      // Access __version directly via proxy, not escape hatch
+      const versionSignal = state.items.__version; // Get version signal via proxy
+      expect(isSignal(versionSignal)).toBe(true); // Verify it's a signal object
       const initialVersion = versionSignal.peek();
 
       // Should NOT throw for array index
@@ -1175,7 +1177,8 @@ describe("DeepState v2 Complex Use Cases (SPA Mode)", () => {
       expect(versionSignal.value).toBe(initialVersion + 1);
     });
 
-    it("should ALLOW deleting computed property definitions in strict mode", () => {
+    // *** THIS TEST CASE IS MODIFIED ***
+    it("should PREVENT deleting computed property definitions in strict mode", () => { // Renamed
       const { state } = reify(
         {
           count: 0,
@@ -1187,15 +1190,15 @@ describe("DeepState v2 Complex Use Cases (SPA Mode)", () => {
       expect(state.double).toBe(0); // Access to ensure it's defined
       expect("double" in state).toBe(true); // Check via 'has' trap
 
-      // Should NOT throw for computed property definition
+      // Should NOW THROW for computed property definition in strict mode
       expect(() => {
-        delete state.double; // Deletes the function definition internally
-      }).not.toThrow();
+        delete state.double;
+      }).toThrow(TypeError); // Changed from not.toThrow()
 
-      // Check it's gone via 'has' trap
-      expect("double" in state).toBe(false);
-      // Accessing should now return undefined
-      expect(state.double).toBeUndefined();
+      // Check it's STILL there via 'has' trap
+      expect("double" in state).toBe(true); // Changed from false
+      // Accessing should still return the correct value
+      expect(state.double).toBe(0); // Changed from toBeUndefined()
     });
 
     // --- Permissive Mode Tests (permissive: true) ---
@@ -1244,16 +1247,16 @@ describe("DeepState v2 Complex Use Cases (SPA Mode)", () => {
 
     it("should handle deleting non-existent properties gracefully in strict mode", () => {
       const { state } = reify({ a: 1 }, { permissive: false });
+      // Expect NOT to throw (trap should return true)
       expect(() => {
         delete state.b; // Property 'b' doesn't exist
       }).not.toThrow();
-      // The delete operator returns true if deletion possible, false otherwise.
-      // We mainly care that no error is thrown by the trap.
       expect("b" in state).toBe(false);
     });
 
     it("should handle deleting non-existent properties gracefully in permissive mode", () => {
       const { state } = reify({ a: 1 }, { permissive: true });
+      // Expect NOT to throw (trap should return true)
       expect(() => {
         delete state.b; // Property 'b' doesn't exist
       }).not.toThrow();
@@ -1262,11 +1265,17 @@ describe("DeepState v2 Complex Use Cases (SPA Mode)", () => {
 
     it("should prevent deleting via escape hatch", () => {
       const { state } = reify({ a: 1 }, { permissive: true }); // Mode doesn't matter here
+      // Expect NOT to throw (trap should return true)
       expect(() => {
         delete state.$a;
-      }).not.toThrow(); // The trap returns false, doesn't throw
+      }).not.toThrow();
       expect(state.a).toBe(1); // Property still exists
       expect(state.$a).toBeDefined(); // Underlying signal still exists
     });
+
+    // Helper function to check if a value is a signal (basic check)
+    function isSignal(val) {
+      return val && typeof val === "object" && typeof val.peek === "function";
+    }
   });
 });

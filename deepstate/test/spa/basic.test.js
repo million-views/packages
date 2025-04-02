@@ -116,7 +116,7 @@ describe("DeepState Basic SPA - Strict vs Permissive Modes", () => {
   it("blocks new properties in strict mode", () => {
     const { state } = reify({ count: 0 });
     expect(() => (state.newProp = "fail"))
-      .toThrow("Cannot add new property 'newProp' in strict mode.");
+      .toThrow(/Cannot add new property ['"]newProp['"] in strict mode/);
   });
 
   it("allows new properties in permissive mode", () => {

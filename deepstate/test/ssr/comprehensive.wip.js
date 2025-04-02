@@ -345,9 +345,9 @@ describe("DeepState Core Functionality (SSR Mode)", () => {
     it("supports primitive coercion for computed properties", () => {
       const store = reify({
         count: 5,
-        message: computedProp(function (self) {
+        message: function (self) {
           return `Count: ${self.count}`;
-        }),
+        },
       }, { permissive: true });
 
       // Test string concatenation (implicit toString)
@@ -355,7 +355,7 @@ describe("DeepState Core Functionality (SSR Mode)", () => {
       expect(withPrefix).toBe("Message: Count: 5");
 
       // Test numeric coercion
-      const numComputed = computedProp((self) => self.count * 2);
+      const numComputed = (self) => self.count * 2;
       store.state.numericValue = numComputed;
 
       const result = store.state.numericValue + 10;
