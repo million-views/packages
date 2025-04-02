@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { batch, effect } from "@preact/signals";
-import { computedProp, reify, shallow } from "@m5nv/deepstate";
+import { reify, shallow } from "@m5nv/deepstate";
 
 // Force SSR mode
 const originalWindow = global.window;
@@ -20,12 +20,10 @@ describe("DeepState Basic SSR reify() Core Behavior", () => {
   });
 
   it("creates reactive state and computed properties", () => {
-    const { state } = reify(
-      {
-        count: 0,
-        double: computedProp((s) => s.count * 2),
-      },
-    );
+    const { state } = reify({
+      count: 0,
+      double: (s) => s.count * 2,
+    });
     expect(state.count).toBe(0);
     expect(state.double).toBe(0);
     state.count = 1;
@@ -34,7 +32,7 @@ describe("DeepState Basic SSR reify() Core Behavior", () => {
 
   it("computed property is lazy until accessed", () => {
     const spy = vi.fn((s) => s.count * 2);
-    const { state } = reify({ count: 0, double: computedProp(spy) });
+    const { state } = reify({ count: 0, double: spy });
     expect(spy).not.toHaveBeenCalled();
     state.count = 1;
     expect(spy).not.toHaveBeenCalled(); // still lazy until access
@@ -48,8 +46,8 @@ describe("DeepState Basic SSR reify() Core Behavior", () => {
   it("supports chained computed properties", () => {
     const { state } = reify({
       count: 2,
-      double: computedProp((s) => s.count * 2),
-      quadruple: computedProp((s) => s.double * 2),
+      double: (s) => s.count * 2,
+      quadruple: (s) => s.double * 2,
     });
     expect(state.quadruple).toBe(8);
     state.count = 3;
@@ -57,12 +55,10 @@ describe("DeepState Basic SSR reify() Core Behavior", () => {
   });
 
   it("handles nested objects and computed properties", () => {
-    const { state } = reify(
-      {
-        user: { first: "John", last: "Doe", name: "Jane" },
-        fullName: computedProp((s) => s.user.first + " " + s.user.last),
-      },
-    );
+    const { state } = reify({
+      user: { first: "John", last: "Doe", name: "Jane" },
+      fullName: (s) => s.user.first + " " + s.user.last,
+    });
     expect(state.user.first).toBe("John");
     state.user.first = "Jane";
     expect(state.fullName).toBe("Jane Doe");
@@ -71,21 +67,23 @@ describe("DeepState Basic SSR reify() Core Behavior", () => {
   });
 
   it("exposes computed signals via $ properties as unwrapped primitives", () => {
-    const { state } = reify(
-      { count: 0, double: computedProp((s) => s.count * 2) },
-    );
+    const { state } = reify({
+      count: 0,
+      double: (s) => s.count * 2,
+    });
     // In SSR mode, accessing $double returns a primitive.
-    expect(state.$double).toBe(0);
+    expect(state.$double.value).toBe(0);
     state.count = 2;
-    expect(state.$double).toBe(4);
+    expect(state.$double.value).toBe(4);
   });
 });
 
 describe("DeepState Basic SSR reify() Strict vs Permissive Modes", () => {
   it("blocks new properties in strict mode", () => {
     const { state } = reify({ count: 0 });
-    expect(() => (state.newProp = "fail"))
-      .toThrow("Cannot add new property 'newProp' in strict mode.");
+    expect(() => (state.newProp = "fail")).toThrow(
+      "Cannot add new property 'newProp' in strict mode."
+    );
   });
 
   it("allows new properties in permissive mode", () => {
@@ -102,11 +100,11 @@ describe("DeepState Basic SSR reify() Strict vs Permissive Modes", () => {
 
   it("rejects direct assignment of $ properties", () => {
     const { state } = reify({ count: 0 });
+    const expectedError =
+      "Cannot directly set escaped property \"$count\". Use the '.value' property on the underlying signal (if applicable) or mutation methods.";
     expect(() => {
       state.$count = { value: 99 };
-    }).toThrow(
-      "Cannot directly set '$count'. Use the signal's 'value' property.",
-    );
+    }).toThrow(expectedError);
   });
 });
 
@@ -119,12 +117,10 @@ describe("DeepState Basic SSR reify() Shallow Object Handling", () => {
   });
   it("shallow objects do not trigger computed updates", () => {
     const staticObj = { id: 1, nested: { value: 42 } };
-    const { state } = reify(
-      {
-        data: shallow(staticObj),
-        nestedValue: computedProp((s) => s.data.nested.value),
-      },
-    );
+    const { state } = reify({
+      data: shallow(staticObj),
+      nestedValue: (s) => s.data.nested.value,
+    });
     expect(state.data).toBe(staticObj);
     expect(state.nestedValue).toBe(42);
     const spy = vi.fn(() => state.nestedValue);
@@ -138,9 +134,9 @@ describe("DeepState Basic SSR reify() Shallow Object Handling", () => {
 
 describe("DeepState Basic SSR reify() Nested State Handling", () => {
   it("handles nested objects", () => {
-    const { state } = reify(
-      { user: { name: "John", address: { city: "Hobbiton", zip: "12345" } } },
-    );
+    const { state } = reify({
+      user: { name: "John", address: { city: "Hobbiton", zip: "12345" } },
+    });
     expect(state.user.name).toBe("John");
     expect(state.user.address.city).toBe("Hobbiton");
     state.user.name = "Frodo";
@@ -148,12 +144,10 @@ describe("DeepState Basic SSR reify() Nested State Handling", () => {
   });
 
   it("supports computed properties across nested objects", () => {
-    const { state } = reify(
-      {
-        user: { first: "John", last: "Doe" },
-        fullName: computedProp((s) => s.user.first + " " + s.user.last),
-      },
-    );
+    const { state } = reify({
+      user: { first: "John", last: "Doe" },
+      fullName: (s) => s.user.first + " " + s.user.last,
+    });
     expect(state.fullName).toBe("John Doe");
     state.user.first = "Jane";
     expect(state.fullName).toBe("Jane Doe");
@@ -215,9 +209,10 @@ describe("DeepState Basic SSR reify().attach() Async Actions", () => {
 
 describe("DeepState Basic SSR reify() Serialization", () => {
   it("toJSON omits $ properties and computed properties", () => {
-    const { state } = reify(
-      { count: 0, double: computedProp((s) => s.count * 2) },
-    );
+    const { state } = reify({
+      count: 0,
+      double: (s) => s.count * 2,
+    });
     expect(JSON.stringify(state)).toBe('{"count":0}');
     state.count = 5;
     expect(JSON.stringify(state)).toBe('{"count":5}');
@@ -249,10 +244,11 @@ describe("DeepState Basic SSR reify() Array Handling", () => {
 
   it("prevents whole array replacement for deep arrays", () => {
     const { state } = reify({ todos: [1, 2, 3] });
+    const expectedError =
+      'Whole array/object replacement is disallowed for deep property "todos". Use mutation methods or actions.';
     expect(() => {
       state.todos = [...state.todos];
-    })
-      .toThrow("Whole array replacement is disallowed for deep arrays");
+    }).toThrow(expectedError);
   });
 
   it("allows whole array replacement for shallow arrays", () => {
@@ -264,14 +260,38 @@ describe("DeepState Basic SSR reify() Array Handling", () => {
     expect(state.todos).toEqual([1, 2, 3]);
   });
 
-  it("allows whole array replacement for deep arrays via the $ escape hatch", () => {
-    const { state } = reify({ todos: [1, 2, 3] });
+  // Rename test to reflect what it actually tests now
+  it("prevents whole array/object replacement for deep properties", () => {
+    const store = reify({
+      items: [1, 2, 3], // Deep array (proxy stored directly at state.items)
+      filters: { search: "" }, // Deep object (proxy stored directly at state.filters)
+    });
+
+    const expectedErrorMsg = /Whole array\/object replacement is disallowed/;
+
+    // Expect direct array replacement to throw the specific TypeError
     expect(() => {
-      // In SSR, $todos returns the unwrapped primitive value,
-      // so assignment must be to state.$todos (which overwrites the underlying value)
-      state.$todos = [...state.todos, 4];
-    }).not.toThrow();
-    expect(state.todos).toEqual([1, 2, 3, 4]);
+      store.state.items = [4, 5, 6];
+    }).toThrow(TypeError);
+    // Also check the message for clarity
+    expect(() => {
+      store.state.items = [4, 5, 6];
+    }).toThrow(expectedErrorMsg);
+
+    // Expect direct object replacement to throw the specific TypeError
+    expect(() => {
+      store.state.filters = { search: "abc" };
+    }).toThrow(TypeError);
+    // Also check the message
+    expect(() => {
+      store.state.filters = { search: "abc" };
+    }).toThrow(expectedErrorMsg);
+
+    // Verify state wasn't changed after the errors
+    expect(store.state.items).toEqual([1, 2, 3]); // Should be unchanged
+    expect(store.state.filters.search).toBe(""); // Should be unchanged
+
+    // Replacement via escape hatch isn't supported this way, so no test for it.
   });
 });
 
