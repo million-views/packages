@@ -11,9 +11,7 @@ describe("DeepState Basic SPA - Core Behavior", () => {
   });
 
   it("creates reactive state and computed properties", () => {
-    const { state } = reify(
-      { count: 0, double: (s) => s.count * 2 },
-    );
+    const { state } = reify({ count: 0, double: (s) => s.count * 2 });
     expect(state.count).toBe(0);
     expect(state.double).toBe(0);
     state.count = 1;
@@ -45,12 +43,10 @@ describe("DeepState Basic SPA - Core Behavior", () => {
   });
 
   it("handles nested objects and computed properties", () => {
-    const { state } = reify(
-      {
-        user: { first: "John", last: "Doe", name: "Jane" },
-        fullName: (s) => s.user.first + " " + s.user.last,
-      },
-    );
+    const { state } = reify({
+      user: { first: "John", last: "Doe", name: "Jane" },
+      fullName: (s) => s.user.first + " " + s.user.last,
+    });
     expect(state.user.first).toBe("John");
     state.user.first = "Jane";
     expect(state.fullName).toBe("Jane Doe");
@@ -61,13 +57,11 @@ describe("DeepState Basic SPA - Core Behavior", () => {
 
 describe("DeepState Basic SPA - Effect & Signal Interaction", () => {
   it("computed properties trigger effects", () => {
-    const { state } = reify(
-      {
-        name: "Jane",
-        surname: "Doe",
-        fullName: (s) => `${s.name} ${s.surname}`,
-      },
-    );
+    const { state } = reify({
+      name: "Jane",
+      surname: "Doe",
+      fullName: (s) => `${s.name} ${s.surname}`,
+    });
     const spy = vi.fn();
     const dispose = effect(() => spy(state.fullName));
     expect(spy).toHaveBeenCalledWith("Jane Doe");
@@ -99,9 +93,7 @@ describe("DeepState Basic SPA - Effect & Signal Interaction", () => {
   });
 
   it("chained effects log computed and derived values correctly", () => {
-    const { state } = reify(
-      { count: 0, double: (s) => s.count * 2 },
-    );
+    const { state } = reify({ count: 0, double: (s) => s.count * 2 });
     const spyDouble = vi.fn();
     const spyTriple = vi.fn();
     effect(() => spyDouble(state.double));
@@ -115,8 +107,9 @@ describe("DeepState Basic SPA - Effect & Signal Interaction", () => {
 describe("DeepState Basic SPA - Strict vs Permissive Modes", () => {
   it("blocks new properties in strict mode", () => {
     const { state } = reify({ count: 0 });
-    expect(() => (state.newProp = "fail"))
-      .toThrow(/Cannot add new property ['"]newProp['"] in strict mode/);
+    expect(() => (state.newProp = "fail")).toThrow(
+      /Cannot add new property ['"]newProp['"] in strict mode/
+    );
   });
 
   it("allows new properties in permissive mode", () => {
@@ -149,12 +142,10 @@ describe("DeepState Basic SPA - Shallow Object Handling", () => {
 
   it("shallow objects do not trigger computed updates", () => {
     const staticObj = { id: 1, nested: { value: 42 } };
-    const { state } = reify(
-      {
-        data: shallow(staticObj),
-        nestedValue: (s) => s.data.nested.value,
-      },
-    );
+    const { state } = reify({
+      data: shallow(staticObj),
+      nestedValue: (s) => s.data.nested.value,
+    });
     expect(state.data).toBe(staticObj);
     expect(state.nestedValue).toBe(42);
     const spy = vi.fn();
@@ -169,9 +160,9 @@ describe("DeepState Basic SPA - Shallow Object Handling", () => {
 
 describe("DeepState Basic SPA - Nested State Handling", () => {
   it("handles nested objects", () => {
-    const { state } = reify(
-      { user: { name: "John", address: { city: "Hobbiton", zip: "12345" } } },
-    );
+    const { state } = reify({
+      user: { name: "John", address: { city: "Hobbiton", zip: "12345" } },
+    });
     expect(state.user.name).toBe("John");
     expect(state.user.address.city).toBe("Hobbiton");
     state.user.name = "Frodo";
@@ -179,12 +170,10 @@ describe("DeepState Basic SPA - Nested State Handling", () => {
   });
 
   it("supports computed properties across nested objects", () => {
-    const { state } = reify(
-      {
-        user: { first: "John", last: "Doe" },
-        fullName: (s) => s.user.first + " " + s.user.last,
-      },
-    );
+    const { state } = reify({
+      user: { first: "John", last: "Doe" },
+      fullName: (s) => s.user.first + " " + s.user.last,
+    });
     expect(state.fullName).toBe("John Doe");
     state.user.first = "Jane";
     expect(state.fullName).toBe("Jane Doe");
@@ -243,7 +232,7 @@ describe("DeepState Basic SPA - Async Actions", () => {
     const store = reify({ count: 0 }).attach({
       async fetchData(state) {
         const response = await fetch(
-          "https://jsonplaceholder.typicode.com/todos",
+          "https://jsonplaceholder.typicode.com/todos"
         );
         const data = await response.json();
         state.count = data.length;
@@ -256,9 +245,7 @@ describe("DeepState Basic SPA - Async Actions", () => {
 
 describe("DeepState Basic SPA - Serialization", () => {
   it("toJSON omits $ properties and computed properties", () => {
-    const { state } = reify(
-      { count: 0, double: (s) => s.count * 2 },
-    );
+    const { state } = reify({ count: 0, double: (s) => s.count * 2 });
     expect(JSON.stringify(state)).toBe('{"count":0}');
     state.count = 5;
     expect(JSON.stringify(state)).toBe('{"count":5}');
@@ -293,9 +280,7 @@ describe("DeepState Basic SPA - Array Handling", () => {
     const { state } = reify({ todos: [1, 2, 3] });
     expect(() => {
       state.todos = [...state.todos];
-    }).toThrow(
-      /Whole array\/object replacement is disallowed/,
-    );
+    }).toThrow(/Whole array\/object replacement is disallowed/);
   });
 
   it("allows whole array replacement for shallow arrays", () => {
@@ -308,7 +293,8 @@ describe("DeepState Basic SPA - Array Handling", () => {
   });
 
   // it("allows whole array replacement for deep arrays via the $ escape hatch", () => { // OLD NAME
-  it("throws an error when attempting whole array replacement via the $ escape hatch .value", () => { // NEW NAME
+  it("throws an error when attempting whole array replacement via the $ escape hatch .value", () => {
+    // NEW NAME
     const { state } = reify({ todos: [1, 2, 3] });
     const originalTodos = state.todos; // Capture original state reference (optional)
 
@@ -319,11 +305,7 @@ describe("DeepState Basic SPA - Array Handling", () => {
       state.$todos.value = [...originalTodos, 4];
     }).toThrow(TypeError);
 
-    // Optional: You might also want to assert that the state didn't actually change
-    // expect(state.todos).toEqual([1, 2, 3]); // Original array should be unchanged
-
-    // The original assertion `expect(state.todos).toEqual([1, 2, 3, 4]);` is removed
-    // as the operation is expected to fail.
+    expect(state.todos).toEqual([1, 2, 3]); // Original array should be unchanged
   });
 });
 
@@ -382,10 +364,7 @@ describe("DeepState Basic SPA - Array Handling - Mutative Methods with Batching"
       state.todos.splice(1, 1);
     });
     expect(state.todos.length).toBe(2);
-    expect(state.todos.map((todo) => todo.text)).toEqual([
-      "Task 1",
-      "Task 3",
-    ]);
+    expect(state.todos.map((todo) => todo.text)).toEqual(["Task 1", "Task 3"]);
     expect(spy.mock.calls.length).toBeGreaterThanOrEqual(2);
     dispose();
   });
