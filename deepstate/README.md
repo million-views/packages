@@ -625,4 +625,4 @@ Inspired by [deepsignal](https://github.com/luisherranz/deepsignal).
 
 ## License
 
-MIT
+Distributed under the MIT License. See [LICENSE](../LICENSE) for details.
