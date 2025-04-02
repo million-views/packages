@@ -2,403 +2,627 @@
 
 **Signal-based Reactive State Management Made Intuitive**
 
-## Introduction
+## 👋 Introduction
 
-@m5nv/deepstate is a tiny, reactive state management library built on top of
-[@preact/signals][preact/signals]. It transforms plain JavaScript objects into
-reactive _stores_, offering an intuitive and refined API that respects the
-original signals model while improving the developer experience (we think).
+DeepState is a state management library powered by Signals & Proxies. It uses
+modern JavaScript features (ES6 Proxies) and a Signal-based core (specifically
+`@preact/signals-core`) to enable automatic **deep reactivity** throughout your
+state objects and arrays. This allows you to manage complex state naturally,
+writing updates like standard JavaScript mutations while benefiting from
+fine-grained reactivity powered by Signals.
 
-[preact/signals]: https://github.com/preactjs/signals
+## 🤔 Why DeepState V2?
 
-## Core Concepts
+- **Intuitive DX:** Write state updates naturally (`state.user.name = 'Bob'`,
+  `state.items.push(...)`). No complex reducers or manual spreading required for
+  common cases.
+- **Deeply Reactive:** Changes anywhere in your state tree trigger updates
+  precisely where needed, powered by Signals.
+- **Simplified Derived State:** Define computed values directly within your
+  state object as simple functions
+  (`fullName(self) { return self.firstName + ' ' + self.lastName }`). DeepState
+  makes them reactive automatically.
+- **Minimal Boilerplate:** Get started quickly with the simple `reify` API.
+- **Framework Agnostic Core:** Use it with React, Preact, Svelte, or vanilla JS
+  via framework-specific adapters or directly with Signals effects.
+- **Performant:** Leverages the efficiency of Signals for fine-grained updates,
+  avoiding unnecessary computations or renders.
 
-### Reactivity via Proxies and Signals
+## ✨ Core Concepts
 
-DeepState wraps each property of your state object in a signal using JavaScript
-proxies. This allows you to work with your state as if it were a plain object,
-while automatic reactivity is maintained behind the scenes.
+- **Deep Reactivity:** Modify any part of your state object (even deeply nested
+  properties or array elements), and DeepState ensures anything depending on
+  that data updates automatically.
+- **Signal-Powered:** Under the hood, your state values are stored in tiny
+  reactive units called Signals. DeepState manages these for you.
+- **Mutational Style:** You interact with state using familiar assignments
+  (`state.prop = ...`) and array methods (`state.list.push(...)`). Proxies make
+  this work reactively.
+- **Inline Computeds:** Just write a function as a property in your initial
+  state, and it becomes a reactive computed value that automatically updates
+  when its dependencies change. It even gets handy `self` and `root` arguments!
+- **`Escape Hatch ($):`** Need direct access to the underlying signal for
+  framework integration or advanced patterns? Use the `$` prefix (e.g.,
+  `state.$prop`).
 
-### Direct vs. Signal Access
+## 🚀 Getting Started
 
-- **Direct State Access:**\
-  Read or update values using `state.prop` for clean, natural code.
-
-- **Signal Access with the Escape Hatch:**\
-  DeepState exposes the underlying signal via an escape hatch when a framework's
-  own reactivity handling may interfere with DeepState's proxy. By default, the
-  underlying signal can be accessed using the `$` prefix (e.g. `state.$prop`).
-  In Svelte, since `$` is reserved, a dedicated entry point (e.g.
-  `@m5nv/deepstate/svelte`) automatically sets the escape hatch to `"_"` so you
-  access it as `state._prop`.
-
-### Shallow Wrapping
-
-The `shallow` helper marks an object so that DeepState wraps only its top-level
-properties—leaving nested objects unproxied (non-reactive). This is useful for
-optimizing performance or when you intentionally want certain nested data to
-remain static. Updating a `shallow` property will not affect computed property
-under normal operation.
-
-During SSR however, changing `shallow` property will affect computed properties
-since we use a simple wrapper to emulate signal to avoid running into
-integration issues with various frameworks since we cannot control how they do
-SSR. This is illustrated in the code below
-
-#### Default Mode
-
-```js
-const staticObj = { id: 1, nested: { value: 42 } };
-const { state } = reify(
-  { data: shallow(staticObj) },
-  { nestedValue: (s) => s.data.nested.value },
-  false,
-);
-console.log(state.nestedValue); // 42
-// Updating the shallow object does NOT trigger re-computation:
-staticObj.nested.value = 100;
-console.log(state.nestedValue); // Remains 42 in SPA/Browser mode
-```
-
-#### SSR Mode:
-
-In SSR mode, computed getters re-run on every access. With the same code, after
-updating:
-
-```js
-console.log(state.nestedValue); // Now becomes 100
-```
-
-### In-Place Mutation vs. Immutability
-
-DeepState embraces in-place mutation rather than forcing immutable updates:
-
-- **Simplicity:** Update state directly (e.g. `state.count++`) without cloning
-  entire objects.
-- **Efficiency:** Only affected properties update—avoiding the overhead of deep
-  cloning common in immutable approaches.
-- **Natural Mapping:** You work with state as a plain object while DeepState
-  transparently manages reactivity.
-
-While immutability has its advantages, DeepState’s approach leverages modern
-JavaScript features (proxies and signals) to deliver an intuitive and performant
-experience for most UI applications.
-
-## Installation
+**1. Installation:**
 
 Install via npm:
 
-```sh
+```bash
 npm install @m5nv/deepstate
+# or yarn add @m5nv/deepstate
+# or pnpm add @m5nv/deepstate
 ```
 
-> **Note**: @m5nv/deepstate declares @preact/signals-* as a peer dependency. You
-> are responsible for installing the correct peer dependency to go with the
+> **Note**: `@m5nv/deepstate` declares `@preact/signals-*` as a peer dependency.
+> You are responsible for installing the correct peer dependency to go with the
 > import variant you plan on using.
 
 ### Import Variants
 
-DeepState supports use with different frameworks in a single installation by
-utilizing peer dependency and variant import paths. The import paths and the
-peer dependency is listed below:
+DeepState supports use with different frameworks by utilizing peer dependencies
+and variant import paths. The import paths and the required peer dependency are
+listed below:
 
 1. **For Preact:**
-   ```js
-   import { reify, shallow } from "@m5nv/deepstate";
+   ```javascript
+   import { reify, shallow } from "@m5nv/deepstate/preact"; // Use explicit /preact entry
    ```
    _Peer dependency:_ `@preact/signals`
 
 2. **For React:**
-   ```js
+   ```javascript
    import { reify, shallow } from "@m5nv/deepstate/react";
    ```
    _Peer dependency:_ `@preact/signals-react`
 
-3. **For CLI Environments:**
-   ```js
+3. **For Core / Node.js / Vanilla JS:**
+   ```javascript
    import { reify, shallow } from "@m5nv/deepstate/core";
    ```
    _Peer dependency:_ `@preact/signals-core`
 
 4. **For Svelte:**
-   ```js
+   ```javascript
    import { reify, shallow } from "@m5nv/deepstate/svelte";
    ```
    _Peer dependency:_ `@preact/signals-core`\
-   **Note:** This special import path automatically configures the escape hatch
-   to use an alternative prefix (default `"_"`) to avoid conflicts with Svelte’s
-   reserved `$` symbol. This is only needed if you plan on using `attach` api
-   for actions.
+   _Note:_ This entry point automatically configures the escape hatch prefix to
+   `_` (underscore) instead of `$` to avoid conflicts with Svelte's syntax.
 
-## Configuration & Environment Modes
+**2. Basic Usage:**
 
-DeepState adapts its behavior based on its runtime environment:
+```javascript
+import { reify } from "@m5nv/deepstate/core"; // Use '/core' for vanilla JS/Node
+import { effect } from "@preact/signals-core"; // For demonstrating reactivity
 
-- **SPA Mode:**\
-  In browsers or jsdom environments, DeepState uses native signals. State
-  properties remain as signal objects (with a `.value` property), and shallow
-  objects are non-reactive as intended.
+// Define initial state - notice the inline computed!
+const initialState = {
+  user: {
+    firstName: "Jane",
+    lastName: "Doe",
+  },
+  todos: ["Learn Signals", "Try DeepState"],
+  // Computed property defined inline
+  fullName(self) {
+    // 'self' refers to the 'user' object level here if this was nested,
+    // but here it refers to the root state as it's a root property.
+    // Let's adjust to use root state directly for simplicity here.
+    // NOTE: For computeds *inside* nested objects, 'self' is more useful.
+    // We'll use 'state' passed to reify for root access demonstration.
+    // A better root example: fullName(self, root) { return `${root.user.firstName} ${root.user.lastName}`; }
+    // Simplified for this basic example:
+    return `${this.user.firstName} ${this.user.lastName}`; // 'this' also refers to state proxy
+  },
+  todoCount(self) {
+    return self.todos.length; // 'self' is the root state here
+  },
+};
 
-- **SSR Mode:**\
-  In server-side rendering—or when `DEEPSTATE_MODE=SSR` is set—DeepState falls
-  back to a model where:
-  - **Computed Properties Re-compute on Every Access:**\
-    Without full dependency tracking in SSR, computed properties re-run on every
-    access. Since SSR rendering happens only once, the performance impact is
-    minimal.
-  - **Automatic Signal Unwrapping:**\
-    Signals return their underlying primitive value to generate valid HTML.
-  - **Impact on Shallow Objects:**\
-    In SPA mode, shallow objects remain non-reactive. In SSR mode, computed
-    getters re-run on every access, so changes to nested values in a shallow
-    object are immediately visible.
+// Create the reactive store
+const store = reify(initialState);
+const state = store.state; // Get the reactive state proxy
 
-DeepState determines its mode using:
+// --- Reading State ---
+console.log(state.user.firstName); // Output: Jane
+console.log(state.todos[0]); // Output: Learn Signals
+console.log(state.fullName); // Output: Jane Doe (Computed automatically)
+console.log(state.todoCount); // Output: 2
 
-```js
-// DEEPSTATE_MODE can be "SPA" or "SSR"
-// If not set, default to checking window.
-const mode = typeof process === "undefined"
-  ? "SPA"
-  : process.env.DEEPSTATE_MODE;
-const isSSR = mode ? mode === "SSR" : (typeof window === "undefined");
+// --- Writing State (Direct Mutation) ---
+state.user.lastName = "Smith";
+state.todos.push("Build Awesome App");
+
+console.log(state.fullName); // Output: Jane Smith (Computed updated!)
+console.log(state.todoCount); // Output: 3
+
+// --- Reactivity with Effects (Example) ---
+effect(() => {
+  console.log(`User's full name is now: ${state.fullName}`);
+});
+// Output: User's full name is now: Jane Smith
+
+state.user.firstName = "John";
+// Output: User's full name is now: John Smith
 ```
 
-> **Tip:** In Node or CLI/test environments, explicitly set `DEEPSTATE_MODE=SPA`
-> if you require SPA behavior.
+## Key Features Guide
 
-## Usage
+### Defining State (`reify`)
 
-DeepState makes state management feel natural by converting your intial state
-into signals &mdash; deeply. Simply read or write using `state.prop` syntax.
-When you need access to underlying signal, use `state.$prop` (or, for Svelte,
-`state._prop`) syntax. Note: destructuring DeepState's state `props` will result
-in losing reactivity; to overcome this you could destructure the native signals
-using `$` (or `_` for Svelte) prefix which remain reactive.
+You create a store using `reify`, passing your initial state object.
 
-### Example: Using DeepState in a Component (React)
+```javascript
+import { reify } from "@m5nv/deepstate/core";
 
-For consistency—especially in React—use the escape hatch in your render code:
+const store = reify({
+  counter: 0,
+  settings: { theme: "dark" },
+});
 
-```jsx
+const state = store.state;
+```
+
+### Reading State
+
+Access properties directly on the `state` proxy.
+
+```javascript
+console.log(state.counter); // Read primitive
+console.log(state.settings.theme); // Read nested property
+```
+
+### Writing State
+
+Mutate properties directly. DeepState handles the reactivity.
+
+```javascript
+state.counter++;
+state.settings.theme = "light";
+state.items.push("new item"); // Use standard array methods
+state.items.splice(0, 1); // They work too!
+```
+
+> **Important:** Replacing entire nested objects or arrays directly
+> (`state.settings = { theme: 'light' }`) is disallowed by default to prevent
+> common reactivity issues. Mutate properties or use actions instead. See
+> "Strict vs Permissive Mode" below.
+
+### Computed Properties
+
+Define functions directly in your initial state. They become reactive computed
+values.
+
+```javascript
+const store = reify({
+  count: 5,
+  // Automatically becomes a computed property
+  double(self) { // 'self' is the state proxy here
+    return self.count * 2;
+  },
+  nested: {
+    value: 10,
+    // Nested computed gets 'self' referring to 'nested' object
+    // and 'root' referring to the top-level state
+    valueTimesCount(self, root) {
+      return self.value * root.count;
+    },
+  },
+});
+
+console.log(store.state.double); // Output: 10
+console.log(store.state.nested.valueTimesCount); // Output: 50 (10 * 5)
+
+store.state.count = 6;
+console.log(store.state.double); // Output: 12
+console.log(store.state.nested.valueTimesCount); // Output: 60 (10 * 6)
+```
+
+### Actions (`attach`, `options.actions`)
+
+For more complex or reusable logic, define actions. Actions receive the `state`
+proxy as the first argument. Updates within actions are batched automatically
+(in SPA mode).
+
+```javascript
+// 1. Define during reify
+const store1 = reify(
+  { count: 0 },
+  { // Options object
+    actions: {
+      increment(state) {
+        state.count++;
+      },
+      add(state, amount) {
+        state.count += amount;
+      },
+      async loadUser(state) { // Async actions work too!
+        state.user = undefined;
+        state.loading = true;
+        try {
+          // const res = await fetch(...);
+          // const user = await res.json();
+          state.user = { name: "Fetched User" }; // Example
+        } catch (e) {
+          state.error = e;
+        } finally {
+          state.loading = false;
+        }
+      },
+    },
+  },
+);
+store1.actions.add(5);
+console.log(store1.state.count); // Output: 5
+
+// 2. Attach later
+const store2 = reify({ value: "" });
+store2.attach({
+  setValue(state, newValue) {
+    state.value = newValue;
+  },
+});
+store2.actions.setValue("hello");
+console.log(store2.state.value); // Output: hello
+```
+
+### Escape Hatch (`$`)
+
+Access the underlying Signal object directly using the `$` prefix (default).
+Useful for framework integrations or advanced patterns where you need the signal
+itself.
+
+```javascript
+const store = reify({ message: "Hi" });
+
+const messageSignal = store.state.$message;
+
+console.log(messageSignal.value); // Output: Hi (Read signal value)
+
+// Update via signal's .value setter
+messageSignal.value = "Hello";
+console.log(store.state.message); // Output: Hello
+
+// Destructure signals
+let { $message } = store.state;
+$message.value = "Hola";
+console.log(store.state.message); // Output: Hola
+```
+
+> **Limitation:** Assigning objects/arrays directly via
+> `signal.value = newObject` bypasses DeepState's proxy wrapping for the _new_
+> object/array, meaning its internal structure won't be reactive. Use
+> `state.prop = newObject` for deep reactivity.
+
+### Snapshots (`toJSON`, `snapshot`)
+
+Get plain JavaScript representations of your state.
+
+- **`store.toJSON()`**: Serializes the state, suitable for `JSON.stringify` or
+  SSR hydration. **Excludes computed properties.**
+  ```javascript
+  const store = reify({ count: 1, double: (s) => s.count * 2 });
+  console.log(JSON.stringify(store)); // Output: {"count":1}
+  ```
+- **`store.snapshot()`**: Creates a snapshot including the _resolved values_ of
+  computed properties. Useful for debugging or testing.
+  ```javascript
+  console.log(store.snapshot()); // Output: { count: 1, double: 2 }
+  ```
+
+### Shallow Objects (`shallow`)
+
+Prevent deep reactivity for specific objects using the `shallow` helper. Only
+the reference to the shallow object is reactive.
+
+```javascript
+import { reify, shallow } from "@m5nv/deepstate/core";
+
+const userSettings = shallow({ theme: "dark", notifications: true });
+const store = reify({ settings: userSettings });
+
+// Changing the reference is reactive
+store.state.settings = shallow({ theme: "light", notifications: false });
+
+// Changing properties *inside* the shallow object is NOT reactive
+userSettings.notifications = true; // Won't trigger effects depending on store.state.settings
+```
+
+### Strict vs Permissive Mode (`options.permissive`)
+
+Control whether the shape of your state objects can change after creation.
+
+- **`Strict Mode (Default - permissive: false):`** Prevents adding or deleting
+  properties on objects after initialization (helps catch errors and ensures
+  shape consistency). Deleting array elements (`delete state.items[0]`) is still
+  allowed.
+  ```javascript
+  const store = reify({ user: { name: "A" } }, { permissive: false });
+  // state.user.age = 30; // Throws TypeError
+  // delete state.user;   // Throws TypeError
+  // delete state.user.name; // Throws TypeError
+  ```
+- **`Permissive Mode (permissive: true):`** Allows adding new properties or
+  deleting existing properties. Functions added this way become computed
+  properties automatically.
+  ```javascript
+  const store = reify({ user: { name: "A" } }, { permissive: true });
+  state.user.age = 30; // OK - adds reactive 'age' property
+  state.user.upperName = (self) => self.name.toUpperCase(); // OK - adds computed
+  console.log(state.user.upperName); // Output: A
+  delete state.user.name; // OK
+  ```
+
+### Versioning (`__version`)
+
+DeepState includes non-enumerable `__version` signals for advanced use cases,
+primarily framework integration:
+
+- `store.__version`: Increments after every action completes. Useful for
+  coarse-grained change detection.
+- `state.myArray.__version`: Increments when an array's structure changes
+  (elements added/removed/length changed via proxy). Useful for optimizing list
+  rendering updates.
+
+These are typically used internally by framework adapters (like the Svelte
+example below).
+
+### Server-Side Rendering (SSR)
+
+DeepState works in SSR environments.
+
+- It automatically detects SSR (or use `DEEPSTATE_MODE=SSR` env var).
+- Uses non-reactive signal mocks (`SSRSignal`, `SSRComputed`).
+- Computed properties re-evaluate on every access.
+- Use `store.toJSON()` to get serializable state for hydration on the client.
+- Client-side reactivity (`effect`) will not run on the server.
+
+## Framework Integration Examples
+
+### React
+
+Use `@m5nv/deepstate/react` which depends on `@preact/signals-react`.
+
+```javascript
 import { reify } from "@m5nv/deepstate/react";
-import { useState } from "react";
+import { useSignals } from "@preact/signals-react/runtime"; // Or appropriate import
+import React, { useState } from "react";
 
 function Counter() {
-  const [{ state: counter, actions }] = useState(() =>
-    reify(
-      { count: 0 },
-      { double: (state) => state.count * 2 },
-    ).attach({ on_click: (state) => state.count++ })
+  // Initialize store in component state or context
+  const [store] = useState(() =>
+    reify({ count: 0, double: (s) => s.count * 2 }).attach({
+      increment: (state) => state.count++,
+    })
   );
+
+  // Hook from signals-react to trigger re-renders
+  useSignals();
 
   return (
     <div>
-      <p>{counter.$count} x 2 = {counter.$double}</p>
-      <button onClick={() => actions.on_click()}>Click me</button>
+      {/* Read directly from state proxy */}
+      <p>{store.state.count} * 2 = {store.state.double}</p>
+      {/* Call action */}
+      <button onClick={store.actions.increment}>Click me</button>
+      {/* Or use escape hatch if needed, depends on setup */}
+      {/* <p>{store.state.$count} * 2 = {store.state.$double}</p> */}
     </div>
   );
 }
 ```
 
-_Note:_ In pure Preact projects, plain properties might work. However, in React
-(especially with react-router) always use the `$`‑prefixed properties for
-reliable updates.
+_`(Note: React integration patterns with Signals are evolving. Always consult the @preact/signals-react documentation. Using $prop might still be necessary in some routing/SSR contexts).`_
+
+### Svelte
+
+Use `@m5nv/deepstate/svelte` (depends on `@preact/signals-core`). This entry
+point automatically sets the escape hatch to `_` to avoid conflicts with
+Svelte's `$`.
+
+**Basic Usage (Reading State):**
+
+Svelte's reactivity often works directly for reads.
+
+```html
+<script>
+  import { reify } from "@m5nv/deepstate/svelte";
+
+  const { state } = reify({ message: "Hello Svelte!" });
+
+  // Changes via proxy trigger Svelte update if state is referenced
+  setTimeout(() => {
+    state.message = "Updated!";
+  }, 2000);
+</script>
+
+<h1>{state.message}</h1>
+```
+
+**`Using Actions / __version Adapter:`**
+
+If you use DeepState actions or mutations that Svelte doesn't automatically
+detect (like array pushes inside an action), you need an adapter that bridges
+DeepState's `__version` signal to a Svelte store.
+
+```html
+<script>
+  import { writable } from "svelte/store";
+  import { effect } from "@preact/signals-core";
+  import { reify } from "@m5nv/deepstate/svelte"; // Uses '_' escape hatch
+
+  // --- Simple Adapter ---
+  function deepstateToSvelte(ds) {
+    // Use ds.state directly for reading its reactive properties
+    const svelteStore = writable(ds.state); // Initial value
+    const stopEffect = effect(() => {
+      // Subscribe to DeepState's version signal
+      ds.__version.value; // Read value to create dependency
+      // Trigger Svelte update by setting the store value again
+      // Svelte will compare and update if needed
+      svelteStore.set(ds.state);
+    });
+    // Return Svelte store interface + actions etc.
+    return {
+      subscribe: svelteStore.subscribe,
+      // Expose actions and maybe state/toJSON directly
+      actions: ds.actions,
+      state: ds.state, // Direct access still works
+      toJSON: ds.toJSON,
+    };
+  }
+  // --------------------
+
+  const counterDs = reify({ count: 0 }).attach({
+    increment: (state) => state.count++,
+  });
+
+  const counterStore = deepstateToSvelte(counterDs);
+</script>
+
+<h1>Count: {$counterStore.count}</h1>
+<button on:click="{counterStore.actions.increment}">Increment</button>
+
+<p>Signal Value: {counterStore.state._count.value}</p>
+```
+
+### Core / Vanilla JS
+
+Use `@m5nv/deepstate/core` and `@preact/signals-core`. Use `effect` to react to
+changes.
+
+```javascript
+import { reify } from "@m5nv/deepstate/core";
+import { batch, effect } from "@preact/signals-core";
+
+const store = reify({ x: 1, y: 2, sum: (s) => s.x + s.y });
+const { state } = store;
+
+effect(() => {
+  console.log(`Sum is: ${state.sum}`);
+});
+// Output: Sum is: 3
+
+// Batch multiple updates
+batch(() => {
+  state.x = 5;
+  state.y = 10;
+});
+// Output: Sum is: 15 (effect runs only once)
+```
 
 ## API Reference
 
-### `reify(initial, computedFns, permissive)`
+Here are the main functions and objects provided by DeepState V2:
 
-Creates a reactive store from an initial state object.
+### `reify(initialState, options?)`
 
-- **`initial`** (object): A non-null object defining your initial state.
-- **`computedFns`** (object): Functions mapping keys to computed (derived)
-  state.
-- **`permissive`** (boolean, default: `false`):
-  - **Strict mode:** Prevents new properties from being added after
-    initialization.
-  - **Permissive mode:** Allows dynamic extension of state.
+Creates and initializes your reactive state store.
 
-**Returns:** A store with:
+- **`initialState`** (Object): A plain JavaScript object defining the initial
+  structure, data, and computed properties (as inline functions) for your state.
+- **`options?`** (Object, optional):
+  - `permissive?` (Boolean, default: `false`): If `true`, allows adding/deleting
+    properties on state objects after creation. If `false` (strict mode),
+    enforces the initial shape.
+  - `actions?` (Object): An object containing action functions to attach to the
+    store immediately. Action functions receive `state` as the first argument.
+- **Returns:** A `store` object containing
+  `{ state, attach, actions, toJSON, snapshot, __version }`.
 
-- **`state`**: A proxy providing direct access to your state.
-- **`attach`**: A method to bind actions to the store.
-- **`toJSON`**: A method to serialize the state (excluding computed properties).
+```javascript
+import { reify } from "@m5nv/deepstate/core";
 
-### `shallow(obj)`
-
-Marks an object as shallow—meaning DeepState wraps only its top-level
-properties, leaving nested objects unproxied (non-reactive).\
-_Usage:_ Use `shallow` when you want to avoid deep wrapping for performance
-reasons or when you intend for nested data to remain static.
-
-## Attaching Actions
-
-Actions are functions that operate on your state. They can be synchronous or
-asynchronous. Bind actions to the store using the `attach` method.
-
-### Synchronous Action Example
-
-```js
-const store = reify({ count: 0 }).attach({
-  increment(state) {
-    state.count++;
+const store = reify(
+  { count: 0, double: (self) => self.count * 2 },
+  {
+    permissive: true,
+    actions: { reset: (state) => state.count = 0 },
   },
-});
-
-store.actions.increment();
-console.log(store.state.count); // 1
+);
 ```
 
-### Asynchronous Action Example
+### `shallow(object)`
 
-```js
-const store = reify({ count: 0 }).attach({
-  async fetchData(state) {
-    const response = await fetch("https://jsonplaceholder.typicode.com/todos");
-    const data = await response.json();
-    state.count = data.length;
-  },
-});
+A helper function to prevent an object from being deeply proxied. Only the
+reference to the object will be reactive. Useful for performance or embedding
+non-reactive data.
 
-await store.actions.fetchData();
-console.log(store.state.count); // Updated from API response
+- **`object`** (Object): The object to mark as shallow.
+- **Returns:** The same object, marked internally.
+
+```javascript
+import { reify, shallow } from "@m5nv/deepstate/core";
+
+const settings = shallow({ theme: "dark", layout: "compact" });
+const store = reify({ userSettings: settings });
+
+// store.state.userSettings.theme = 'light'; // This change won't be reactive
+store.state.userSettings = shallow({ theme: "light" }); // Replacing the reference IS reactive
 ```
 
-## Best Practices & Considerations
+### `store` Object
 
-- **Rendering:**\
-  In React/preact based projects use `$`‑prefixed properties in render code
-  (e.g. `<p>{counter.$count} x 2 = {counter.$double}</p>`)
+The object returned by `reify`.
 
-- **Mutations:**\
-  Prefer direct in-place updates (e.g. `state.count++`) for simplicity and
-  efficiency.
-
-- **Batching:**\
-  Utilize `batch()` from `@preact/signals` to combine multiple updates into a
-  single re-computation, reducing unnecessary re-renders.
-
-- **State Organization:**\
-  For large or deeply nested state, consider splitting it into multiple stores
-  for better performance and maintainability.
-
-- **SSR Mode Limitations:**\
-  In SSR mode, computed properties re-run on every access (due to the lack of
-  full dependency tracking), and signals are automatically unwrapped for valid
-  HTML output. This means:
-  - Computed values always reflect the latest state—even for shallow objects.
-  - Given that SSR rendering happens only once per request, this trade-off is
-    acceptable for generating static markup.
-
-## Integration
-
-### React Integration
-
-- **Reactivity Considerations:**\
-  In standard Vite React projects using `@preact/signals-react`, you might see
-  that plain state properties update as expected. However, when using frameworks
-  such as react-router or in SSR scenarios, use `$`-prefixed property in your
-  render code (e.g. `counter.$count` and `counter.$double`). This ensures that
-  React’s reconciliation is triggered reliably.
-
-### Svelte Integration
-
-- **Native Reactivity vs. DeepState:**\
-  Svelte has its own powerful, assignment-based reactivity. For simple
-  read/update scenarios, Svelte’s built-in reactivity may suffice.
-
-- **When a Store Adapter is Needed:**\
-  In cases where you attach actions that update state via in-place mutations
-  (e.g. `state.count++`), Svelte does not automatically detect the changes. To
-  bridge this gap, a Svelte store adapter is required.
-
-- **Escape Hatch Configuration:**\
-  Because Svelte reserves `$` for its own reactivity, a dedicated Svelte entry
-  point (e.g. `@m5nv/deepstate/svelte`) configures the escape hatch to use an
-  alternative prefix (by default, `_`). This allows you to access the underlying
-  signal as `state._prop`.
-
-### Svelte Store Adapter for Actions
-
-When you attach actions that update state, those in-place mutations won’t
-trigger Svelte’s reactivity automatically. In such cases, a Svelte store adapter
-is required to bridge DeepState’s updates with Svelte’s assignment-based
-reactivity. A simple store adapter is presented below for reference.
-
-```html
-<script module>
-  // deepstateStore.js
-  import { writable } from "svelte/store";
-  import { effect } from "@preact/signals-core";
-  import { reify } from "@m5nv/deepstate/core";
-
-  export function createSvelteStore(ds) {
-    const { state, actions, __version, toJSON } = ds;
-    const store = writable(state, (set) => {
-      const stop = effect(() => {
-        __version.value; // Subscribe to changes via __version.
-        set(state);
-      });
-      return () => stop();
-    });
-
-    return {
-      subscribe: store.subscribe,
-      set: store.set,
-      state,
-      actions,
-      toJSON,
-    };
-  }
-</script>
-
-<script>
-  // Create a deep state store.
-  const deepstate = reify(
-    { count: 0 },
-    { double: (s) => s.count * 2 },
-    false,
-  ).attach({
-    on_click: (state) => {
-      console.log(state.count, state.double);
-      state.count++;
-    },
+- **`store.state`**: The reactive proxy representing your state. Interact with
+  it directly for reads and writes:
+  - Read: `console.log(store.state.prop);`
+  - Write: `store.state.prop = newValue;`
+  - Computed: `console.log(store.state.myComputed);`
+  - Arrays: `store.state.items.push('new');`
+  - Escape Hatch: Access underlying signal via `store.state.$prop` (or `_prop`
+    in Svelte entry).
+  - Array Version: Access array structure version via
+    `store.state.myArray.__version`.
+- **`store.attach(actions)`**: A method to add more action functions to the
+  store after creation. Returns the `store` object for chaining.
+  - `actions` (Object): An object where keys are action names and values are
+    action functions `(state, ...args) => { ... }`.
+  ```javascript
+  store.attach({
+    decrement: (state) => state.count--,
   });
-  const sveltestore = createSvelteStore(deepstate);
-</script>
+  ```
+- **`store.actions`**: An object containing all attached actions. Call them like
+  methods: `store.actions.myAction(payload);`.
+- **`store.toJSON()`**: Returns a plain JavaScript object representation of the
+  state, suitable for serialization (e.g., `JSON.stringify`) or SSR hydration.
+  **Excludes computed properties.**
+- **`store.snapshot()`**: Returns a plain JavaScript object representation of
+  the state, including the resolved values of **all computed properties**.
+  Useful for debugging or testing.
+- **`store.__version`**: A signal that increments after any attached action
+  completes. Useful for coarse-grained change detection in framework
+  integrations.
 
-<h2>DeepState Svelte Store</h2>
-<input type="number" bind:value="{$sveltestore.count}" />
-<button on:click="{sveltestore.actions.on_click}">count</button>
-<h3>Is it working?</h3>
-<code>{deepstate.state.count} * 2 = {$sveltestore.double}</code>
-<pre>{JSON.stringify($sveltestore)}</pre>
+## Migration from V1
 
-<hr />
-<ul>
-  <li>Two-way binding works!</li>
-  <li>
-    Fine-grained reactivity is available by accessing the raw <i>state</i>.
-  </li>
-  <li>
-    The Svelte store adapter is needed only when you attach actions to update
-    state, since in-place mutations are not detected by Svelte's reactivity
-    automatically.
-  </li>
-</ul>
-```
+DeepState V2 includes significant improvements and breaking changes compared to
+V1 published on npm:
+
+- **Computed Properties:** Must be defined inline in the initial state object,
+  not via the second `computedFns` argument to `reify`. They now receive `self`
+  and `root` context.
+- **`toJSON()`**: Behavior (excluding computeds) is consistent with V1's
+  documented behavior.
+- **Strict Mode Deletion:** Now prevents deleting initial computed properties,
+  in addition to data properties (unless it's an array index).
+- **`debug` Option:** No longer available via `reify`. Configure via
+  `createDeepStateAPIv2` factory if needed (advanced).
+- See the [CHANGELOG](./CHANGELOG.md) for full details.
 
 ## Contributing
 
-Contributions to improve @m5nv/deepstate are welcome! Please submit issues or
-pull requests on our GitHub repository.
+Contributions welcome! Please submit issues or PRs on GitHub.
 
 ## Credits
 
-DeepState was inspired by
-[deepsignal](https://github.com/luisherranz/deepsignal).
+Inspired by [deepsignal](https://github.com/luisherranz/deepsignal).
 
 ## License
 
-Distributed under the MIT License. See [LICENSE](../LICENSE) for details.
+MIT

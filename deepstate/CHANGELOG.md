@@ -1,10 +1,11 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/deepstate)
 
-## [2.0.0] - YYYY-MM-DD
+## 2.0.0 - YYYY-MM-DD
 
 This major release (V2) introduces significant improvements, API changes, and a
 more robust reactivity core compared to V1. Migration from V1 will be required,
-primarily concerning how computed properties are defined.
+primarily concerning how computed properties are defined and how strict mode
+behaves.
 
 ### Breaking Changes 💥
 
@@ -16,81 +17,78 @@ primarily concerning how computed properties are defined.
     where the computed is defined) as the first argument, and optionally `root`
     (a proxy to the top-level state) as the second argument
     (`myComputed(self, root) { ... }`). This provides correct local context.
-  - The V1 approach of passing a separate `computed: { ... }` map in the `reify`
-    options is **removed**. V1 computeds likely only received the `root`
-    context, potentially leading to incorrect behavior for nested state.
-- **`toJSON()` Behavior:**
-  - The `store.toJSON()` method (and the proxy's `toJSON()`) now explicitly
-    **excludes** computed properties from its output. It only serializes the
-    base data properties, aligning better with standard `JSON.stringify`
-    behavior and optimizing for serialization/hydration.
+  - The V1 approach of passing a separate `computedFns` object as the second
+    argument to `reify` is **removed**. V1 computeds likely only received the
+    `root` context.
 - **Array/Object Replacement Policy:**
   - Directly assigning a new array or object to a property that already holds an
     array/object managed by DeepState (e.g., `state.items = newArray`) is
-    explicitly disallowed and will now throw a specific `TypeError`.
-  - **Assigning to `$prop.value` via Escape Hatch Disallowed:** Attempting to
-    replace an entire array or object by assigning to the `.value` property of
-    the underlying signal/proxy accessed via the escape hatch (e.g.,
-    `state.$items.value = newArray`) is also **disallowed**. This would
-    previously have likely failed silently or behaved unpredictably from a
-    reactivity standpoint. This capability is explicitly not supported in V2 due
-    to the significant architectural complexity and potential for bugs required
-    to implement it robustly within the deep reactivity model.
+    explicitly disallowed and throws a `TypeError`.
+  - Assigning to `$prop.value` via the escape hatch to replace collections
+    (e.g., `state.$items.value = newArray`) is also **disallowed**.
   - **Recommendation:** Use standard mutation methods (`.splice()`, `.push()`,
     etc.) or dedicated actions to modify collections. (V1 implicitly disallowed
-    direct replacement; V2 makes the policy explicit and clarifies the escape
-    hatch limitation).
+    direct replacement; V2 makes the policy explicit).
+- **Strict Mode (`permissive: false`) Deletion Behavior:**
+  - Strict mode now prevents the deletion of **both** existing data properties
+    _and_ initially defined computed property definitions using the `delete`
+    operator (throws `TypeError`). This enforces a more consistent "fixed shape"
+    based on the initial state. (Array index deletion remains allowed).
 
 ### Added ✨
 
 - **`snapshot()` Method:**
-  - A new `store.snapshot()` method (and corresponding proxy method) has been
-    added.
-  - Unlike `toJSON()`, `snapshot()` returns a plain object representation of the
-    state that **includes** the resolved values of computed properties.
-  - Primarily intended for testing, debugging, or specific framework
-    integrations requiring a complete point-in-time view of the state.
+  - A new `store.snapshot()` method returns a plain object representation of the
+    state that **includes** the resolved values of computed properties (both
+    initial and dynamically added). Primarily intended for testing/debugging.
 - **Versioning Signals (`__version`):**
-  - `store.__version`: A top-level signal (non-enumerable) that increments after
-    each attached action completes successfully. Useful for framework adapters
-    (e.g., triggering updates in Svelte/React).
-  - `store.state.arrayIdentifier.__version`: Array proxies now contain a
-    non-enumerable `__version` signal that increments automatically when array
-    indices or length are changed via the proxy `set`/`deleteProperty` traps.
-    (Note: Wrapping native mutation methods like `push`, `splice` to increment
-    version was deferred).
-- **Inline Computed Properties:** (Also a Breaking Change, listed here as a
-  feature) Functions within the initial state are automatically treated as
-  computed properties with `self`/`root` context. This significantly improves
-  Developer Experience (DX).
+  - `store.__version`: Top-level signal incremented after actions complete.
+  - `store.state.arrayIdentifier.__version`: Array-level signal incremented on
+    structural changes via `set`/`deleteProperty`. Useful for framework
+    integrations.
+- **Dynamic Computed Properties:**
+  - In permissive mode (`permissive: true`), assigning a function to a _new_
+    property on a state object now automatically creates a reactive computed
+    property.
+- **Inline Computed Properties:** (Also a Breaking Change) Functions in the
+  initial state are automatically treated as computed properties with
+  `self`/`root` context (Improved DX).
+- **Debug Logging Configuration:**
+  - A `debug` option (`true`, `false`, or console-like object) can now be passed
+    to the `createDeepStateAPIv2` factory function to enable/configure internal
+    logging.
 
 ### Changed 🔁
 
-- **Core Reactivity:** Internal reactivity mechanism rewritten based on evolving
-  the `simpleDeepProxy` concept, aiming for improved robustness, particularly
-  with nested state and computed property context.
-- **SSR Implementation:** Server-Side Rendering support (`isSSR` detection) is
-  refined using mock signal implementations (`SSRSignal`, `SSRComputed`) and
-  safe primitives (`safeSignal`, `safeBatch`, etc.) for better compatibility and
-  correctness in non-browser environments.
-- **Fine-Grained Reactivity:** Ensured that accessing array elements or
-  properties within array items does not unnecessarily depend on the array's
-  structure `__version`, preserving finer-grained updates for components
-  observing specific items.
+- **Core Reactivity:** Internal reactivity mechanism rewritten for improved
+  robustness.
+- **SSR Implementation:** Refined SSR detection and handling using mock
+  signals/primitives.
+- **Fine-Grained Reactivity:** Improved array dependency tracking to avoid
+  unnecessary updates.
+- **Permissive Mode (`set` Behavior):** Enhanced permissive mode `set` trap to
+  create computed properties dynamically when a function is assigned to a new
+  key.
+- **Strict Mode (`delete` Behavior):** Enhanced strict mode `delete` trap to
+  prevent deletion of initial computed properties, enforcing shape more
+  strictly.
+- **`toJSON()` Behavior:** The behavior of `toJSON()` (excluding computed
+  properties) remains consistent with the documented behavior of V1.
 
 ### Fixed 🐛
 
-- **Computed Property Context:** Resolved potential issues from V1 where
-  computed properties might have received incorrect context (only root, or map
-  of signals), especially within nested objects/arrays. V2 provides stable
-  `self` and `root` proxies.
-- **Nested Reactivity:** Improved handling of nested objects and arrays to
-  ensure reactivity propagates correctly and consistently.
+- **Computed Property Context:** Resolved potential V1 issues with incorrect
+  context (`self`/`root`) in computeds.
+- **Nested Reactivity:** Improved consistency for nested objects/arrays.
+- **Proxy Invariants (`deleteProperty`):** Fixed potential `TypeError` ("trap
+  returned falsish") when using `delete` on non-existent properties or via the
+  escape hatch prefix, by ensuring the trap returns `true` in these cases as
+  required by proxy invariants.
 
 ### Removed ➖
 
-- Removed the V1 `options.computed` argument from `reify`. Computed properties
-  must now be defined inline within the initial state object.
+- Removed the V1 `computedFns` argument from `reify` (replaced by inline
+  definition).
 
 ## v1.5.1 - 26MAR2025
 

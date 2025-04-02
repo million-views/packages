@@ -1,7 +1,7 @@
 # DeepState V2 - Functional Specification
 
-- **Version:** 2.1.0
-- **Date:** April 2, 2025
+- **Version:** 2.0.0 (Draft)
+- **Date:** April 1, 2025
 - **Status:** Ready for review
 
 > _NOTE_: Code and Specification may diverge post release. Code will always
@@ -64,9 +64,10 @@ explicit state snapshots, and framework integration.
 - Provides a mechanism for dependency injection, allowing users (or package
   maintainers) to supply specific implementations of `signal`, `computed`,
   `untracked`, and `batch`. Defaults to `@preact/signals-core`.
-- Accepts an optional `debug` option (`true`, `false`, or a console-like object)
-  to enable internal logging. Initializes a `dbi` (debug interface) instance
-  based on this flag, which is then available via closure to internal functions.
+- Introduces an optional `debug` option (`true`, `false`, or a console-like
+  object) to enable internal logging. Initializes a `dbi` (debug interface)
+  instance based on this flag, which is then available via closure to internal
+  functions.
 - Configures the escape hatch prefix (default `$`).
 - Determines the execution environment (SSR vs. SPA) and selects the appropriate
   "safe" primitives (`safeSignal`, `safeComputed`, etc.).
@@ -192,6 +193,8 @@ explicit state snapshots, and framework integration.
   dynamic) if present on target.
 - Skips internal properties/symbols. Accesses values via proxy. Skips functions
   if `forJson`.
+- The behavior of `toJSON` (excluding computed properties) is consistent with
+  the documented behavior in V1.
 
 ### 3.9. Actions (`attach`, `options.actions`)
 
