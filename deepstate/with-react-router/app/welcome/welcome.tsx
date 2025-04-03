@@ -2,7 +2,7 @@ import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
 import { reify } from "@m5nv/deepstate/react";
 import { useState } from "react";
-// import { useSignals } from "@preact/signals-react/runtime";
+import { useSignals } from "@preact/signals-react/runtime";
 
 const store = reify(
   { count: 8, double: (state) => state.count * 2 },
@@ -14,7 +14,7 @@ const store = reify(
 });
 
 function DerivedCounter2() {
-  // useSignals();
+  useSignals();
   const counter = store.state;
   const actions = store.actions;
   const { $count, $double } = counter;
