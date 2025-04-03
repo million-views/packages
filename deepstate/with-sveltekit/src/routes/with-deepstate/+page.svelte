@@ -4,9 +4,19 @@
   const store = reify({ count: 0, double: (state) => state.count * 2 });
   const { _count: count, _double: double } = store.state;
   const { state } = store;
+
+  // Note: For SSR, initialize store appropriately within component instance/context
+  const timer = reify({ message: 'Hello Svelte!' });
+
+  // Example mutation
+  setTimeout(() => {
+    timer.state.message = 'Updated!'; // Triggers Svelte update if {state.message} is used
+  }, 2000);
 </script>
 
 <h2>With Deepstate</h2>
+<h1>{timer.state.message}</h1>
+
 <input type="number" bind:value={state.count} />
 <button onclick={() => (state.count += 1)}>count</button>
 <h3>Is it working?</h3>
