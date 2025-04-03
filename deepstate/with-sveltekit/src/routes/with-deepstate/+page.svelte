@@ -1,8 +1,8 @@
 <script>
   import { reify } from '@m5nv/deepstate/svelte';
 
-  const store = reify({ count: 0 }, { double: (state) => state.count * 2 });
-  const { _count, _double } = store.state;
+  const store = reify({ count: 0, double: (state) => state.count * 2 });
+  const { _count: count, _double: double } = store.state;
   const { state } = store;
 </script>
 
@@ -12,7 +12,7 @@
 <h3>Is it working?</h3>
 <code>{state.count} * 2 = {state.double} | proxy read (.get)</code>
 <br />
-<code>{_count.value} * 2 = {_double.value} | signal read (.value)</code>
+<code>{$count} * 2 = {$double} | signal read (.value)</code>
 
 <hr />
 <aside>

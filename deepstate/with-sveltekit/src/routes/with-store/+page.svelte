@@ -2,12 +2,8 @@
   import { writable } from 'svelte/store';
   import { reify } from '@m5nv/deepstate/svelte'; // for Svelte/CLI environment
 
-  export function createDeepStateStore(
-    initial,
-    computedFns,
-    permissive = false,
-  ) {
-    const { state, attach } = reify(initial, computedFns, permissive);
+  export function createDeepStateStore(initial, permissive = false) {
+    const { state, attach } = reify(initial, { permissive });
     const { subscribe, set } = writable(state);
     const actions = {};
 
@@ -30,11 +26,10 @@
 
 <script>
   // Create a deep state store. Note: escape hatch prefix is configured (say "_")
-  const deepStore = createDeepStateStore(
-    { count: 0 },
-    { double: (s) => s.count * 2 },
-    false,
-  ).attach({
+  const deepStore = createDeepStateStore({
+    count: 0,
+    double: (s) => s.count * 2,
+  }).attach({
     on_click: (state) => {
       console.log(state.count, state.double);
       state.count++;
@@ -57,6 +52,10 @@
 </p>
 <hr />
 <ul>
-  <li>Notice that two way binding doesn't work.</li>
+  <li>
+    Notice that two way binding doesn't work. That's because we are unable to
+    expose a set method on the store effectively making it a readable (for
+    svelte)
+  </li>
   <li>Don't use this - it's broken.</li>
 </ul>

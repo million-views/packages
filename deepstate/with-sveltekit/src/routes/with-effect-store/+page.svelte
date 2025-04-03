@@ -29,8 +29,7 @@
 <script>
   // Create a deep state store.
   const deepstate = reify(
-    { count: 0 },
-    { double: (s) => s.count * 2 },
+    { count: 0, double: (s) => s.count * 2 },
     false,
   ).attach({
     on_click: (state) => {

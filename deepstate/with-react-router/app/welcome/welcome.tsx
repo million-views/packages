@@ -1,5 +1,3 @@
-"use client";
-
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
 import { reify } from "@m5nv/deepstate/react";
@@ -7,8 +5,7 @@ import { useState } from "react";
 // import { useSignals } from "@preact/signals-react/runtime";
 
 const store = reify(
-  { count: 8 },
-  { double: (state) => state.count * 2 },
+  { count: 8, double: (state) => state.count * 2 },
 ).attach({
   on_click: (state) => {
     // console.log(state.count, state.double);
@@ -25,7 +22,11 @@ function DerivedCounter2() {
   return (
     <div className="flex flex-col items-center justify-center p-6 rounded-lg shadow-md space-y-4">
       <h1 className="text-3xl font-bold">
-        {counter.$count} x 2 = {counter.$double}
+        {counter.count} x 2 = {counter.double}
+        <br />
+        {$count} x 2 = {$double}
+        <br />
+        {$count.value} x 2 = {$double.value}
       </h1>
 
       <button
@@ -39,12 +40,11 @@ function DerivedCounter2() {
 }
 
 function DerivedCounter3() {
-  // useSignals();
+  useSignals();
 
   const [{ state: counter, actions }] = useState(() =>
     reify(
-      { count: 0 },
-      { double: (state) => state.count * 2 },
+      { count: 0, double: (state) => state.count * 2 },
     ).attach({ on_click: (state) => state.count++ })
   );
 
@@ -103,7 +103,7 @@ export function Welcome() {
             </ul>
           </nav>
           <DerivedCounter2 />
-          <DerivedCounter3 />
+          {/* <DerivedCounter3 /> */}
         </div>
       </div>
     </main>
