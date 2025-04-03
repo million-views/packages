@@ -1,22 +1,19 @@
-import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
 
-import { useSignals } from "@preact/signals-react/runtime";
-import { reify } from "@m5nv/deepstate/core";
+import { reify } from "@m5nv/deepstate/react";
 
 const store = reify(
   { count: 0, double: (state) => state.count * 2 },
 ).attach({
   on_click: (state) => {
-    console.log(state.count, state.double);
+    // console.log(state.count, state.double);
     state.count++;
   },
 });
 
 function DerivedCounter2() {
-  useSignals();
   const counter = store.state;
   const actions = store.actions;
   const { $count, $double } = counter;

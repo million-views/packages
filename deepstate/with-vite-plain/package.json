@@ -12,13 +12,15 @@
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "@m5nv/deepstate": "file:../"
+    "@m5nv/deepstate": "file:../",
+    "@preact/signals-react": "3.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "@preact/signals-react-transform": "^0.5.1",
     "eslint": "^9.23.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
