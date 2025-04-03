@@ -1,4 +1,4 @@
-// src/common.js
+// src/common_v2.js (Refactored + Dynamic Computed Props + Stricter Delete)
 
 // --- Error Messages ---
 const ERROR_MESSAGES = {
@@ -90,19 +90,14 @@ function SSRComputed(fn) {
 // --- Main API Factory ---
 export function createDeepStateAPIv2(
   {
-    signal: injectedSignal,
-    computed: injectedComputed,
-    untracked: injectedUntracked,
-    batch: injectedBatch,
+    signal: injectedSignal = coreSignal,
+    computed: injectedComputed = coreComputed,
+    untracked: injectedUntracked = coreUntracked,
+    batch: injectedBatch = coreBatch,
+    debug = false,
   } = {},
-  config = {},
+  esc = "$",
 ) {
-  const {
-    debug = false, // Default debug to false
-    escapeHatch: esc = "$", // Default escape hatch to '$'
-    enableReactSsrEscapeHatchPatch: useReactSsrPatch = false, // Default patch to disabled
-  } = config;
-  // --- Debug Interface Setup ---
   const dbi = (typeof debug === "object" && debug !== null &&
       typeof debug.log === "function")
     ? debug
@@ -110,18 +105,13 @@ export function createDeepStateAPIv2(
 
   dbi.log("[Factory] Initializing DeepState API v2");
 
-  dbi.log(
-    `[Factory] React SSR Escape Hatch Patch configured: ${useReactSsrPatch}`,
-  );
-
-  // --- Shallow Marker ---
   const IS_SHALLOW = Symbol("@m5nv/deepstate/v2/is-shallow");
+
   function shallow(obj) {
     if (obj && typeof obj === "object") obj[IS_SHALLOW] = true;
     return obj;
   }
 
-  // --- Environment Detection ---
   const isNode = typeof process !== "undefined" && process.versions != null &&
     process.versions.node != null;
   const isBrowser = typeof window !== "undefined" &&
@@ -135,7 +125,6 @@ export function createDeepStateAPIv2(
     `[Factory] Environment detection: isNode=${isNode}, isBrowser=${isBrowser}, mode=${mode}, isSSR=${isSSR}`,
   );
 
-  // --- Safe Primitives Setup ---
   const safeSignal = isSSR ? SSRSignal : injectedSignal;
   const safeComputed = isSSR ? SSRComputed : injectedComputed;
   const safeUntracked = isSSR ? ((fn) => fn()) : injectedUntracked;
@@ -143,7 +132,6 @@ export function createDeepStateAPIv2(
     ? injectedBatch
     : (fn) => fn();
 
-  // --- Utility Functions ---
   const isSignal = (val) =>
     val && typeof val === "object" && typeof val.peek === "function";
 
@@ -231,34 +219,29 @@ export function createDeepStateAPIv2(
     });
   }
 
-  // --- Proxy Creation Logic ---
-  function _createStateProxy(initial, options) { // options = { permissive }
-    const { permissive = false } = options; // Extract permissive from options
+  function _createStateProxy(initial, options) {
+    const { permissive = false } = options;
     if (
       initial === null || typeof initial !== "object" || Array.isArray(initial)
     ) {
       throw new Error(ERROR_MESSAGES.INITIAL_VALUE_MUST_BE_OBJECT);
     }
-    let root = null; // To be assigned after root proxy is created
+    let root = null;
 
     function should_proxy(val) {
       return val && typeof val === "object" && !val[IS_SHALLOW] &&
         (val.constructor === Object || Array.isArray(val));
     }
-
     function deep_wrap(val, currentLevelOpts) {
-      // Ensure currentLevelOpts is passed down for recursive calls
       return should_proxy(val)
         ? _recursiveDeepProxy(val, currentLevelOpts)
         : val;
     }
 
-    // Recursive function to build the proxy tree
     function _recursiveDeepProxy(o, currentLevelOpts) {
-      // currentLevelOpts now includes { permissive, _useReactSsrPatch }
-      const computedFns = {}; // Store initial function definitions for computeds
-      let storage; // The underlying plain object or array holding signals/proxies
-      let proxy; // The proxy object itself
+      const computedFns = {};
+      let storage;
+      let proxy;
 
       if (Array.isArray(o)) {
         storage = [];
@@ -274,42 +257,32 @@ export function createDeepStateAPIv2(
           const itemIsShallow = itemIsObject && item[IS_SHALLOW];
           if (itemIsObject && !itemIsSignalInstance && !itemIsShallow) {
             return _recursiveDeepProxy(item, currentLevelOpts);
-          } else if (itemIsShallow) {
-            // Store shallow objects directly as per baseline code provided
-            // NOTE: V2 spec discussion suggested maybe wrapping these in signals too.
-            // Sticking EXACTLY to user baseline code now.
-            return item;
-          } else {
-            return itemIsSignalInstance ? item : safeSignal(item);
-          }
+          } else if (itemIsShallow) return item;
+          else return itemIsSignalInstance ? item : safeSignal(item);
         }));
       } else {
         storage = {};
         for (const key in o) {
           if (!Object.hasOwnProperty.call(o, key)) continue;
           const val = o[key];
-          if (typeof val === "function") {
-            computedFns[key] = val;
-          } else {
+          if (typeof val === "function") computedFns[key] = val;
+          else {
             const valIsObject = val && typeof val === "object";
             const valIsSignalInstance = isSignal(val);
             const valIsShallow = valIsObject && val[IS_SHALLOW];
             if (valIsObject && !valIsSignalInstance && !valIsShallow) {
               storage[key] = _recursiveDeepProxy(val, currentLevelOpts);
-            } else if (valIsShallow) {
-              // Wrap shallow references in signals per baseline code provided
-              storage[key] = safeSignal(val);
-            } else {
-              storage[key] = valIsSignalInstance ? val : safeSignal(val);
-            }
+            } else if (valIsShallow) storage[key] = safeSignal(val);
+            else storage[key] = valIsSignalInstance ? val : safeSignal(val);
           }
         }
       }
 
-      // --- The Proxy Handler ---
       const handler = {
+        // Inside the handler object within _recursiveDeepProxy function in src/common_v2.js
+
         get: (target, prop, receiver) => {
-          // --- Escape Hatch Logic (WITH CONDITIONAL PATCH) ---
+          // --- START: Escape Hatch Logic ---
           if (
             typeof esc === "string" && esc.length > 0 &&
             typeof prop === "string" && prop.startsWith(esc)
@@ -317,70 +290,96 @@ export function createDeepStateAPIv2(
             const actualProp = prop.substring(esc.length);
             dbi.log(`[Get EscapeHatch] "${prop}" -> "${actualProp}"`);
 
-            let underlyingSignal = null; // Variable to hold the found signal/computed
-
-            // Check initial computed properties
+            // --- Check initially defined computed properties (computedFns) ---
             if (actualProp in computedFns) {
-              let computedSignalInstance = Reflect.get(target, actualProp);
+              let computedSignal = Reflect.get(target, actualProp); // Check if already materialized/cached on target
+              // Ensure cached value is the correct computed signal
               if (
-                !isSignal(computedSignalInstance) ||
-                computedSignalInstance._fn !== computedFns[actualProp]
+                !isSignal(computedSignal) ||
+                computedSignal._fn !== computedFns[actualProp]
               ) {
                 dbi.log(
                   `[Get EscapeHatch] Materializing computed signal for "${actualProp}"`,
                 );
-                computedSignalInstance = derivedBy(
+                computedSignal = derivedBy(
                   receiver,
                   computedFns[actualProp],
-                  root,
+                  root, // root comes from closure
                 );
-                target[actualProp] = computedSignalInstance; // Cache the computed signal object
+                // Cache the materialized computed signal on the target storage
+                // Note: This stores the signal object itself, not the definition function
+                target[actualProp] = computedSignal;
               }
-              underlyingSignal = computedSignalInstance;
-            } // Check target storage
-            else if (actualProp in target) {
-              underlyingSignal = Reflect.get(target, actualProp);
+
+              // *** V1 SSR Behavior Modification START ***
+              if (isSSR) {
+                // In SSR, return the primitive value
+                dbi.log(
+                  `[Get EscapeHatch SSR] Returning .value for computed "${actualProp}"`,
+                );
+                return computedSignal.value;
+              } else {
+                // In SPA, return the signal object
+                return computedSignal;
+              }
+              // *** V1 SSR Behavior Modification END ***
             }
 
-            // If a signal/computed was found...
-            if (underlyingSignal !== null) {
-              // *** === CONDITIONAL SSR PATCH LOGIC === ***
-              // Check: Is it SSR mode? Is the React patch enabled for this API instance? Is the underlying thing actually a signal?
-              if (
-                isSSR && currentLevelOpts._useReactSsrPatch &&
-                isSignal(underlyingSignal)
-              ) {
+            // --- Check target storage (data properties or dynamically added computed signals) ---
+            if (actualProp in target) {
+              const underlying = Reflect.get(target, actualProp);
+
+              // *** V1 SSR Behavior Modification START ***
+              // Check if it's actually a signal before trying to access .value
+              // (Handles cases where non-signal values might be on target)
+              if (isSSR && isSignal(underlying)) {
+                // In SSR, return the primitive value if it's a signal
                 dbi.log(
-                  `[Get EscapeHatch SSR ReactPatch] Returning .value for "${actualProp}"`,
+                  `[Get EscapeHatch SSR] Returning .value for signal "${actualProp}"`,
                 );
-                return underlyingSignal.value; // Return primitive value (Patched Behavior)
+                return underlying.value;
               } else {
-                return underlyingSignal; // Return signal object / underlying item (Default V2 Behavior)
+                // In SPA, return the signal object (if it is one)
+                // Or return the raw value if it wasn't a signal
+                return underlying;
               }
-              // *** === END CONDITIONAL LOGIC === ***
-            } else {
-              return undefined; // Prop not found via escape hatch
+              // *** V1 SSR Behavior Modification END ***
             }
+
+            // Property not found via escape hatch
+            return undefined;
           }
           // --- END: Escape Hatch Logic ---
 
-          // --- START: Non-Escape Hatch Logic ---
-          // Handle snapshot and toJSON properties first (identical to baseline)
+          // --- START: Non-Escape Hatch Logic (Snapshot/toJSON/Regular Access) ---
+          // Handle snapshot and toJSON properties first
           if (prop === "snapshot") {
             const snapshotFn = () => {
-              dbi.log(`[Snapshot] Pre-materializing...`);
+              dbi.log(
+                `[Snapshot] Pre-materializing computed props (if any)...`,
+              );
+              // Pre-materialize initial computed props by accessing them via receiver
               for (const key in computedFns) {
                 if (Object.hasOwnProperty.call(computedFns, key)) {
                   try {
-                    receiver[key]; // Access via receiver to trigger caching
+                    // Access via receiver to trigger derivedBy and caching if needed
+                    const _ignore = receiver[key];
                   } catch (e) {
-                    dbi.error(`[Snapshot] Error materializing '${key}':`, e);
+                    dbi.error(
+                      `[Snapshot] Error materializing initial computed '${key}':`,
+                      e,
+                    );
                   }
                 }
               }
-              dbi.log(`[Snapshot] Pre-materialization complete.`);
+              // Also ensure any dynamically added computeds (now on target as signals) are accessed
+              // Note: createSnapshot accesses via proxy anyway, maybe pre-materialization isn't strictly needed here?
+              // Let's keep it simple for now, createSnapshot handles recursion.
+              dbi.log(
+                `[Snapshot] Pre-materialization complete (invoked reads). Calling createSnapshot.`,
+              );
               return createSnapshot(
-                receiver,
+                receiver, // Pass the proxy itself
                 { forJson: false },
                 safeUntracked,
                 esc,
@@ -388,12 +387,14 @@ export function createDeepStateAPIv2(
             };
             return snapshotFn;
           }
+
           if (prop === "toJSON") {
             return () =>
               createSnapshot(receiver, { forJson: true }, safeUntracked, esc);
           }
 
-          // Track array access for reactivity (SPA only) (identical to baseline)
+          // Track array access for reactivity (SPA only)
+          // Read target.__version.value to establish dependency
           if (
             !isSSR && Array.isArray(target) && prop !== "__version" &&
             target.__version
@@ -401,48 +402,61 @@ export function createDeepStateAPIv2(
             target.__version.value; // Read signal value
           }
 
-          // Check target storage for the property (identical to baseline)
+          // Check target storage for the property
           if (prop in target) {
             const val = Reflect.get(target, prop, receiver);
-            if (prop === "__version" && isSignal(val)) return val; // Return __version signal itself
-            if (isSignal(val)) return val.value; // Unwrap signal values
-            return val; // Return nested proxy or raw value
+            // Return the signal object itself if __version is explicitly requested
+            if (prop === "__version" && isSignal(val)) return val;
+            // If it's a signal, return its value
+            if (isSignal(val)) return val.value;
+            // Otherwise, return the raw value (could be a nested proxy, primitive, etc.)
+            return val;
           }
 
-          // Check initially defined computed properties (identical to baseline)
+          // Check initially defined computed properties (computedFns)
           if (prop in computedFns) {
+            // Check if already materialized/cached on target
             const cachedComputed = Reflect.get(target, prop);
             if (
               isSignal(cachedComputed) &&
               cachedComputed._fn === computedFns[prop]
             ) {
-              return cachedComputed.value; // Return cached computed value
+              // Already materialized and function matches, return its value
+              return cachedComputed.value;
             } else {
+              // Not materialized or function changed (latter shouldn't happen for initial)
+              // Materialize, cache, and return value
               dbi.log(
                 `[Get] Materializing initial computed signal for "${
                   String(prop)
                 }"`,
               );
               const comp = derivedBy(receiver, computedFns[prop], root);
-              target[prop] = comp; // Cache the computed signal object
-              return comp.value; // Return computed value
+              target[prop] = comp; // Cache the computed signal object on target
+              return comp.value;
             }
           }
 
-          // Handle array methods (identical to baseline)
+          // Handle array methods potentially (check if needed based on V2 spec goal)
+          // V2 Spec seems to imply array methods might be handled, let's add basic check:
           if (
             Array.isArray(target) && typeof prop === "string" &&
-            prop in Array.prototype
+            typeof Array.prototype[prop] === "function"
           ) {
-            const method = Array.prototype[prop];
-            if (typeof method === "function") return method.bind(receiver);
+            // Ensure array methods operate on the proxy receiver for reactivity traps
+            return (...args) => Array.prototype[prop].apply(receiver, args);
+            // Or perhaps just: return Reflect.get(target, prop, receiver); if Reflect handles binding? Test needed.
+            // Let's stick to original V2 intent - simpler if methods aren't explicitly handled here unless needed by traps.
+            // Reverting to simpler logic:
+            // return Reflect.get(target, prop, receiver); // Standard delegation
           }
 
-          return undefined; // Property not found
+          // Property not found
+          return undefined;
           // --- END: Non-Escape Hatch Logic ---
         }, // End get trap
 
-        // --- set, has, deleteProperty traps remain IDENTICAL to your working baseline ---
+        // ... other traps (set, has, deleteProperty) remain the same as V2 code provided ...
         set: (target, prop, newVal, receiver) => {
           dbi.log(`[Set] Request to set prop "${String(prop)}"`);
           const currentVal = Reflect.get(target, prop);
@@ -461,11 +475,12 @@ export function createDeepStateAPIv2(
             dbi.error(errorMsg);
             throw new TypeError(errorMsg);
           }
-          if (prop in computedFns) {
+          if (prop in computedFns) { // Check initial computed definitions
             const errorMsg = ERROR_MESSAGES.CANNOT_SET_COMPUTED(prop);
             dbi.error(errorMsg);
             throw new TypeError(errorMsg);
           }
+
           if (isSignal(currentVal)) {
             const wrappedNewVal = deep_wrap(newVal, currentLevelOpts);
             if (currentVal.peek() !== wrappedNewVal) {
@@ -480,17 +495,16 @@ export function createDeepStateAPIv2(
             const wrappedNewVal = deep_wrap(newVal, currentLevelOpts);
             let valueChanged = !alreadyExisted ||
               (!isSignal(Reflect.get(target, prop)) ||
-                Reflect.get(target, prop).peek() !== wrappedNewVal); // Using baseline logic here
+                Reflect.get(target, prop).peek() !== wrappedNewVal);
             if (valueChanged) {
-              target[prop] = wrappedNewVal; // Assign wrapped value (might be proxy or primitive)
-              // Need to ensure it's signal or proxy in storage? Baseline code implied assignment was enough. Let's stick to baseline assignment.
+              target[prop] = wrappedNewVal;
               if (target.__version) target.__version.value++;
             }
             return true;
           } else if (isArrayLength) {
             const currentLength = target.length;
             try {
-              target[prop] = newVal; // Use standard length assignment
+              target[prop] = newVal;
               if (target.length !== currentLength && target.__version) {
                 target.__version.value++;
               }
@@ -524,24 +538,13 @@ export function createDeepStateAPIv2(
               dbi.error(errorMsg);
               throw new TypeError(errorMsg);
             }
-          } else { // Prop exists, but isn't a signal - implies wholesale replacement attempt
-            // Need to check if newVal requires proxying to match spec's intent more closely?
-            if (should_proxy(currentVal) && should_proxy(newVal)) { // Check if both old and new are proxy-able objects/arrays
-              const errorMsg = ERROR_MESSAGES.CANNOT_REPLACE_PROXY(prop);
-              dbi.error(errorMsg);
-              throw new TypeError(errorMsg);
-            } else {
-              // Allow replacement if not replacing proxy with proxy? Baseline seems to hit type error below.
-              // Let's stick closer to baseline's apparent simpler logic which might error implicitly here.
-              // Or explicitly throw:
-              const errorMsg = `[Set] Unhandled replacement for prop "${
-                String(prop)
-              }"`;
-              dbi.error(errorMsg);
-              throw new TypeError(errorMsg); // Be explicit about disallowed replacement
-            }
+          } else {
+            const errorMsg = ERROR_MESSAGES.CANNOT_REPLACE_PROXY(prop);
+            dbi.error(errorMsg);
+            throw new TypeError(errorMsg);
           }
         }, // End set
+
         has: (target, prop) => {
           if (
             typeof esc === "string" && esc.length > 0 &&
@@ -551,13 +554,18 @@ export function createDeepStateAPIv2(
             return (actualProp in target) || (actualProp in computedFns);
           }
           return (prop in target) || (prop in computedFns);
-        }, // End has
+        },
+
+        // #############################################################
+        // # deleteProperty Trap with Stricter Delete Logic START      #
+        // #############################################################
         deleteProperty: (target, prop) => {
           dbi.log(`[Delete] Request for prop: "${String(prop)}"`);
           const hadPropInTarget = prop in target;
-          const isComputed = prop in computedFns;
+          const isComputed = prop in computedFns; // Check initial computed definitions
           const isPermissive = currentLevelOpts.permissive;
 
+          // Disallow deleting via escape hatch (return true to avoid invariant error)
           if (
             typeof esc === "string" && esc.length > 0 &&
             typeof prop === "string" && prop.startsWith(esc)
@@ -565,14 +573,20 @@ export function createDeepStateAPIv2(
             dbi.error(ERROR_MESSAGES.CANNOT_DELETE_ESCAPED(prop));
             return true;
           }
-          if (!isPermissive) {
+
+          // *** Strict Mode Check - Now includes computed properties ***
+          if (!isPermissive) { // If in strict mode...
             const isTargetArray = Array.isArray(target);
             const isArrayIndex = isTargetArray &&
               String(Number(prop)) === String(prop) && Number(prop) >= 0;
+
+            // Prevent deletion IF it's an existing property on target OR an initial computed property definition,
+            // AND it's NOT an array index.
+            // Note: Dynamically added computed props are stored on target, so hadPropInTarget handles them.
             if ((hadPropInTarget || isComputed) && !isArrayIndex) {
               const errorMsg = ERROR_MESSAGES.CANNOT_DELETE_STRICT(prop);
               dbi.error(errorMsg);
-              throw new TypeError(errorMsg);
+              throw new TypeError(errorMsg); // Throw error
             }
             dbi.log(
               `[Delete] Allowing potential deletion for "${
@@ -580,24 +594,29 @@ export function createDeepStateAPIv2(
               }" in strict mode (must be array index or non-existent).`,
             );
           }
+          // *** End Strict Mode Check ***
 
+          // Proceed with deletion if permissive OR if it's an array index (strict mode already checked)
           let deleted = false;
-          if (isComputed) {
+          if (isComputed) { // Only reachable in permissive mode now for initial computed defs
             dbi.log(
               `[Delete Permissive] Removing computed definition "${
                 String(prop)
               }"`,
             );
             delete computedFns[prop];
-            if (hadPropInTarget) Reflect.deleteProperty(target, prop);
-            deleted = true; // Report success
-          } else if (hadPropInTarget) {
+            if (hadPropInTarget) Reflect.deleteProperty(target, prop); // Delete cached signal too
+            return true; // Deletion of definition successful
+          } else if (hadPropInTarget) { // Data property on target (or dynamically added computed signal)
+            // Strict mode already validated if applicable (i.e., it must be an array index)
             deleted = Reflect.deleteProperty(target, prop);
             dbi.log(
               `[Delete${
                 isPermissive ? " Permissive" : ""
               }] Deleting from target storage "${String(prop)}": ${deleted}`,
             );
+
+            // Increment array version if an array index was successfully deleted
             const isTargetArray = Array.isArray(target);
             const isArrayIndex = isTargetArray &&
               String(Number(prop)) === String(prop) && Number(prop) >= 0;
@@ -609,31 +628,28 @@ export function createDeepStateAPIv2(
               );
               target.__version.value++;
             }
-          } else {
+            return deleted; // Return result of Reflect.deleteProperty
+          } else { // Property not found on target and not an initial computed definition
             dbi.log(`[Delete] Property "${String(prop)}" not found.`);
-            deleted = true; // Deleting non-existent is successful
+            return true; // Deleting non-existent is successful (prevents invariant error)
           }
-          return deleted;
         }, // End deleteProperty
+        // #############################################################
+        // # deleteProperty Trap with Stricter Delete Logic END        #
+        // #############################################################
       }; // End handler
 
       proxy = new Proxy(storage, handler);
       return proxy;
     } // End _recursiveDeepProxy
 
-    // *** MODIFIED ***: Pass the config flag down via optionsForProxy
-    const optionsForProxy = {
-      permissive: options.permissive, // Pass permissive flag
-      _useReactSsrPatch: useReactSsrPatch, // Pass patch flag
-    };
+    const optionsForProxy = { permissive };
     const finalProxy = _recursiveDeepProxy(initial, optionsForProxy);
-    root = finalProxy; // Assign root proxy *after* creation
+    root = finalProxy;
     dbi.log("[_createStateProxy] Root proxy established.");
     return finalProxy;
   } // End _createStateProxy
 
-  // --- Public API ---
-  // reify and attach remain IDENTICAL to your working baseline code
   function reify(
     initial,
     options = { permissive: false, actions: {} },
@@ -677,7 +693,7 @@ export function createDeepStateAPIv2(
         }
       }
       return store;
-    } // End attach
+    }
 
     function toJSON() {
       return rootProxy.toJSON ? rootProxy.toJSON() : undefined;
@@ -692,7 +708,7 @@ export function createDeepStateAPIv2(
       writable: false,
       enumerable: false,
     });
-    if (providedActions && Object.keys(providedActions).length > 0) { // Check providedActions exists
+    if (Object.keys(providedActions).length > 0) {
       dbi.log("[reify] Attaching initial actions...");
       attach(providedActions);
     }
@@ -700,6 +716,27 @@ export function createDeepStateAPIv2(
     return store;
   } // End reify
 
-  // Return the public API functions from the factory
   return { shallow, reify };
 } // End createDeepStateAPIv2
+
+// --- Placeholder Core Primitives ---
+const coreSignal = (v) => ({
+  value: v,
+  peek: () => v,
+  subscribe: (cb) => {
+    cb(v);
+    return () => {};
+  },
+});
+const coreComputed = (fn) => ({
+  get value() {
+    return fn();
+  },
+  peek: fn,
+  subscribe: (cb) => {
+    cb(fn());
+    return () => {};
+  },
+});
+const coreUntracked = (fn) => fn();
+const coreBatch = (fn) => fn();

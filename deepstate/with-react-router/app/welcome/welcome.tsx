@@ -21,7 +21,7 @@ function DerivedCounter2() {
       <h1 className="text-3xl font-bold">
         {counter.count} x 2 = {counter.double}
         <br />
-        {/* {$count} x 2 = {$double} */}
+        {$count} x 2 = {$double}
         <br />
         {$count.value} x 2 = {$double.value}
       </h1>

@@ -7,7 +7,7 @@ const { shallow, reify } = createDeepStateAPIv2({
   computed,
   untracked,
   batch,
-}, "_");
+}, { escapeHatch: "_" });
 
 // Re-export them
 export { reify, shallow };

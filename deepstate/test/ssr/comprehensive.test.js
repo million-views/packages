@@ -1,28 +1,12 @@
 // test/ssr/deepstate-v2.test.js - Tests for DeepState v2 in SSR mode
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { batch, effect } from "@preact/signals-core";
+import { describe, expect, it, vi } from "vitest";
 import { reify, shallow } from "@m5nv/deepstate/core";
 
-// // Setup for SSR mode - run before each test
-// beforeEach(() => {
-//   // Force SSR mode by removing window (if it exists)
-//   global.originalWindow = global.window;
-//   delete global.window;
-
-//   // Ensure SSR mode by setting the environment variable
-//   process.env.DEEPSTATE_MODE = "SSR";
-// });
-
-// // Restore environment after each test
-// afterEach(() => {
-//   // Restore window if it existed
-//   if (global.originalWindow) {
-//     global.window = global.originalWindow;
-//   }
-
-//   // Reset environment variable
-//   delete process.env.DEEPSTATE_MODE;
-// });
+// Helper to check if a value looks like an SSR signal/computed mock
+// (Based on the mocks having a peek function)
+function isSsrSignalMock(val) {
+  return val && typeof val === "object" && typeof val.peek === "function";
+}
 
 describe("DeepState Core Functionality (SSR Mode)", () => {
   describe("Basic Reactivity", () => {
@@ -260,12 +244,6 @@ describe("DeepState Core Functionality (SSR Mode)", () => {
     });
   });
 
-  // Helper to check if a value looks like an SSR signal/computed mock
-  // (Based on the mocks having a peek function)
-  function isSsrSignalMock(val) {
-    return val && typeof val === "object" && typeof val.peek === "function";
-  }
-
   // IMPORTANT: Ensure these tests run with DEEPSTATE_MODE=SSR environment variable set!
   describe("Escape Hatch (SSR Mode)", () => {
     it("provides underlying SSRSignal object via escape hatch", () => {
@@ -377,7 +355,7 @@ describe("DeepState Core Functionality (SSR Mode)", () => {
             return `Count: ${self.count}`;
           },
         },
-        { permissive: true }
+        { permissive: true },
       );
 
       // Test string concatenation (implicit toString)
@@ -413,21 +391,18 @@ describe("DeepState Complex Use Cases (SSR Mode)", () => {
         },
         validation: function (self) {
           return {
-            username:
-              self.form.username.length < 3
-                ? "Username must be at least 3 characters"
-                : "",
+            username: self.form.username.length < 3
+              ? "Username must be at least 3 characters"
+              : "",
             email: !self.form.email.includes("@")
               ? "Invalid email address"
               : "",
-            password:
-              self.form.password.length < 8
-                ? "Password must be at least 8 characters"
-                : "",
-            confirmPassword:
-              self.form.password !== self.form.confirmPassword
-                ? "Passwords do not match"
-                : "",
+            password: self.form.password.length < 8
+              ? "Password must be at least 8 characters"
+              : "",
+            confirmPassword: self.form.password !== self.form.confirmPassword
+              ? "Passwords do not match"
+              : "",
           };
         },
         isValid: function (self, root) {
@@ -503,7 +478,7 @@ describe("DeepState Complex Use Cases (SSR Mode)", () => {
         store.state.errors.username || ""
       }</div>`;
       expect(errorTemplate).toBe(
-        '<div class="error">Username must be at least 3 characters</div>'
+        '<div class="error">Username must be at least 3 characters</div>',
       );
 
       // Fix the validation error
@@ -541,9 +516,11 @@ describe("DeepState Complex Use Cases (SSR Mode)", () => {
         <div class="stats">
           <p>${store.state.greeting}</p>
           <ul>
-            ${store.state.users
-              .map((user) => `<li>${user.name} (${user.role})</li>`)
-              .join("")}
+            ${
+        store.state.users
+          .map((user) => `<li>${user.name} (${user.role})</li>`)
+          .join("")
+      }
           </ul>
         </div>
       `;
@@ -560,16 +537,18 @@ describe("DeepState Complex Use Cases (SSR Mode)", () => {
         <div class="stats">
           <p>${store.state.greeting}</p>
           <ul>
-            ${store.state.users
-              .map((user) => `<li>${user.name} (${user.role})</li>`)
-              .join("")}
+            ${
+        store.state.users
+          .map((user) => `<li>${user.name} (${user.role})</li>`)
+          .join("")
+      }
           </ul>
         </div>
       `;
 
       // Should have updated values
       expect(updatedTemplate).toContain(
-        "Hello, there are 2 admins and 2 users."
+        "Hello, there are 2 admins and 2 users.",
       );
       expect(updatedTemplate).toContain("<li>Alice (admin)</li>");
     });
