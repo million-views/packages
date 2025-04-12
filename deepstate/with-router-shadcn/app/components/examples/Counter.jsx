@@ -1,7 +1,7 @@
 import { reify } from "@m5nv/deepstate/react";
 
 const store = reify(
-  { count: 10 },
+  { count: 1 },
 ).attach({
   increment: (state) => {
     state.count++;
@@ -17,7 +17,7 @@ export default function Counter() {
   const { $count } = counter;
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-muted rounded-lg shadow-md space-y-4">
+    <div className="flex flex-col items-center justify-center p-1 md:p-6 bg-muted rounded-lg shadow-md space-y-4">
     {/* Fluid Text Size: Uses clamp() with container query inline units (cqi).
         Font scales between 1.875rem (text-2xl) and 3rem (text-3xl),
         preferring a size relative to 4% of the container's width.
@@ -38,13 +38,13 @@ export default function Counter() {
           - px-4: Maintains consistent horizontal padding inside the button. */}
       <button
         onClick={() => (actions.increment())}
-        className="w-full @sm:w-auto @sm:flex-1 @sm:min-w-0 font-semibold bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition duration-200"
+        className="w-[60cqw] mx-auto @sm:flex-1 @sm:min-w-0 font-semibold bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition duration-200"
       >
         Increment
       </button>
       <button
         onClick={() => (actions.decrement())}
-        className="w-full @sm:w-auto @sm:flex-1 @sm:min-w-0 font-semibold py-2 px-4 rounded transition duration-200 bg-red-500 hover:bg-red-600 text-white"
+        className="w-[60cqw] mx-auto @sm:flex-1 @sm:min-w-0 font-semibold py-2 px-4 rounded transition duration-200 bg-red-500 hover:bg-red-600 text-white"
       >
         Decrement
       </button>

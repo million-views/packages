@@ -1,7 +1,7 @@
 import { reify } from "@m5nv/deepstate/react";
 
 const store = reify(
-  { count: 10, double: (state) => state.count * 2 },
+  { count: 1, double: (state) => state.count * 2 },
 ).attach({
   increment: (state) => {
     state.count++;

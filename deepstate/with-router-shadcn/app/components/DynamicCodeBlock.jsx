@@ -1,6 +1,7 @@
 // CodeBlock.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 // Import Textarea if you intended to use it visibly elsewhere, otherwise it's not needed for the hidden copy area.
 // import { Textarea } from "@/components/ui/textarea";
 import { Copy, Check } from "lucide-react";
@@ -137,8 +138,10 @@ const DynamicCodeBlock = ({ filename, language = "javascript" }) => {
     return <div className="text-red-500 p-4 bg-red-100 border border-red-400 rounded">Error: {error}</div>;
   }
 
+  // <div className="relative w-full rounded-md bg-zinc-800 p-4 min-h-[50px] overflow-auto"> {/* Added min-h for loading */}
   return (
-    <div className="relative w-full rounded-md bg-zinc-800 p-4 min-h-[50px]"> {/* Added min-h for loading */}
+    
+    <ScrollArea className="h-[60cqh] w-full rounded-md border sm:p-0 m-0">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-800 bg-opacity-75">
            {/* Add a spinner or loading text */}
@@ -148,7 +151,7 @@ const DynamicCodeBlock = ({ filename, language = "javascript" }) => {
       {/* Render the highlighted code */}
       <div
         dangerouslySetInnerHTML={{ __html: highlightedCode }}
-        className="text-sm font-mono text-white overflow-x-auto"
+        className="text-sm font-mono text-white @sm:p-1 @md:p-4 p-4 bg-zinc-800 rounded-md"
        />
       {/* Copy Button - only show if not loading and there's code */}
       {!isLoading && sourceCode && (
@@ -169,7 +172,8 @@ const DynamicCodeBlock = ({ filename, language = "javascript" }) => {
          aria-hidden="true"
       />
       */}
-    </div>
+      <ScrollBar orientation="horizontal"/>
+    </ScrollArea>
   );
 };
 
