@@ -18,10 +18,8 @@ export default function Home() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const selectedExample = examples.find(ex => ex.id === selectedExampleId) || examples[0];
-  console.log ('selected example id: ', selectedExample.id);
 
   const handleSelectExample = (id: string) => {
-    console.log ('id: ', id);
     setSelectedExampleId(id);
     setIsSheetOpen(false);
   };

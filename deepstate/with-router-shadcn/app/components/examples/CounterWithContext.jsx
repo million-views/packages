@@ -14,11 +14,11 @@ function CtxCounter () {
   const { state: counter, actions } = useContext(Store);
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 rounded-lg shadow-md space-y-4">
+    <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-muted space-y-4">
       <Value counter={counter} />
       <button
         onClick={() => actions.increment()}
-        class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-200"
+        className="w-[60cqw] mx-auto mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-200"
       >
         Increment
       </button>

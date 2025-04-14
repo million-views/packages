@@ -14,8 +14,6 @@ function Header({
 }) {
   const { theme, setTheme } = useTheme();
 
-  console.log ('theme: ', theme);
-
   return (
     // Removed bottom margin, added border-b here
     <header className={cn("flex items-center justify-between h-16 px-4 md:px-6 shrink-0 border-b", className)}>

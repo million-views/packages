@@ -61,7 +61,7 @@ export default function MainContent(props) {
           </ResizablePanel>
 
            {/* Handle adapts automatically based on direction */}
-           <ResizableHandle withHandle className="w-1 h-full md:h-full @sm:hidden md:w-1 bg-transparent hover:bg-primary/10 active:bg-primary/20 data-[resize-handle-state=drag]:bg-primary/20 transition-colors duration-150 group data-[panel-group-direction=vertical]:h-2 data-[panel-group-direction=vertical]:w-full" >
+           <ResizableHandle withHandle className="w-1 h-full md:h-full md:w-1 bg-transparent hover:bg-primary/10 active:bg-primary/20 data-[resize-handle-state=drag]:bg-primary/20 transition-colors duration-150 group data-[panel-group-direction=vertical]:h-2 data-[panel-group-direction=vertical]:w-full" >
               <div className="w-1 h-8 md:w-1 md:h-8 bg-border rounded-full my-auto md:my-auto md:mx-auto group-hover:bg-primary/50 group-data-[resize-handle-state=drag]:bg-primary/50 transition-colors duration-150 data-[panel-group-direction=vertical]:h-1 data-[panel-group-direction=vertical]:w-8 data-[panel-group-direction=vertical]:mx-auto"></div>
             </ResizableHandle>
 
@@ -71,9 +71,9 @@ export default function MainContent(props) {
             defaultSize={isSmallScreen ? verticalLayoutSizes.output : horizontalLayoutSizes.output}
             minSize={35} // Keep a reasonable minSize
             >
-            <div className="w-[98cqw] @md: w-[98cqw] flex flex-col h-full p-0 sm:p-4 sm:p-6"> {/* Adjust padding for small screens */}
+            <div className="@container w-[98cqw] flex flex-col h-full p-0 @sm:p-6"> {/* Adjust padding for small screens */}
               {/* ... Output Header ... */}
-              <div className="flex justify-center pb-2 md:pb-4 mb-0 md:mb-4 md:border-b shrink-0">
+              <div className="flex justify-center pb-2 mt-6 md:pb-4 mb-0 md:mb-4 md:border-b shrink-0">
                 <h3 className="text-base font-medium text-foreground">Output</h3>
               </div>
               {/* ... Output Content Area ... */}
@@ -81,7 +81,7 @@ export default function MainContent(props) {
                 {/* <pre className="text-sm font-mono text-muted-foreground whitespace-pre-wrap break-words h-full outline-none">
                     {output}
                 </pre> */}
-                <DynamicComponentLoader filename={name} />                
+                  <DynamicComponentLoader filename={name} />
               {/* </div> */}
             </div>
           </ResizablePanel>
