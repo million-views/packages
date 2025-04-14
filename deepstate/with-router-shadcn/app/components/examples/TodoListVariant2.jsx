@@ -76,7 +76,7 @@ export default function TodoListWithId() {
               className="flex-grow" // Allow input to take available space
             />
             {/* Use Shadcn Button. Type="button" prevents form submission if onClick is preferred */}
-             <Button type="button" onClick={actions.addTodo}>
+             <Button type="button" onClick={actions.addTodo} className="bg-blue-500 hover:bg-blue-600 text-white">
                  Add
              </Button>
             {/* Or use type="submit" if you want Enter key in Input to submit the form */}

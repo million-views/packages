@@ -1,9 +1,9 @@
 // src/components/Header.tsx
 import { Moon, Sun, Menu, Code2 } from "lucide-react"; // Added Code2 icon
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/ThemeProvider";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import SidebarContent from "./sidebar-content";
+import SidebarContent from "@components/SidebarContent";
 import { cn } from "@/lib/utils";
 
 function Header({
@@ -34,7 +34,7 @@ function Header({
         {/* Logo/Title with Icon */}
         <div className="flex items-center gap-2">
              <Code2 className="h-6 w-6 text-primary hidden sm:block"/> {/* Optional Icon */}
-             <h1 className="text-lg font-semibold sm:text-xl">Snippet Showcase</h1>
+             <h1 className="text-lg font-semibold sm:text-xl">DeepState Demo</h1>
         </div>
       </div>
 

@@ -23,13 +23,13 @@ export default function Counter() {
       <div className="w-full flex flex-col gap-1 @sm:flex-col @sm:space-y-0 @md:space-x-4 mb-5">
         <button
           onClick={() => (actions.increment())}
-          className="w-[50cqw] mx-auto @sm:min-w-0 font-semibold bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition duration-200"
+          className="w-[60cqw] mx-auto @sm:min-w-0 font-semibold bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition duration-200"
         >
           Increment
         </button>
         <button
           onClick={() => (actions.decrement())}
-          className="w-[50cqw] mx-auto @sm:min-w-0 font-semibold py-2 px-4 rounded transition duration-200 bg-red-500 hover:bg-red-600 text-white"
+          className="w-[60cqw] mx-auto @sm:min-w-0 font-semibold py-2 px-4 rounded transition duration-200 bg-red-500 hover:bg-red-600 text-white"
         >
           Decrement
         </button>

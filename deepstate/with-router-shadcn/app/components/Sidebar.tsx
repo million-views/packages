@@ -1,5 +1,5 @@
 // src/components/Sidebar.tsx
-import SidebarContent from './sidebar-content';
+import SidebarContent from '@/components/SidebarContent';
 import { cn } from "@/lib/utils";
 
 function Sidebar({ className, ...props }) {

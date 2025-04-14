@@ -6,7 +6,7 @@ const Store = createContext();
 function Value({ counter }) {
   const {$count} = counter;
   return (
-    <h2 className="text-3xl font-bold text-gray-800">Count: {$count}</h2>
+    <h2 className="text-lg font-semibold text-[clamp(1.875rem,4cqi,3rem)]">Count: {$count}</h2>
   );
 }
 

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import Header from '@/components/header';
-import Sidebar from '@/components/sidebar';
+import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
 import { examples } from '@/components/data';
 import type { Route } from "./+types/home";
 
-import MainContent from "@/components/main-content";
+import MainContent from "@/components/MainContent";
 
 export function meta({}: Route.MetaArgs) {
   return [
