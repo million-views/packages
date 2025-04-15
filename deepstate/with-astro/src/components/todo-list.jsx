@@ -4,7 +4,6 @@ import { useState } from "preact/hooks";
 
 import renderComponent from "./render-component.jsx";
 
-  
 const store = reify(
   {
     todos: [
@@ -13,8 +12,6 @@ const store = reify(
       { text: "Walk the dog", completed: false },
     ],
     draft: "",
-  },
-  {
     completedCount: (state) =>
       state.todos.filter((todo) => todo.completed).length,
   },
@@ -33,44 +30,53 @@ store.attach({
 });
 
 export function TodoListWithoutId() {
-  
   const { state, actions } = store;
   const onInput = (event) => (state.draft = event.target.value);
 
   return (
     <section class="grid bg-white shadow-lg p-8 w-full px-40">
-    <form class="grid justify-center gap-6" onSubmit={actions.addTodo}>
-      <div class="grid grid-cols-2 grid-rows-1 gap-2">
-        <input type="text" class="border-1 border-solid rounded-md w-40" value={state.draft} onInput={onInput} />
-        <button 
+      <form class="grid justify-center gap-6" onSubmit={actions.addTodo}>
+        <div class="grid grid-cols-2 grid-rows-1 gap-2">
+          <input
+            type="text"
+            class="border-1 border-solid rounded-md w-40"
+            value={state.draft}
+            onInput={onInput}
+          />
+          <button
             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-200"
-            onClick={actions.addTodo}>
-          Add
-        </button>
-      </div>
-      <ul class="grid grid-cols-1 gap-8">
-        {state.todos.map((todo, index) => (
-          <li class="grid grid-cols-2 gap-4">
-            <label>
-              <input
-                type="checkbox"
-                checked={todo.completed}
-                onInput={() => {
-                  todo.completed = !todo.completed;
-                  // state.todos = [...state.todos];
-                }}
-              />
-              {todo.completed ? <s>{todo.text}</s> : todo.text}
-            </label>{" "}
-            <button 
-              type="button" onClick={() => actions.removeTodo(index)}>
-              ❌
-            </button>
-          </li>
-        ))}
-      </ul>
-      <p class="mt-4 text-sm text-gray-500">Completed: {state.completedCount}</p>
-    </form>
+            onClick={actions.addTodo}
+          >
+            Add
+          </button>
+        </div>
+        <ul class="grid grid-cols-1 gap-8">
+          {state.todos.map((todo, index) => (
+            <li class="grid grid-cols-2 gap-4">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onInput={() => {
+                    todo.completed = !todo.completed;
+                    // state.todos = [...state.todos];
+                  }}
+                />
+                {todo.completed ? <s>{todo.text}</s> : todo.text}
+              </label>{" "}
+              <button
+                type="button"
+                onClick={() => actions.removeTodo(index)}
+              >
+                ❌
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p class="mt-4 text-sm text-gray-500">
+          Completed: {state.completedCount}
+        </p>
+      </form>
     </section>
   );
 }
@@ -82,8 +88,8 @@ export function TodoListWithoutId() {
  */
 export function CreateTodoStore(initial) {
   const todo_store = reify(
-    initial,
     {
+      ...initial,
       pending_count: (state) =>
         state.todos.filter((todo) => !todo.completed).length,
       completed_count: (state) =>
@@ -125,7 +131,6 @@ export function CreateTodoStore(initial) {
 
   return todo_store;
 }
-
 
 // Component for editing the title
 function TitleEditor({ store }) {
@@ -343,13 +348,15 @@ export default function TodoExampleContent() {
   return (
     <main class="p-4">
       <section class="bg-white shadow-md rounded-lg p-6 mb-4">
-        <h2 class="text-xl font-bold mb-2 text-gray-800">TodoList - With Id</h2>      
-        {renderComponent (TodoListWithId, codeJSX)}
+        <h2 class="text-xl font-bold mb-2 text-gray-800">TodoList - With Id</h2>
+        {renderComponent(TodoListWithId, codeJSX)}
       </section>
 
       <section class="bg-white shadow-md rounded-lg p-6 mb-4">
-        <h2 class="text-xl font-bold mb-2 text-gray-800">TodoList - Without Id</h2>      
-        {renderComponent (TodoListWithoutId, codeJSX)}
+        <h2 class="text-xl font-bold mb-2 text-gray-800">
+          TodoList - Without Id
+        </h2>
+        {renderComponent(TodoListWithoutId, codeJSX)}
       </section>
     </main>
   );

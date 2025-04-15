@@ -37,8 +37,7 @@ const Counter = () => {
 const DerivedCounter = () => {
   const [{ state: counter }] = useState(() =>
     reify(
-      { count: 0 },
-      { double: (state) => state.count * 2 },
+      { count: 0, double: (state) => state.count * 2 },
     )
   );
 
@@ -65,8 +64,7 @@ const DerivedCounter = () => {
 function DerivedCounter2() {
   const [{ state: counter, actions }] = useState(() =>
     reify(
-      { count: 0 },
-      { double: (state) => state.count * 2 },
+      { count: 0, double: (state) => state.count * 2 },
     ).attach({ on_click: (state) => state.count++ })
   );
 
