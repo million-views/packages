@@ -1,7 +1,7 @@
 import { type RouteConfig, index, route, layout } from "@react-router/dev/routes";
 
 const dashboard_routes = [
-  route("dashboard", "routes/dashboard/$index.tsx"),
+  route("dashboard/*", "routes/dashboard/$index.tsx"),
   // route("settings", "routes/dashboard/$settings.tsx"),
 ];
 
