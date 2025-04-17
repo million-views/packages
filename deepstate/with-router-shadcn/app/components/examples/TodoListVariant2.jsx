@@ -58,7 +58,7 @@ export default function TodoListWithId() {
 
   return (
     // <ScrollArea className="h-[60cqh] w-full rounded-md border sm:p-0 m-0">
-    <Card className="w-full max-w-lg mx-auto shadow-lg overflow-auto">
+    <Card className="@container w-full max-w-lg mx-auto shadow-lg overflow-auto">
       <CardHeader>
         <CardTitle>My Todo List</CardTitle>
         {/* Optional: <CardDescription>Manage your tasks efficiently.</CardDescription> */}
@@ -76,7 +76,7 @@ export default function TodoListWithId() {
               className="flex-grow" // Allow input to take available space
             />
             {/* Use Shadcn Button. Type="button" prevents form submission if onClick is preferred */}
-             <Button type="button" onClick={actions.addTodo} className="bg-blue-500 hover:bg-blue-600 text-white">
+             <Button type="button" onClick={actions.addTodo}>
                  Add
              </Button>
             {/* Or use type="submit" if you want Enter key in Input to submit the form */}
@@ -123,7 +123,7 @@ export default function TodoListWithId() {
            )}
         </form>
       </CardContent>
-      <CardFooter className="flex justify-evenly">
+      <CardFooter className="grid grid-cols-2">
         {/* Display completed count */}
         <p className="text-sm text-muted-foreground">
           Pending: {state.pendingCount ?? 0}

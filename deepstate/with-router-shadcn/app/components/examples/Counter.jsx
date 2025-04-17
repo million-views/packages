@@ -1,4 +1,6 @@
 import { reify } from "@m5nv/deepstate/react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 const store = reify(
   { count: 1 },
@@ -12,28 +14,42 @@ const store = reify(
 });
 
 export default function Counter() {
+
   const counter = store.state;
   const actions = store.actions;
   const { $count } = counter;
 
   return (
-    <div className="@container flex flex-col items-center justify-center p-1 md:p-6 bg-muted mx-3 rounded-lg shadow-md space-y-4">
-      <h1 className="text-lg font-semibold text-[clamp(1.875rem,4cqi,3rem)]">Count: {$count}</h1>
 
-      <div className="w-full flex flex-col gap-1 @sm:flex-col @sm:space-y-0 @md:space-x-4 mb-5">
-        <button
+    <Card className="@container grid place-items-center bg-muted gap-y-4 w-full max-w-xs mx-auto my-8 p-6">
+
+      <CardHeader className="p-0 w-full">
+        <h1 className="text-xl font-semibold md:text-2xl text-center">
+          Count: {$count}
+        </h1>
+      </CardHeader>
+
+      <CardContent className="@container p-0 w-full grid grid-cols-1 @md:grid-cols-2 gap-4">
+        <Button
+          className="w-[60cqw] mx-auto @sm:min-w-0 py-2 px-4 rounded transition duration-200"
           onClick={() => (actions.increment())}
-          className="w-[60cqw] mx-auto @sm:min-w-0 font-semibold bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition duration-200"
         >
           Increment
-        </button>
-        <button
+        </Button>
+
+        <Button
+          variant="destructive" // Use destructive variant for semantic color
+          className="w-[60cqw] mx-auto @sm:min-w-0 py-2 px-4 rounded transition duration-200"
           onClick={() => (actions.decrement())}
-          className="w-[60cqw] mx-auto @sm:min-w-0 font-semibold py-2 px-4 rounded transition duration-200 bg-red-500 hover:bg-red-600 text-white"
         >
           Decrement
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+
+    </Card>
   );
+
+
+
+
 }
