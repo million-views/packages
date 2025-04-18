@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Link, useLocation, useMatches } from "react-router";
-import { Menu } from "lucide-react";
+import { ChevronRight, Home, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Icon } from "@/components/icon-mapper";
+import { routeMetadata } from "@/routes";
 
 // Types for route items
 export interface RouteItem {
@@ -46,6 +47,9 @@ export function Navigator(
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
 
+  // Check if we're on the home page
+  const isHomePage = location.pathname === "/";
+
   // Check if a route is active
   const isActive = React.useCallback(
     (path: string, end = false) => {
@@ -61,6 +65,49 @@ export function Navigator(
   const activeMainRoute = React.useMemo(() => {
     return routes.find((route) => isActive(route.path));
   }, [routes, isActive]);
+
+  // Generate breadcrumb items based on the current path
+  const breadcrumbItems = React.useMemo(() => {
+    if (isHomePage) return [];
+
+    const items = [];
+
+    // Always add home
+    items.push({
+      path: "/",
+      label: "Home",
+      isHome: true,
+    });
+
+    // Parse the current path to build breadcrumb segments
+    const pathSegments = location.pathname.split("/").filter(Boolean);
+    let currentPath = "";
+
+    for (let i = 0; i < pathSegments.length; i++) {
+      const segment = pathSegments[i];
+      currentPath += `/${segment}`;
+
+      // Find metadata for this path
+      const metadata = routeMetadata[currentPath];
+
+      if (metadata) {
+        items.push({
+          path: currentPath,
+          label: metadata.label,
+          isLast: i === pathSegments.length - 1,
+        });
+      } else {
+        // Fallback if no metadata is found
+        items.push({
+          path: currentPath,
+          label: segment.charAt(0).toUpperCase() + segment.slice(1),
+          isLast: i === pathSegments.length - 1,
+        });
+      }
+    }
+
+    return items;
+  }, [location.pathname, isHomePage]);
 
   // Desktop navigation
   const DesktopNav = (
@@ -84,8 +131,8 @@ export function Navigator(
     </nav>
   );
 
-  // View navigation (secondary level)
-  const ViewNav = viewRoutes && viewRoutes.length > 0 && (
+  // View navigation (secondary level) - shown on desktop
+  const ViewNav = !isMobile && viewRoutes && viewRoutes.length > 0 && (
     <div className="border-b">
       <div className="container flex overflow-x-auto">
         {viewRoutes.map((view, index) => (
@@ -104,6 +151,55 @@ export function Navigator(
       </div>
     </div>
   );
+
+  // Breadcrumb navigation - only shown on mobile
+  const BreadcrumbNav = isMobile && !isHomePage && breadcrumbItems.length > 0 &&
+    (
+      <nav
+        className="flex items-center text-sm text-muted-foreground py-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        aria-label="Breadcrumb"
+      >
+        <div className="container flex items-center">
+          <ol className="flex items-center space-x-2">
+            {breadcrumbItems.map((item, index) => (
+              <React.Fragment key={item.path}>
+                {index > 0 && (
+                  <li className="flex items-center">
+                    <ChevronRight className="h-4 w-4 mx-1" />
+                  </li>
+                )}
+                <li>
+                  {item.isHome
+                    ? (
+                      <Link
+                        to="/"
+                        className="flex items-center hover:text-foreground transition-colors"
+                        aria-label="Home"
+                      >
+                        <Home className="h-4 w-4" />
+                      </Link>
+                    )
+                    : item.isLast
+                    ? (
+                      <span className="font-medium text-foreground">
+                        {item.label}
+                      </span>
+                    )
+                    : (
+                      <Link
+                        to={item.path}
+                        className="hover:text-foreground transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    )}
+                </li>
+              </React.Fragment>
+            ))}
+          </ol>
+        </div>
+      </nav>
+    );
 
   // Mobile navigation
   const MobileNav = (
@@ -183,6 +279,7 @@ export function Navigator(
         </div>
       </header>
       {ViewNav}
+      {BreadcrumbNav}
     </>
   );
 }
