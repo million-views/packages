@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Link, useLocation, useMatches } from "react-router";
-import { ChevronRight, Home, Menu } from "lucide-react";
+import { Link, useLocation } from "react-router";
+import { ChevronDown, ChevronRight, Home, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,36 +14,25 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Icon } from "@/components/icon-mapper";
-import { routeMetadata } from "@/routes";
-
-// Types for route items
-export interface RouteItem {
-  label: string;
-  path: string;
-  iconName?: string;
-  end?: boolean;
-  views?: RouteViewItem[];
-}
-
-export interface RouteViewItem {
-  label: string;
-  path: string;
-  iconName?: string;
-  end?: boolean;
-}
+import type { NavigableRouteObject } from "@/route-helpers";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavigatorProps {
-  routes: RouteItem[];
-  viewRoutes?: RouteViewItem[];
+  routes: NavigableRouteObject[];
+  level?: number;
   appName?: string;
   className?: string;
 }
 
 export function Navigator(
-  { routes, viewRoutes, appName = "App", className }: NavigatorProps,
+  { routes, level = 1, appName = "App", className }: NavigatorProps,
 ) {
   const location = useLocation();
-  const matches = useMatches();
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
 
@@ -52,7 +41,8 @@ export function Navigator(
 
   // Check if a route is active
   const isActive = React.useCallback(
-    (path: string, end = false) => {
+    (path = "", end = false) => {
+      if (!path) return false;
       if (end) {
         return location.pathname === path;
       }
@@ -61,10 +51,24 @@ export function Navigator(
     [location.pathname],
   );
 
-  // Find the current active main route
-  const activeMainRoute = React.useMemo(() => {
-    return routes.find((route) => isActive(route.path));
-  }, [routes, isActive]);
+  // Get routes for the current level
+  const currentLevelRoutes = React.useMemo(() => {
+    return getRoutesForLevel(routes, level);
+  }, [routes, level]);
+
+  // Get child routes for the active parent
+  const childRoutes = React.useMemo(() => {
+    if (level <= 1) return [];
+
+    // Find the active parent route at level-1
+    const parentRoutes = getRoutesForLevel(routes, level - 1);
+    const activeParent = parentRoutes.find((route) =>
+      route.path && location.pathname.startsWith(route.path)
+    );
+
+    if (!activeParent || !activeParent.children) return [];
+    return activeParent.children.filter((route) => !route.hideInNav);
+  }, [routes, level, location.pathname]);
 
   // Generate breadcrumb items based on the current path
   const breadcrumbItems = React.useMemo(() => {
@@ -87,17 +91,18 @@ export function Navigator(
       const segment = pathSegments[i];
       currentPath += `/${segment}`;
 
-      // Find metadata for this path
-      const metadata = routeMetadata[currentPath];
+      // Find a matching route
+      const matchingRoute = findRouteByPath(routes, currentPath);
 
-      if (metadata) {
+      if (matchingRoute) {
         items.push({
           path: currentPath,
-          label: metadata.label,
+          label: matchingRoute.label ||
+            segment.charAt(0).toUpperCase() + segment.slice(1),
           isLast: i === pathSegments.length - 1,
         });
       } else {
-        // Fallback if no metadata is found
+        // Fallback if no route is found
         items.push({
           path: currentPath,
           label: segment.charAt(0).toUpperCase() + segment.slice(1),
@@ -107,7 +112,113 @@ export function Navigator(
     }
 
     return items;
-  }, [location.pathname, isHomePage]);
+  }, [location.pathname, isHomePage, routes]);
+
+  // Helper function to find a route by path
+  function findRouteByPath(
+    routeList: NavigableRouteObject[],
+    path: string,
+  ): NavigableRouteObject | undefined {
+    for (const route of routeList) {
+      if (route.path === path) {
+        return route;
+      }
+      if (route.children) {
+        const found = findRouteByPath(route.children, path);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  }
+
+  // Helper function to get routes at a specific level
+  function getRoutesForLevel(
+    routeList: NavigableRouteObject[],
+    targetLevel: number,
+    currentLevel = 1,
+  ): NavigableRouteObject[] {
+    if (currentLevel === targetLevel) {
+      return routeList.filter((route) => !route.hideInNav);
+    }
+
+    if (currentLevel < targetLevel) {
+      const result: NavigableRouteObject[] = [];
+      routeList.forEach((route) => {
+        if (route.children) {
+          result.push(
+            ...getRoutesForLevel(route.children, targetLevel, currentLevel + 1),
+          );
+        }
+      });
+      return result;
+    }
+
+    return [];
+  }
+
+  // Render a navigation item with potential dropdown for children
+  const NavItem = (
+    { route, mobile = false }: {
+      route: NavigableRouteObject;
+      mobile?: boolean;
+    },
+  ) => {
+    const hasChildren = route.children &&
+      route.children.some((child) => !child.hideInNav);
+    const isRouteActive = isActive(route.path, route.end);
+
+    if (hasChildren && !mobile) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant={isRouteActive ? "secondary" : "ghost"}
+              className={cn(
+                "flex items-center gap-2",
+                mobile && "w-full justify-start",
+              )}
+            >
+              {route.iconName && <Icon name={route.iconName} />}
+              <span className={cn(mobile && "ml-2")}>{route.label}</span>
+              <ChevronDown className="h-4 w-4 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {route.children
+              ?.filter((child) => !child.hideInNav)
+              .map((child, idx) => (
+                <DropdownMenuItem key={idx} asChild>
+                  <Link
+                    to={child.path || ""}
+                    className="flex items-center gap-2"
+                  >
+                    {child.iconName && <Icon name={child.iconName} />}
+                    {child.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    return (
+      <Button
+        variant={isRouteActive ? "secondary" : "ghost"}
+        asChild
+        className={cn(
+          "flex items-center gap-2",
+          mobile && "w-full justify-start",
+        )}
+        onClick={mobile ? () => setOpen(false) : undefined}
+      >
+        <Link to={route.path || ""}>
+          {route.iconName && <Icon name={route.iconName} />}
+          <span className={cn(mobile && "ml-2")}>{route.label}</span>
+        </Link>
+      </Button>
+    );
+  };
 
   // Desktop navigation
   const DesktopNav = (
@@ -115,36 +226,26 @@ export function Navigator(
       <div className="flex items-center mr-6">
         <span className="text-xl font-bold">{appName}</span>
       </div>
-      {routes.map((route, index) => (
-        <Button
-          key={index}
-          variant={isActive(route.path, route.end) ? "secondary" : "ghost"}
-          asChild
-          className="flex items-center gap-2"
-        >
-          <Link to={route.path}>
-            {route.iconName && <Icon name={route.iconName} />}
-            {route.label}
-          </Link>
-        </Button>
+      {currentLevelRoutes.map((route, index) => (
+        <NavItem key={index} route={route} />
       ))}
     </nav>
   );
 
-  // View navigation (secondary level) - shown on desktop
-  const ViewNav = !isMobile && viewRoutes && viewRoutes.length > 0 && (
+  // Child navigation (secondary level) - shown on desktop
+  const ChildNav = !isMobile && childRoutes.length > 0 && (
     <div className="border-b">
       <div className="container flex overflow-x-auto">
-        {viewRoutes.map((view, index) => (
+        {childRoutes.map((route, index) => (
           <Button
             key={index}
-            variant={isActive(view.path, view.end) ? "secondary" : "ghost"}
+            variant={isActive(route.path, route.end) ? "secondary" : "ghost"}
             asChild
             className="flex items-center gap-2"
           >
-            <Link to={view.path}>
-              {view.iconName && <Icon name={view.iconName} />}
-              {view.label}
+            <Link to={route.path || ""}>
+              {route.iconName && <Icon name={route.iconName} />}
+              {route.label}
             </Link>
           </Button>
         ))}
@@ -217,53 +318,49 @@ export function Navigator(
         <div className="overflow-y-auto h-full pb-20">
           <div className="p-4">
             <div className="space-y-4">
-              {routes.map((route, index) => {
-                const isRouteActive = isActive(route.path, route.end);
-
-                return (
-                  <div key={index}>
-                    <Button
-                      variant={isRouteActive ? "secondary" : "ghost"}
-                      asChild
-                      className="w-full justify-start"
-                      onClick={() => setOpen(false)}
-                    >
-                      <Link to={route.path}>
-                        {route.iconName && <Icon name={route.iconName} />}
-                        <span className="ml-2">{route.label}</span>
-                      </Link>
-                    </Button>
-
-                    {/* Show views for the active route */}
-                    {isRouteActive && route.views && route.views.length > 0 && (
-                      <div className="pl-6 border-l ml-4 mt-2 space-y-2">
-                        {route.views.map((view, viewIndex) => (
-                          <Button
-                            key={viewIndex}
-                            variant={isActive(view.path, view.end)
-                              ? "secondary"
-                              : "ghost"}
-                            asChild
-                            className="w-full justify-start"
-                            onClick={() => setOpen(false)}
-                          >
-                            <Link to={view.path}>
-                              {view.iconName && <Icon name={view.iconName} />}
-                              <span className="ml-2">{view.label}</span>
-                            </Link>
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Render all routes in mobile view, with proper nesting */}
+              {renderMobileNavItems(routes.filter((route) => !route.hideInNav))}
             </div>
           </div>
         </div>
       </SheetContent>
     </Sheet>
   );
+
+  // Helper function to render nested mobile navigation items
+  function renderMobileNavItems(items: NavigableRouteObject[], depth = 0) {
+    return items.map((item, index) => {
+      const isItemActive = isActive(item.path, item.end);
+      const hasChildren = item.children &&
+        item.children.some((child) => !child.hideInNav);
+
+      return (
+        <div key={index}>
+          <Button
+            variant={isItemActive ? "secondary" : "ghost"}
+            asChild
+            className={cn("w-full justify-start", depth > 0 && "pl-6")}
+            onClick={() => setOpen(false)}
+          >
+            <Link to={item.path || ""}>
+              {item.iconName && <Icon name={item.iconName} />}
+              <span className="ml-2">{item.label}</span>
+            </Link>
+          </Button>
+
+          {/* Render children if they exist and the item is active */}
+          {hasChildren && isItemActive && (
+            <div className={cn("pl-6 border-l ml-4 mt-2 space-y-2")}>
+              {renderMobileNavItems(
+                item.children?.filter((child) => !child.hideInNav) || [],
+                depth + 1,
+              )}
+            </div>
+          )}
+        </div>
+      );
+    });
+  }
 
   return (
     <>
@@ -278,7 +375,7 @@ export function Navigator(
           {MobileNav}
         </div>
       </header>
-      {ViewNav}
+      {ChildNav}
       {BreadcrumbNav}
     </>
   );
