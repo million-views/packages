@@ -1,143 +1,79 @@
-import type { RouteConfig } from "@react-router/dev/routes"
-import { route, index, layout } from "./lib/rr-helpers"
-import type { NavRoute } from "./lib/rr-helpers"
+import type { RouteConfig } from "@react-router/dev/routes";
+import { route, index, layout, build } from "@/lib/rr-builder";
 
-// Define our application routes with integrated metadata
-export default [
-  layout(
-    "routes/layout.tsx",
-    [
-      // Level 1 routes - Main navigation
-      index("routes/page.tsx", {
+// —————————————————————————————————————————————————————————————
+// 1) Dashboard feature routes (owns its own Builder)
+// —————————————————————————————————————————————————————————————
+const dashboardSection = route("dashboard", "routes/dashboard/layout.tsx")
+  .meta({ label: "Dashboard", iconName: "dashboard", section: "main" })
+  .children(
+    route("overview", "routes/dashboard/layout.tsx")
+      .meta({ label: "Summary", iconName: "BarChart" })
+      .children(
+        index("routes/dashboard/overview/summary.tsx")
+          .meta({ label: "Summary", iconName: "CircleDot", end: true }),
+        route("performance", "routes/dashboard/overview/performance.tsx")
+          .meta({ label: "Performance", iconName: "TrendingUp" }),
+        route("metrics", "routes/dashboard/overview/metrics.tsx")
+          .meta({ label: "Metrics", iconName: "Clock" })
+      ),
+    route("analytics", "routes/dashboard/layout.tsx")
+      .meta(({ label: "Analytics", iconName: "FileText", }))
+      .children(
+        index("routes/dashboard/analytics/summary.tsx")
+          .meta({ label: "Summary", iconName: "CircleDot", end: true }),
+        route("traffic", "routes/dashboard/analytics/traffic.tsx")
+          .meta({ label: "Traffic", iconName: "Activity" }),
+        route("conversion", "routes/dashboard/analytics/conversion.tsx")
+          .meta({ label: "Conversion", iconName: "PieChart" })
+      )
+  );
+
+// —————————————————————————————————————————————————————————————
+// 2) User‑management feature routes
+// —————————————————————————————————————————————————————————————
+const userSection = layout("routes/users/layout.tsx")
+  .meta({ section: "users" })
+  .children(
+    index("routes/users/page.tsx")
+      .meta({ label: "All Users", iconName: "Users", end: true }),
+    route("active", "routes/users/active.tsx")
+      .meta({ label: "Active Users", iconName: "UserCheck" }),
+    route("inactive", "routes/users/inactive.tsx")
+      .meta({ label: "Inactive Users", iconName: "UserMinus" }),
+    layout("routes/users/roles/layout.tsx")
+      .meta({ section: "roles" })
+      .children(
+        index("routes/users/roles/page.tsx")
+          .meta({ label: "All Roles", iconName: "Shield", end: true }),
+        route("admin", "routes/users/roles/admin.tsx")
+          .meta({ label: "Administrators", iconName: "ShieldAlert" }),
+        route("editor", "routes/users/roles/editor.tsx")
+          .meta({ label: "Editors", iconName: "Edit" }),
+        route("viewer", "routes/users/roles/viewer.tsx")
+          .meta({ label: "Viewers", iconName: "Eye" })
+      )
+  );
+
+// —————————————————————————————————————————————————————————————
+// 3) Top‑level shell (your “app” layout + main nav items + feature sections)
+// —————————————————————————————————————————————————————————————
+const appShell = layout("routes/layout.tsx")
+  .children(
+    index("routes/page.tsx")
+      .meta({
         label: "Home",
         iconName: "Home",
         end: true,
+        section: "main",
       }),
+    route("settings", "routes/settings/page.tsx")
+      .meta({ label: "Settings", iconName: "Settings", section: "main" }),
+    dashboardSection,
+    userSection,
+  );
 
-      // Dashboard section with nested routes
-      layout(
-        "routes/dashboard/layout.tsx",
-        [
-          // Level 2 routes - Dashboard sections
-          layout(
-            "routes/dashboard/overview/layout.tsx",
-            [
-              // Level 3 routes - Overview subsections
-              index("routes/dashboard/overview/summary.tsx", {
-                label: "Summary",
-                iconName: "CircleDot",
-                end: true,
-              }),
-              route("performance", "routes/dashboard/overview/performance.tsx", {
-                label: "Performance",
-                iconName: "TrendingUp",
-              }),
-              route("metrics", "routes/dashboard/overview/metrics.tsx", {
-                label: "Metrics",
-                iconName: "Clock",
-              }),
-            ]
-          ),
-
-          // Analytics section
-          layout(
-            "routes/dashboard/analytics/layout.tsx",
-            [
-              // Level 3 routes - Analytics subsections
-              index("routes/dashboard/analytics/summary.tsx", {
-                label: "Summary",
-                iconName: "CircleDot",
-                end: true,
-              }),
-              route("traffic", "routes/dashboard/analytics/traffic.tsx", {
-                label: "Traffic",
-                iconName: "Activity",
-              }),
-              route("conversion", "routes/dashboard/analytics/conversion.tsx", {
-                label: "Conversion",
-                iconName: "PieChart",
-              }),
-            ]
-          ),
-
-          // Reports section
-          layout(
-            "routes/dashboard/reports/layout.tsx",
-            [
-              // Level 3 routes - Reports subsections
-              index("routes/dashboard/reports/summary.tsx", {
-                label: "Summary",
-                iconName: "CircleDot",
-                end: true,
-              }),
-              route("monthly", "routes/dashboard/reports/monthly.tsx", {
-                label: "Monthly",
-                iconName: "Calendar",
-              }),
-              route("quarterly", "routes/dashboard/reports/quarterly.tsx", {
-                label: "Quarterly",
-                iconName: "CalendarDays",
-              }),
-              route("annual", "routes/dashboard/reports/annual.tsx", {
-                label: "Annual",
-                iconName: "CalendarRange",
-              }),
-            ]
-          ),
-        ]
-      ),
-
-      // Users section with nested routes
-      layout(
-        "routes/users/layout.tsx",
-        [
-          // Level 2 routes - User management
-          index("routes/users/page.tsx", {
-            label: "All Users",
-            iconName: "Users",
-            end: true,
-          }),
-          route("active", "routes/users/active.tsx", {
-            label: "Active Users",
-            iconName: "UserCheck",
-          }),
-          route("inactive", "routes/users/inactive.tsx", {
-            label: "Inactive Users",
-            iconName: "UserMinus",
-          }),
-
-          // User roles section - Level 2
-          layout(
-            "routes/users/roles/layout.tsx",
-            [
-              // Level 3 routes - Roles subsections
-              index("routes/users/roles/page.tsx", {
-                label: "All Roles",
-                iconName: "Shield",
-                end: true,
-              }),
-              route("admin", "routes/users/roles/admin.tsx", {
-                label: "Administrators",
-                iconName: "ShieldAlert",
-              }),
-              route("editor", "routes/users/roles/editor.tsx", {
-                label: "Editors",
-                iconName: "Edit",
-              }),
-              route("viewer", "routes/users/roles/viewer.tsx", {
-                label: "Viewers",
-                iconName: "Eye",
-              }),
-            ]
-          ),
-        ]
-      ),
-
-      // Settings section - Level 1
-      route("settings", "routes/settings/page.tsx", {
-        label: "Settings",
-        iconName: "Settings",
-      }),
-    ]
-  ),
-] satisfies RouteConfig;
+// —————————————————————————————————————————————————————————————
+// 4) Finally, export exactly the array Router expects
+// —————————————————————————————————————————————————————————————
+export default build([appShell]) satisfies RouteConfig;
