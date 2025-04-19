@@ -1,133 +1,199 @@
-"use client"
+"use client";
 
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import * as React from "react";
+import { Link, useLocation, useMatches } from "react-router";
+import { ChevronDown, ChevronRight, Home, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Icon } from "@/components/icon-mapper";
+import type { NavRoute } from "@/lib/rr-helpers";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-import { DropdownMenuContent } from "@/components/ui/dropdown-menu"
-
-import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-
-import { DropdownMenu } from "@/components/ui/dropdown-menu"
-
-import * as React from "react"
-import { Link, useLocation } from "react-router"
-import { Menu, ChevronRight, Home, ChevronDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Icon } from "@/components/icon-mapper"
-// Update the import for the new route-helpers
-import type { NavRoute } from "@/lib/rr-helpers"
-import { getRoutesByLevel } from "@/lib/rr-helpers"
-
-// Update the interface to use NavRoute
 interface NavigatorProps {
-  routes: NavRoute[]
-  level?: number
-  appName?: string
-  className?: string
-  section?: string
+  routes: NavRoute[];
+  appName?: string;
+  className?: string;
 }
 
-// Update the Navigator component to use the handle property
-export function Navigator({ routes, level = 1, appName = "App", className, section }: NavigatorProps) {
-  const location = useLocation()
-  const isMobile = useIsMobile()
-  const [open, setOpen] = React.useState(false)
+export function Navigator(
+  { routes, appName = "App", className }: NavigatorProps,
+) {
+  const location = useLocation();
+  const matches = useMatches();
+  const isMobile = useIsMobile();
+  const [open, setOpen] = React.useState(false);
+
+  // Extract the current path segments
+  const pathSegments = location.pathname.split("/").filter(Boolean);
 
   // Check if we're on the home page
-  const isHomePage = location.pathname === "/"
+  const isHomePage = location.pathname === "/";
 
   // Check if a route is active
   const isActive = React.useCallback(
     (path = "", end = false) => {
-      if (!path) return false
+      if (!path) return false;
       if (end) {
-        return location.pathname === path
+        return location.pathname === path;
       }
-      return location.pathname.startsWith(path)
+      return location.pathname.startsWith(path);
     },
     [location.pathname],
-  )
+  );
 
-  // Get routes for the current level using the imported helper
-  const currentLevelRoutes = React.useMemo(() => {
-    return getRoutesByLevel(routes, level, section)
-  }, [routes, level, section])
+  // Find all navigable routes (routes with a path and handle.label)
+  const findNavigableRoutes = (routeList: NavRoute[]): NavRoute[] => {
+    return routeList.flatMap((route) => {
+      const isNavigable = route.path !== undefined && route.handle?.label;
+      const result: NavRoute[] = isNavigable ? [route] : [];
 
-  // Get child routes for the active parent using the imported helper
-  const childRoutes = React.useMemo(() => {
-    if (level <= 1) return []
+      if (route.children) {
+        result.push(...findNavigableRoutes(route.children));
+      }
 
-    // Find the active parent route at level-1
-    const parentRoutes = getRoutesByLevel(routes, level - 1, section)
-    const activeParent = parentRoutes.find((route) => route.path && location.pathname.startsWith(route.path))
+      return result;
+    });
+  };
 
-    if (!activeParent || !activeParent.children) return []
-    return activeParent.children
-  }, [routes, level, location.pathname, section])
+  // Get the current route and its ancestors
+  const getCurrentRouteHierarchy = React.useMemo(() => {
+    // Start with an empty path
+    let currentPath = "";
+    const hierarchy: NavRoute[] = [];
+
+    // Build up the path segment by segment and find matching routes
+    for (let i = 0; i < pathSegments.length; i++) {
+      currentPath += `/${pathSegments[i]}`;
+
+      // Find a route that matches this path
+      const findRouteByPath = (
+        routeList: NavRoute[],
+        path: string,
+      ): NavRoute | undefined => {
+        for (const route of routeList) {
+          if (route.path === path) {
+            return route;
+          }
+          if (route.children) {
+            const found = findRouteByPath(route.children, path);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+
+      const matchingRoute = findRouteByPath(routes, currentPath);
+      if (matchingRoute) {
+        hierarchy.push(matchingRoute);
+      }
+    }
+
+    return hierarchy;
+  }, [pathSegments, routes]);
+
+  // Get top-level navigation items
+  const topLevelNavItems = React.useMemo(() => {
+    return routes[0]?.children?.filter((route) => route.handle?.label) || [];
+  }, [routes]);
+
+  // Get second-level navigation items based on the current active top-level item
+  const secondLevelNavItems = React.useMemo(() => {
+    if (getCurrentRouteHierarchy.length === 0) return [];
+
+    // Find the active top-level route
+    const activeTopLevel = topLevelNavItems.find(
+      (route) => route.path && location.pathname.startsWith(`/${route.path}`),
+    );
+
+    if (!activeTopLevel || !activeTopLevel.children) return [];
+
+    return activeTopLevel.children.filter((route) => route.handle?.label);
+  }, [getCurrentRouteHierarchy, topLevelNavItems, location.pathname]);
+
+  // Get third-level navigation items based on the current active second-level item
+  const thirdLevelNavItems = React.useMemo(() => {
+    if (getCurrentRouteHierarchy.length <= 1) return [];
+
+    // Find the active second-level route
+    const activeSecondLevel = secondLevelNavItems.find((route) => {
+      if (!route.path) return false;
+
+      // Handle index routes and regular routes differently
+      if (route.index) {
+        const parentPath = getCurrentRouteHierarchy[0]?.path || "";
+        return location.pathname === `/${parentPath}`;
+      }
+
+      const fullPath = getCurrentRouteHierarchy[0]?.path
+        ? `/${getCurrentRouteHierarchy[0].path}/${route.path}`
+        : `/${route.path}`;
+
+      return location.pathname.startsWith(fullPath);
+    });
+
+    if (!activeSecondLevel || !activeSecondLevel.children) return [];
+
+    return activeSecondLevel.children.filter((route) => route.handle?.label);
+  }, [getCurrentRouteHierarchy, secondLevelNavItems, location.pathname]);
 
   // Generate breadcrumb items based on the current path
   const breadcrumbItems = React.useMemo(() => {
-    if (isHomePage) return []
+    if (isHomePage) return [];
 
-    const items = []
+    const items = [];
 
     // Always add home
     items.push({
       path: "/",
       label: "Home",
       isHome: true,
-    })
+      isLast: false, // Home is never the last item unless it's the only item
+    });
 
-    // Parse the current path to build breadcrumb segments
-    const pathSegments = location.pathname.split("/").filter(Boolean)
-    let currentPath = ""
-
-    for (let i = 0; i < pathSegments.length; i++) {
-      const segment = pathSegments[i]
-      currentPath += `/${segment}`
-
-      // Find a matching route
-      const matchingRoute = findRouteByPath(routes, currentPath)
-
-      if (matchingRoute) {
+    // Add items based on the route hierarchy
+    getCurrentRouteHierarchy.forEach((route, index) => {
+      if (route.handle?.label) {
         items.push({
-          path: currentPath,
-          label: matchingRoute.handle?.label || segment.charAt(0).toUpperCase() + segment.slice(1),
-          isLast: i === pathSegments.length - 1,
-        })
-      } else {
-        // Fallback if no route is found
-        items.push({
-          path: currentPath,
-          label: segment.charAt(0).toUpperCase() + segment.slice(1),
-          isLast: i === pathSegments.length - 1,
-        })
+          path: route.path ? `/${route.path}` : "/",
+          label: route.handle.label,
+          isHome: false,
+          isLast: index === getCurrentRouteHierarchy.length - 1,
+        });
       }
+    });
+
+    // If we only have the home item, mark it as last
+    if (items.length === 1) {
+      items[0].isLast = true;
     }
 
-    return items
-  }, [location.pathname, isHomePage, routes])
-
-  // Helper function to find a route by path
-  function findRouteByPath(routeList: NavRoute[], path: string): NavRoute | undefined {
-    for (const route of routeList) {
-      if (route.path === path) {
-        return route
-      }
-      if (route.children) {
-        const found = findRouteByPath(route.children, path)
-        if (found) return found
-      }
-    }
-    return undefined
-  }
+    return items;
+  }, [isHomePage, getCurrentRouteHierarchy]);
 
   // Render a navigation item with potential dropdown for children
-  const NavItem = ({ route, mobile = false }: { route: NavRoute; mobile?: boolean }) => {
-    const hasChildren = route.children && route.children.length > 0
-    const isRouteActive = isActive(route.path, route.handle?.end)
+  const NavItem = (
+    { route, mobile = false }: { route: NavRoute; mobile?: boolean },
+  ) => {
+    const hasChildren = route.children &&
+      route.children.some((child) => child.handle?.label);
+    const isRouteActive = isActive(
+      route.path ? `/${route.path}` : "",
+      route.handle?.end,
+    );
+    const meta = route.handle || {};
 
     if (hasChildren && !mobile) {
       return (
@@ -135,109 +201,179 @@ export function Navigator({ routes, level = 1, appName = "App", className, secti
           <DropdownMenuTrigger asChild>
             <Button
               variant={isRouteActive ? "secondary" : "ghost"}
-              className={cn("flex items-center gap-2", mobile && "w-full justify-start")}
+              className={cn(
+                "flex items-center gap-2",
+                mobile && "w-full justify-start",
+              )}
             >
-              {route.handle?.iconName && <Icon name={route.handle.iconName} />}
-              <span className={cn(mobile && "ml-2")}>{route.handle?.label}</span>
+              {meta.iconName && <Icon name={meta.iconName} />}
+              <span className={cn(mobile && "ml-2")}>{meta.label}</span>
               <ChevronDown className="h-4 w-4 ml-1" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {route.children?.map((child, idx) => (
-              <DropdownMenuItem key={idx} asChild>
-                <Link to={child.path || ""} className="flex items-center gap-2">
-                  {child.handle?.iconName && <Icon name={child.handle.iconName} />}
-                  {child.handle?.label}
-                </Link>
-              </DropdownMenuItem>
-            ))}
+            {route.children
+              ?.filter((child) => child.handle?.label)
+              .map((child, idx) => {
+                const childMeta = child.handle || {};
+                const childPath = child.index
+                  ? `/${route.path || ""}`
+                  : `/${route.path || ""}/${child.path || ""}`;
+
+                return (
+                  <DropdownMenuItem key={idx} asChild>
+                    <Link to={childPath} className="flex items-center gap-2">
+                      {childMeta.iconName && <Icon name={childMeta.iconName} />}
+                      {childMeta.label}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     }
+
+    const routePath = route.index ? "/" : `/${route.path || ""}`;
 
     return (
       <Button
         variant={isRouteActive ? "secondary" : "ghost"}
         asChild
-        className={cn("flex items-center gap-2", mobile && "w-full justify-start")}
+        className={cn(
+          "flex items-center gap-2",
+          mobile && "w-full justify-start",
+        )}
         onClick={mobile ? () => setOpen(false) : undefined}
       >
-        <Link to={route.path || ""}>
-          {route.handle?.iconName && <Icon name={route.handle.iconName} />}
-          <span className={cn(mobile && "ml-2")}>{route.handle?.label}</span>
+        <Link to={routePath}>
+          {meta.iconName && <Icon name={meta.iconName} />}
+          <span className={cn(mobile && "ml-2")}>{meta.label}</span>
         </Link>
       </Button>
-    )
-  }
+    );
+  };
 
-  // Desktop navigation
-  const DesktopNav = (
+  // Top-level navigation (always visible)
+  const TopLevelNav = (
     <nav className={cn("hidden md:flex items-center space-x-4", className)}>
       <div className="flex items-center mr-6">
         <span className="text-xl font-bold">{appName}</span>
       </div>
-      {currentLevelRoutes.map((route, index) => (
+      {topLevelNavItems.map((route, index) => (
         <NavItem key={index} route={route} />
       ))}
     </nav>
-  )
+  );
 
-  // Child navigation (secondary level) - shown on desktop
-  const ChildNav = !isMobile && childRoutes.length > 0 && (
+  // Second-level navigation (visible when in a section that has it)
+  const SecondLevelNav = secondLevelNavItems.length > 0 && (
     <div className="border-b">
       <div className="container flex overflow-x-auto">
-        {childRoutes.map((route, index) => (
-          <Button
-            key={index}
-            variant={isActive(route.path, route.handle?.end) ? "secondary" : "ghost"}
-            asChild
-            className="flex items-center gap-2"
-          >
-            <Link to={route.path || ""}>
-              {route.handle?.iconName && <Icon name={route.handle.iconName} />}
-              {route.handle?.label}
-            </Link>
-          </Button>
-        ))}
+        {secondLevelNavItems.map((route, index) => {
+          const meta = route.handle || {};
+          const parentPath = getCurrentRouteHierarchy[0]?.path || "";
+          const routePath = route.index
+            ? `/${parentPath}`
+            : `/${parentPath}/${route.path || ""}`;
+
+          return (
+            <Button
+              key={index}
+              variant={isActive(routePath, meta.end) ? "secondary" : "ghost"}
+              asChild
+              className="flex items-center gap-2"
+            >
+              <Link to={routePath}>
+                {meta.iconName && <Icon name={meta.iconName} />}
+                {meta.label}
+              </Link>
+            </Button>
+          );
+        })}
       </div>
     </div>
-  )
+  );
+
+  // Third-level navigation (visible when in a section that has it)
+  const ThirdLevelNav = thirdLevelNavItems.length > 0 && (
+    <div className="border-b">
+      <div className="container flex overflow-x-auto">
+        {thirdLevelNavItems.map((route, index) => {
+          const meta = route.handle || {};
+          const parentPath = getCurrentRouteHierarchy[0]?.path || "";
+          const secondLevelPath = getCurrentRouteHierarchy[1]?.path || "";
+
+          const routePath = route.index
+            ? `/${parentPath}/${secondLevelPath}`
+            : `/${parentPath}/${secondLevelPath}/${route.path || ""}`;
+
+          return (
+            <Button
+              key={index}
+              variant={isActive(routePath, meta.end) ? "secondary" : "ghost"}
+              asChild
+              className="flex items-center gap-2"
+            >
+              <Link to={routePath}>
+                {meta.iconName && <Icon name={meta.iconName} />}
+                {meta.label}
+              </Link>
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   // Breadcrumb navigation - only shown on mobile
-  const BreadcrumbNav = isMobile && !isHomePage && breadcrumbItems.length > 0 && (
-    <nav
-      className="flex items-center text-sm text-muted-foreground py-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-      aria-label="Breadcrumb"
-    >
-      <div className="container flex items-center">
-        <ol className="flex items-center space-x-2">
-          {breadcrumbItems.map((item, index) => (
-            <React.Fragment key={item.path}>
-              {index > 0 && (
-                <li className="flex items-center">
-                  <ChevronRight className="h-4 w-4 mx-1" />
-                </li>
-              )}
-              <li>
-                {item.isHome ? (
-                  <Link to="/" className="flex items-center hover:text-foreground transition-colors" aria-label="Home">
-                    <Home className="h-4 w-4" />
-                  </Link>
-                ) : item.isLast ? (
-                  <span className="font-medium text-foreground">{item.label}</span>
-                ) : (
-                  <Link to={item.path} className="hover:text-foreground transition-colors">
-                    {item.label}
-                  </Link>
+  const BreadcrumbNav = isMobile && !isHomePage && breadcrumbItems.length > 0 &&
+    (
+      <nav
+        className="flex items-center text-sm text-muted-foreground py-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        aria-label="Breadcrumb"
+      >
+        <div className="container flex items-center">
+          <ol className="flex items-center space-x-2">
+            {breadcrumbItems.map((item, index) => (
+              <React.Fragment key={item.path}>
+                {index > 0 && (
+                  <li className="flex items-center">
+                    <ChevronRight className="h-4 w-4 mx-1" />
+                  </li>
                 )}
-              </li>
-            </React.Fragment>
-          ))}
-        </ol>
-      </div>
-    </nav>
-  )
+                <li>
+                  {item.isHome
+                    ? (
+                      <Link
+                        to="/"
+                        className="flex items-center hover:text-foreground transition-colors"
+                        aria-label="Home"
+                      >
+                        <Home className="h-4 w-4" />
+                      </Link>
+                    )
+                    : item.isLast
+                    ? (
+                      <span className="font-medium text-foreground">
+                        {item.label}
+                      </span>
+                    )
+                    : (
+                      <Link
+                        to={item.path}
+                        className="hover:text-foreground transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    )}
+                </li>
+              </React.Fragment>
+            ))}
+          </ol>
+        </div>
+      </nav>
+    );
 
   // Mobile navigation
   const MobileNav = (
@@ -255,49 +391,56 @@ export function Navigator({ routes, level = 1, appName = "App", className, secti
         <div className="overflow-y-auto h-full pb-20">
           <div className="p-4">
             <div className="space-y-4">
-              {/* Render all routes in mobile view, with proper nesting */}
-              {renderMobileNavItems(routes)}
+              {/* Render all navigable routes in mobile view */}
+              {renderMobileNavItems(topLevelNavItems)}
             </div>
           </div>
         </div>
       </SheetContent>
     </Sheet>
-  )
+  );
 
   // Helper function to render nested mobile navigation items
-  function renderMobileNavItems(items: NavRoute[], depth = 0) {
-    return items
-      .map((item, index) => {
-        const isItemActive = isActive(item.path, item.handle?.end)
-        const hasChildren = item.children && item.children.length > 0
+  function renderMobileNavItems(items: NavRoute[], depth = 0, parentPath = "") {
+    return items.map((item, index) => {
+      const meta = item.handle || {};
+      const itemPath = item.index
+        ? parentPath
+        : parentPath
+        ? `${parentPath}/${item.path || ""}`
+        : `/${item.path || ""}`;
 
-        // Skip items without a label (likely layout routes)
-        if (!item.handle?.label) return null
+      const isItemActive = isActive(itemPath, meta.end);
+      const hasChildren = item.children &&
+        item.children.some((child) => child.handle?.label);
 
-        return (
-          <div key={index}>
-            <Button
-              variant={isItemActive ? "secondary" : "ghost"}
-              asChild
-              className={cn("w-full justify-start", depth > 0 && "pl-6")}
-              onClick={() => setOpen(false)}
-            >
-              <Link to={item.path || ""}>
-                {item.handle?.iconName && <Icon name={item.handle.iconName} />}
-                <span className="ml-2">{item.handle?.label}</span>
-              </Link>
-            </Button>
+      return (
+        <div key={index}>
+          <Button
+            variant={isItemActive ? "secondary" : "ghost"}
+            asChild
+            className={cn("w-full justify-start", depth > 0 && "pl-6")}
+            onClick={() => setOpen(false)}
+          >
+            <Link to={itemPath}>
+              {meta.iconName && <Icon name={meta.iconName} />}
+              <span className="ml-2">{meta.label}</span>
+            </Link>
+          </Button>
 
-            {/* Render children if they exist and the item is active */}
-            {hasChildren && isItemActive && (
-              <div className={cn("pl-6 border-l ml-4 mt-2 space-y-2")}>
-                {renderMobileNavItems(item.children || [], depth + 1)}
-              </div>
-            )}
-          </div>
-        )
-      })
-      .filter(Boolean)
+          {/* Render children if they exist and the item is active */}
+          {hasChildren && isItemActive && (
+            <div className={cn("pl-6 border-l ml-4 mt-2 space-y-2")}>
+              {renderMobileNavItems(
+                item.children?.filter((child) => child.handle?.label) || [],
+                depth + 1,
+                itemPath,
+              )}
+            </div>
+          )}
+        </div>
+      );
+    });
   }
 
   return (
@@ -308,13 +451,14 @@ export function Navigator({ routes, level = 1, appName = "App", className, secti
             <Link to="/" className="flex items-center mr-4 md:mr-0">
               <span className="text-xl font-bold md:hidden">{appName}</span>
             </Link>
-            {DesktopNav}
+            {TopLevelNav}
           </div>
           {MobileNav}
         </div>
       </header>
-      {ChildNav}
+      {!isMobile && SecondLevelNav}
+      {!isMobile && ThirdLevelNav}
       {BreadcrumbNav}
     </>
-  )
+  );
 }
