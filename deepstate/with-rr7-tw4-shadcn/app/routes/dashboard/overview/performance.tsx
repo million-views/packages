@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 
 export default function DashboardPerformancePage() {
-
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">

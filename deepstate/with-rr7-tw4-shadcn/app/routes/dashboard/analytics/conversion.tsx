@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 
 export default function DashboardSummaryPage() {
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <Card>
