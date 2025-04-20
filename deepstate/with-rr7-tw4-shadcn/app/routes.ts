@@ -1,13 +1,13 @@
 import type { RouteConfig } from "@react-router/dev/routes";
-import { route, index, layout, build } from "@/lib/rr-builder";
+import { route, index, layout, build } from "./lib/rr-builder.ts";
 
 // —————————————————————————————————————————————————————————————
 // 1) Dashboard feature routes (owns its own Builder)
 // —————————————————————————————————————————————————————————————
-const dashboardSection = route("dashboard", "routes/dashboard/layout.tsx")
+const dashboardSection = layout("routes/dashboard/layout.tsx", { id: "main" })
   .meta({ label: "Dashboard", iconName: "dashboard", section: "main" })
   .children(
-    route("overview", "routes/dashboard/layout.tsx")
+    route("overview", "routes/dashboard/overview/layout.tsx")
       .meta({ label: "Summary", iconName: "BarChart" })
       .children(
         index("routes/dashboard/overview/summary.tsx")
@@ -17,8 +17,8 @@ const dashboardSection = route("dashboard", "routes/dashboard/layout.tsx")
         route("metrics", "routes/dashboard/overview/metrics.tsx")
           .meta({ label: "Metrics", iconName: "Clock" })
       ),
-    route("analytics", "routes/dashboard/layout.tsx")
-      .meta(({ label: "Analytics", iconName: "FileText", }))
+    route("analytics", "routes/dashboard/analytics/layout.tsx")
+      .meta({ label: "Analytics", iconName: "FileText", })
       .children(
         index("routes/dashboard/analytics/summary.tsx")
           .meta({ label: "Summary", iconName: "CircleDot", end: true }),
@@ -32,8 +32,8 @@ const dashboardSection = route("dashboard", "routes/dashboard/layout.tsx")
 // —————————————————————————————————————————————————————————————
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
-const userSection = layout("routes/users/layout.tsx")
-  .meta({ section: "users" })
+const userSection = route("users", "routes/dashboard/layout.tsx")
+  .meta({ label: "Users", section: "users" })
   .children(
     index("routes/users/page.tsx")
       .meta({ label: "All Users", iconName: "Users", end: true }),
@@ -41,8 +41,8 @@ const userSection = layout("routes/users/layout.tsx")
       .meta({ label: "Active Users", iconName: "UserCheck" }),
     route("inactive", "routes/users/inactive.tsx")
       .meta({ label: "Inactive Users", iconName: "UserMinus" }),
-    layout("routes/users/roles/layout.tsx")
-      .meta({ section: "roles" })
+    layout("routes/dashboard/layout.tsx", { id: "users" })
+      .meta({ label: "Roles", section: "roles" })
       .children(
         index("routes/users/roles/page.tsx")
           .meta({ label: "All Roles", iconName: "Shield", end: true }),
