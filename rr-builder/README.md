@@ -90,7 +90,12 @@ import {
 - `.meta({ label?, iconName?, end?, group?, section? })` stash nav metadata on
   `.handle`.
 
-#### Navigation Meta
+### Extraction
+
+- `build(builders: Builder[]): RouteConfigEntry[]` —final array for
+  React Router.
+
+## Navigation Meta
 
 `NavMeta` type is used to colocate data needed to render menu and navigational
 UI with the route configuration. Currently it is typed as below:
@@ -128,11 +133,6 @@ index("./app/home/page").meta({
 
 2. **When you want to prevent a parent route from being highlighted** when
    viewing its children.
-
-### Extraction
-
-- `build(builders: Builder[]): RouteConfigEntry[]` —final array for
-  React Router.
 
 ## React Router API vs `rr-builder` API
 
