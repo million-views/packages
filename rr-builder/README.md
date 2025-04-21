@@ -11,7 +11,7 @@ Frameworks such as _Astro_ and _SvelteKit_ offer file based routing that mandate
 following conventions in order for the scheme to work; sooner or later one has
 to deal with the limitations of those conventions. On the other hand Framework
 mode of _React Router v7_ lets you configure your routes as you
-please&mdash;which is great!.
+please&mdash;which is great.
 
 The downside is that as the app grows, managing deeply nested React Router
 configs—and keeping navigation menus in sync—becomes tedious and error‑prone.
