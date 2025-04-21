@@ -43,31 +43,36 @@ function collectIds(routes, countMap) {
 
 /**
  * Print the route tree, marking duplicates with '*' before the label.
+ * Optionally include route IDs if showId flag is true.
  * @param {RouteConfigEntry[]} routes
  * @param {Set<string>} dupIds
+ * @param {boolean} showId
  * @param {string} [prefix='']
  */
-function printTree(routes, dupIds, prefix = "") {
+function printTree(routes, dupIds, showId, prefix = "") {
   routes.forEach((r, idx) => {
     const isLast = idx === routes.length - 1;
     const conn = isLast ? "└── " : "├── ";
     const label = r.handle?.label || "(no label)";
     const id = r.id ?? r.file.replace(/\.[^/.]+$/, "");
     const mark = dupIds.has(id) ? "*" : " ";
-    console.log(`${prefix}${conn}${mark} ${label} (id: ${id})`);
+    const idPart = showId ? ` (id: ${id})` : "";
+    console.log(`${prefix}${conn}${mark} ${label}${idPart}`);
     if (Array.isArray(r.children) && r.children.length) {
       const next = prefix + (isLast ? "    " : "│   ");
-      printTree(r.children, dupIds, next);
+      printTree(r.children, dupIds, showId, next);
     }
   });
 }
 
-(async () => {
-  const file = Deno.args[0];
-  if (!file) {
-    console.error("Usage: navigator.js <routes.ts>");
+async function main() {
+  const args = Deno.args;
+  if (args.length < 1) {
+    console.error("Usage: navigator.js <routes.ts> [--show-id]");
     Deno.exit(1);
   }
+  const file = args[0];
+  const showId = args.includes("--show-id");
   try {
     // 1) Load routes
     let routes = await loadRoutes(file);
@@ -97,9 +102,11 @@ function printTree(routes, dupIds, prefix = "") {
     }
 
     // 3) Print tree
-    printTree(routes, dupIds);
+    printTree(routes, dupIds, showId);
   } catch (err) {
     console.error("Error:", err.message);
     Deno.exit(1);
   }
-})();
+}
+
+await main();
