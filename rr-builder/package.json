@@ -1,0 +1,73 @@
+{
+  "name": "@m5nv/rr-builder",
+  "version": "1.0.0",
+  "description": "Fluent API for seamless route & navigation authoring experience in React Router v7 framework mode",
+  "type": "module",
+  "main": "src/rr-builder.js",
+  "types": "src/rr-builder.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/million-views/packages.git",
+    "directory": "rr-builder"
+  },
+  "bin": {
+    "rr-check": "src/rr-check.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/rr-builder.js",
+      "types": "./src/rr-builder.d.ts"
+    },
+    "./rr-check": {
+      "import": "./src/rr-check.js"
+    }
+  },
+  "files": [
+    "src/rr-builder.js",
+    "src/rr-builder.d.ts",
+    "src/rr-check.js"
+  ],
+  "bugs": {
+    "url": "https://github.com/million-views/packages/issues"
+  },
+  "homepage": "https://github.com/million-views/packages/tree/main/rr-builder",
+  "author": {
+    "name": "Million Views, LLC.",
+    "url": "https://m5nv.com"
+  },
+  "license": "MIT",
+  "contributors": [
+    "Hemalatha Manickam (https://github.com/hmanicka)",
+    "Vijay Aswadhati (https://github.com/vijay8i)"
+  ],
+  "keywords": [
+    "react-router-v7",
+    "route-builder",
+    "fluent-api",
+    "builder-pattern",
+    "navigation",
+    "metadata",
+    "route-metadata",
+    "single-source-of-truth",
+    "cli",
+    "rr-check",
+    "ascii-tree-of-routes",
+    "debug-routes",
+    "duplicate-id-detection",
+    "typescript",
+    "jsdoc",
+    "esmodule",
+    "esm"
+  ],
+  "scripts": {
+    "check-api-routes": "node ./src/rr-check.js test/api-routes.js --show-id --show-path",
+    "check-crud-routes": "node ./src/rr-check.js test/crud-routes.js --show-id --show-path",
+    "check-app-routes": "node ./src/rr-check.js test/app-routes.js --show-id --show-path"
+  },
+  "peerDependencies": {
+    "@react-router/dev": ">=7.0.0 <8.0.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": ">=7.0.0 <8.0.0"
+  }
+}
