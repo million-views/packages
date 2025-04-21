@@ -33,9 +33,11 @@ etc., reflecting areas of interest of our organization.
 | [@m5nv/deepstate][deepstate]      | State Management | A better DX for using signals in a framework agnostic manner.                       |
 | [@m5nv/abac][abac]                | Security         | A lightweight, intuitive, and powerful library for fine-grained access control.     |
 | [@m5nv/dom][dom]                  | DOM Manipulation | A nano‑jQuery–like DOM manipulation library for evergreen browsers.                 |
+| [@m5nv/rr-builder][rrb]           | React Router     | Fluent Route Configuration for React Router v7                                      |
 
 [vpr]: https://github.com/million-views/packages/tree/main/vite-plugin-run-task
 [stl]: https://github.com/million-views/packages/tree/main/stl
 [deepstate]: https://github.com/million-views/packages/tree/main/deepstate
 [abac]: https://github.com/million-views/packages/tree/main/abac
 [dom]: https://github.com/million-views/packages/tree/main/dom
+[rrb]: https://github.com/million-views/packages/tree/main/rr-builder
