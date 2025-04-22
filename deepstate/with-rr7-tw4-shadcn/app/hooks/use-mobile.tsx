@@ -23,7 +23,7 @@ export function useIsMobile() {
   }, []);
 
   // For debugging
-  console.log("useIsMobile returning:", isMobile);
+  // console.log("useIsMobile returning:", isMobile);
 
   return isMobile;
 }

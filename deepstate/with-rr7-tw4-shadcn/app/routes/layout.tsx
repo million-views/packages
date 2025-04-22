@@ -4,8 +4,9 @@ import routes from "@/routes";
 
 export default function RootLayout() {
   const location = useLocation();
-  const matches = useMatches();
-  console.log("routes", routes);
+  // console.log("routes", routes);
+  // const matches = useMatches();
+  // matches.forEach((element) => console.log("Root.Layout", element));
 
   return (
     <div className="min-h-screen flex flex-col">

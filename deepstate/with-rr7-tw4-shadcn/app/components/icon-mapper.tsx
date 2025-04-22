@@ -18,6 +18,7 @@ import {
   Settings,
   Shield,
   ShieldAlert,
+  ShieldQuestion,
   TrendingUp,
   UserCheck,
   UserMinus,
@@ -49,6 +50,7 @@ const iconMap = {
   ChevronRight,
   ChevronDown,
   Menu,
+  ShieldQuestion,
 };
 
 interface IconProps {
