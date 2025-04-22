@@ -1,4 +1,4 @@
-import { build, index, layout, route } from "@m5nv/rr-builder";
+import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 /**
  * @typedef {import("@react-router/dev/routes").RouteConfigEntry} RouteConfigEntry
  * @typedef {import("@react-router/dev/routes").RouteConfig} RouteConfig
@@ -48,18 +48,19 @@ const reports = route("reports", "routes/dashboard/reports/layout.tsx")
       .meta({ label: "Annual", iconName: "CalendarRange" }),
   );
 
-const dashboard = route(
-  "dashboard",
+const dashboard = layout(
   "routes/dashboard/layout.tsx",
   { id: "main" },
 )
   .meta({ label: "Dashboard", iconName: "dashboard", section: "main" })
   .children(
-    index("routes/dashboard/page.tsx")
-      .meta({ label: "Dashboard Home", iconName: "Home", end: true }),
-    overview,
-    analytics,
-    reports,
+    ...prefix("dashboard", [
+      index("routes/dashboard/page.tsx")
+        .meta({ label: "Index", iconName: "Home", end: true }),
+      overview,
+      analytics,
+      reports,
+    ]),
   );
 
 // —————————————————————————————————————————————————————————————

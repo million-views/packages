@@ -19,7 +19,9 @@ import { NavLink, Outlet, Route, Routes, useLocation } from "react-router";
 export default function DashboardOverview() {
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Dashboard Overview</h2>
+      <h2 className="text-2xl font-semibold mb-4">
+        Dashboard Overview (Index)
+      </h2>
 
       <div className="grid gap-4">
         <Card>
