@@ -369,8 +369,8 @@ definitions are in TypeScript, use `deno`:
 
 ```sh
 # locate the script in your node_modules (assuming its installed locally)
-# typically found in ./node_modules/@m5nv/rr-builder/bin/rr-check.js
-deno run --unstable-sloppy-imports --allow-read rr-check.js routes.ts
+# typically found in ./node_modules/@m5nv/rr-builder/src/rr-check.js
+deno run --unstable-sloppy-imports --allow-read path-to/rr-check.js routes.ts
 ```
 
 Alternatively, compile your `routes.ts` to `routes.js` and use:
