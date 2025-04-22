@@ -42,41 +42,78 @@ function collectIds(routes, countMap) {
 }
 
 /**
- * Print the route tree, marking duplicates with '*' before the label.
- * Optionally include route IDs if showId flag is true.
+ * Print the route forest, marking duplicates with '*' before the label.
+ * Optionally include route IDs and/or paths.
  * @param {RouteConfigEntry[]} routes
  * @param {Set<string>} dupIds
  * @param {boolean} showId
- * @param {string} [prefix='']
+ * @param {boolean} showPath
+ * @param {string} basePath
+ * @param {string} prefix
  */
-function printTree(routes, dupIds, showId, prefix = "") {
+function printTree(
+  routes,
+  dupIds,
+  showId,
+  showPath,
+  basePath = "",
+  prefix = "",
+) {
   routes.forEach((r, idx) => {
     const isLast = idx === routes.length - 1;
     const conn = isLast ? "└── " : "├── ";
+
+    // Compute current path
+    let currentPath;
+    if (typeof r.path === "string") {
+      currentPath = basePath ? `/${basePath}/${r.path}` : `/${r.path}`;
+    } else if (r.index) {
+      currentPath = basePath ? `/${basePath}` : "/";
+    }
+
+    // Determine next base path for children
+    let nextBase;
+    if (typeof r.path === "string") {
+      nextBase = basePath ? `${basePath}/${r.path}` : r.path;
+    } else if (r.index) {
+      nextBase = basePath;
+    } else {
+      nextBase = basePath;
+    }
+
     const label = r.handle?.label || "(no label)";
     const id = r.id ?? r.file.replace(/\.[^/.]+$/, "");
     const mark = dupIds.has(id) ? "*" : " ";
-    const idPart = showId ? ` (id: ${id})` : "";
-    console.log(`${prefix}${conn}${mark} ${label}${idPart}`);
+
+    // Build info parts
+    const info = [];
+    if (showPath) info.push(`path: ${currentPath}`);
+    if (showId) info.push(`id: ${id}`);
+    const infoStr = info.length ? ` (${info.join(", ")})` : "";
+
+    console.log(`${prefix}${conn}${mark} ${label}${infoStr}`);
+
     if (Array.isArray(r.children) && r.children.length) {
-      const next = prefix + (isLast ? "    " : "│   ");
-      printTree(r.children, dupIds, showId, next);
+      const nextPrefix = prefix + (isLast ? "    " : "│   ");
+      printTree(r.children, dupIds, showId, showPath, nextBase, nextPrefix);
     }
   });
 }
 
-async function main() {
+(async () => {
   const args = Deno.args;
   if (args.length < 1) {
-    console.error("Usage: navigator.js <routes.ts> [--show-id]");
+    console.error("Usage: navigator.js <routes.ts> [--show-id] [--show-path]");
     Deno.exit(1);
   }
+
   const file = args[0];
   const showId = args.includes("--show-id");
+  const showPath = args.includes("--show-path");
+
   try {
-    // 1) Load routes
+    // 1) Load and flatten routes
     let routes = await loadRoutes(file);
-    // Flatten single unlabeled root to print forest
     if (
       routes.length === 1 &&
       !routes[0].handle?.label &&
@@ -95,18 +132,16 @@ async function main() {
     );
     if (dupIds.size) {
       console.error("⚠ Duplicate route IDs detected:");
-      for (const id of dupIds) {
-        console.error(`  • ${id} appears ${idMap.get(id)} times`);
+      for (const idVal of dupIds) {
+        console.error(`  • ${idVal} appears ${idMap.get(idVal)} times`);
       }
       console.error("Tree marks duplicates with *");
     }
 
-    // 3) Print tree
-    printTree(routes, dupIds, showId);
+    // 3) Print forest
+    printTree(routes, dupIds, showId, showPath);
   } catch (err) {
     console.error("Error:", err.message);
     Deno.exit(1);
   }
-}
-
-await main();
+})();
