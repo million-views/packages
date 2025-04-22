@@ -1,90 +1,102 @@
-import { type RouteConfig } from "@react-router/dev/routes";
-import { route, index, layout, build, prefix } from "./lib/rr-builder.ts";
-
+import { build, index, layout, route } from "@m5nv/rr-builder";
+/**
+ * @typedef {import("@react-router/dev/routes").RouteConfigEntry} RouteConfigEntry
+ * @typedef {import("@react-router/dev/routes").RouteConfig} RouteConfig
+ */
 
 // —————————————————————————————————————————————————————————————
-// 1) Dashboard feature routes (owns its own Builder)
+// 1) Dashboard feature routes
 // —————————————————————————————————————————————————————————————
 const overview = route("overview", "routes/dashboard/overview/layout.tsx")
-  .meta({ label: "Summary", iconName: "BarChart" })
+  .meta({ label: "Overview", iconName: "BarChart", section: "main" })
   .children(
     index("routes/dashboard/overview/summary.tsx")
       .meta({ label: "Index", iconName: "CircleDot", end: true }),
     route("performance", "routes/dashboard/overview/performance.tsx")
       .meta({ label: "Performance", iconName: "TrendingUp" }),
     route("metrics", "routes/dashboard/overview/metrics.tsx")
-      .meta({ label: "Metrics", iconName: "Clock" })
+      .meta({ label: "Metrics", iconName: "Clock" }),
   );
 
 const analytics = route("analytics", "routes/dashboard/analytics/layout.tsx")
-  .meta({ label: "Analytics", iconName: "FileText", })
+  .meta({ label: "Analytics", iconName: "FileText", section: "main" })
   .children(
     index("routes/dashboard/analytics/summary.tsx")
       .meta({ label: "Index", iconName: "CircleDot", end: true }),
     route("traffic", "routes/dashboard/analytics/traffic.tsx")
       .meta({ label: "Traffic", iconName: "Activity" }),
     route("conversion", "routes/dashboard/analytics/conversion.tsx")
-      .meta({ label: "Conversion", iconName: "PieChart" })
+      .meta({ label: "Conversion", iconName: "PieChart" }),
   );
 
 const reports = route("reports", "routes/dashboard/reports/layout.tsx")
-  .meta({ label: "Reports", iconName: "FileText", })
+  .meta({ label: "Reports", iconName: "PieChart", section: "main" })
   .children(
     index("routes/dashboard/reports/summary.tsx")
       .meta({ label: "Index", iconName: "CircleDot", end: true }),
-    route("monthly", "routes/dashboard/reports/monthly.tsx")
+    route("monthly", "routes/dashboard/reports/monthly.tsx", {
+      id: "reports-monthly",
+    })
       .meta({ label: "Monthly", iconName: "Calendar" }),
-    route("quarterly", "routes/dashboard/reports/quarterly.tsx")
+    route("quarterly", "routes/dashboard/reports/quarterly.tsx", {
+      id: "reports-quarterly",
+    })
       .meta({ label: "Quarterly", iconName: "CalendarDays" }),
-    route("quarterly", "routes/dashboard/reports/annual.tsx")
-      .meta({ label: "Annual", iconName: "CalendarRange" })
+    route("annual", "routes/dashboard/reports/annual.tsx", {
+      id: "reports-annual",
+    })
+      .meta({ label: "Annual", iconName: "CalendarRange" }),
   );
 
-const dashboard = route("dashboard", "routes/dashboard/layout.tsx", { id: "main" })
+const dashboard = route(
+  "dashboard",
+  "routes/dashboard/layout.tsx",
+  { id: "main" },
+)
   .meta({ label: "Dashboard", iconName: "dashboard", section: "main" })
   .children(
-    overview, analytics, reports
+    index("routes/dashboard/page.tsx")
+      .meta({ label: "Dashboard Home", iconName: "Home", end: true }),
+    overview,
+    analytics,
+    reports,
   );
 
 // —————————————————————————————————————————————————————————————
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
-const roles = route("roles", "routes/dashboard/layout.tsx")
-  .meta({ label: "Roles", section: "roles" })
-  .children(index("routes/users/roles/page.tsx")
-    .meta({ label: "All Roles", iconName: "Shield", end: true }),
-    route("admin", "routes/users/roles/admin.tsx")
+const roles = route("roles", "routes/users/roles/layout.tsx")
+  .meta({ label: "Roles", section: "users" })
+  .children(
+    index("routes/users/roles/page.tsx", { id: "users-roles-index" })
+      .meta({ label: "All Roles", iconName: "Shield", end: true }),
+    route("admin", "routes/users/roles/page.tsx", { id: "users-roles-admin" })
       .meta({ label: "Administrators", iconName: "ShieldAlert" }),
-    route("editor", "routes/users/roles/editor.tsx")
+    route("editor", "routes/users/roles/page.tsx", { id: "users-roles-editor" })
       .meta({ label: "Editors", iconName: "Edit" }),
-    route("viewer", "routes/users/roles/viewer.tsx")
-      .meta({ label: "Viewers", iconName: "Eye" })
+    route("viewer", "routes/users/roles/page.tsx", { id: "users-roles-viewer" })
+      .meta({ label: "Viewers", iconName: "Eye" }),
   );
 
-const users = route("users", "routes/dashboard/layout.tsx", { id: "users" })
-  .meta({ label: "Users", section: "users" })
+const users = route("users", "routes/users/layout.tsx", { id: "users" })
+  .meta({ label: "Users", iconName: "Users", section: "main" })
   .children(
-    index("routes/users/page.tsx")
+    index("routes/users/page.tsx", { id: "users-index" })
       .meta({ label: "All Users", iconName: "Users", end: true }),
-    route("active", "routes/users/active.tsx")
+    route("active", "routes/users/page.tsx", { id: "users-active" })
       .meta({ label: "Active Users", iconName: "UserCheck" }),
-    route("inactive", "routes/users/inactive.tsx")
+    route("inactive", "routes/users/page.tsx", { id: "users-inactive" })
       .meta({ label: "Inactive Users", iconName: "UserMinus" }),
-    roles
+    roles,
   );
 
 // —————————————————————————————————————————————————————————————
-// 3) Top‑level shell (your “app” layout + main nav items + feature sections)
+// 3) App shell
 // —————————————————————————————————————————————————————————————
 const appShell = layout("routes/layout.tsx")
   .children(
     index("routes/page.tsx")
-      .meta({
-        label: "Home",
-        iconName: "Home",
-        end: true,
-        section: "main",
-      }),
+      .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
     route("settings", "routes/settings/page.tsx")
       .meta({ label: "Settings", iconName: "Settings", section: "main" }),
     dashboard,
@@ -92,6 +104,7 @@ const appShell = layout("routes/layout.tsx")
   );
 
 // —————————————————————————————————————————————————————————————
-// 4) Finally, export exactly the array Router expects
+// 4) Export
 // —————————————————————————————————————————————————————————————
-export default build([appShell]) satisfies RouteConfig;
+/** @type {RouteConfig} */
+export default build([appShell]);
