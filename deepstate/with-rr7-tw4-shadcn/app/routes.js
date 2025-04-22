@@ -7,31 +7,36 @@ import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 // —————————————————————————————————————————————————————————————
 // 1) Dashboard feature routes
 // —————————————————————————————————————————————————————————————
-const overview = route("overview", "routes/dashboard/overview/layout.tsx")
+const overview = layout("routes/dashboard/layout.tsx", { id: "overview" })
   .meta({ label: "Overview", iconName: "BarChart", section: "main" })
   .children(
+    ...prefix("overview", [
     index("routes/dashboard/overview/summary.tsx")
       .meta({ label: "Index", iconName: "CircleDot", end: true }),
     route("performance", "routes/dashboard/overview/performance.tsx")
       .meta({ label: "Performance", iconName: "TrendingUp" }),
     route("metrics", "routes/dashboard/overview/metrics.tsx")
       .meta({ label: "Metrics", iconName: "Clock" }),
+    ]),
   );
 
-const analytics = route("analytics", "routes/dashboard/analytics/layout.tsx")
+const analytics = layout("analytics", "routes/dashboard/layout.tsx", { id: "analytics"})
   .meta({ label: "Analytics", iconName: "FileText", section: "main" })
   .children(
+    ...prefix("analytics", [
     index("routes/dashboard/analytics/summary.tsx")
       .meta({ label: "Index", iconName: "CircleDot", end: true }),
     route("traffic", "routes/dashboard/analytics/traffic.tsx")
       .meta({ label: "Traffic", iconName: "Activity" }),
     route("conversion", "routes/dashboard/analytics/conversion.tsx")
       .meta({ label: "Conversion", iconName: "PieChart" }),
+    ]),
   );
 
-const reports = route("reports", "routes/dashboard/reports/layout.tsx")
+const reports = layout("reports", "routes/dashboard/layout.tsx", { id: "reports"})
   .meta({ label: "Reports", iconName: "PieChart", section: "main" })
   .children(
+    ...prefix("reports", [
     index("routes/dashboard/reports/summary.tsx")
       .meta({ label: "Index", iconName: "CircleDot", end: true }),
     route("monthly", "routes/dashboard/reports/monthly.tsx", {
@@ -46,6 +51,7 @@ const reports = route("reports", "routes/dashboard/reports/layout.tsx")
       id: "reports-annual",
     })
       .meta({ label: "Annual", iconName: "CalendarRange" }),
+    ]),
   );
 
 const dashboard = layout(
