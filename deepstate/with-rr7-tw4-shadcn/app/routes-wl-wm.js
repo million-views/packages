@@ -8,7 +8,7 @@ import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 // 1) Dashboard feature routes
 // —————————————————————————————————————————————————————————————
 const overview = layout("layouts/content.tsx", { id: "overview" })
-  // .meta({ label: "Overview", iconName: "BarChart", section: "main" })
+  .meta({ label: "Overview", iconName: "BarChart", section: "main" })
   .children(
     ...prefix("overview", [
       index("routes/dashboard/overview/summary.tsx")
@@ -23,7 +23,7 @@ const overview = layout("layouts/content.tsx", { id: "overview" })
 const analytics = layout("layouts/content.tsx", {
   id: "analytics",
 })
-  // .meta({ label: "Analytics", iconName: "FileText", section: "main" })
+  .meta({ label: "Analytics", iconName: "FileText", section: "main" })
   .children(
     ...prefix("analytics", [
       index("routes/dashboard/analytics/summary.tsx")
@@ -38,7 +38,7 @@ const analytics = layout("layouts/content.tsx", {
 const reports = layout("layouts/content.tsx", {
   id: "reports",
 })
-  // .meta({ label: "Reports", iconName: "PieChart", section: "main" })
+  .meta({ label: "Reports", iconName: "PieChart", section: "main" })
   .children(
     ...prefix("reports", [
       index("routes/dashboard/reports/summary.tsx")
@@ -62,7 +62,7 @@ const dashboard = layout(
   "layouts/content.tsx",
   { id: "main" },
 )
-  // .meta({ label: "Dashboard", iconName: "LayoutDashboard", section: "main" })
+  .meta({ label: "Dashboard", iconName: "LayoutDashboard", section: "main" })
   .children(
     ...prefix("dashboard", [
       index("routes/dashboard/page.tsx")
@@ -77,7 +77,7 @@ const dashboard = layout(
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
 const roles = layout("routes/users/layout.tsx", { id: "roles"} )
-  // .meta({ label: "Roles", section: "users" })
+  .meta({ label: "Roles", section: "users" })
   .children(
     ...prefix("roles", [
       index("routes/users/roles/page.tsx", { id: "users-roles-index" })
@@ -92,7 +92,7 @@ const roles = layout("routes/users/layout.tsx", { id: "roles"} )
   );
 
 const users = layout("routes/users/layout.tsx", { id: "users" })
-  // .meta({ label: "Users", iconName: "Users", section: "main" })
+  .meta({ label: "Users", iconName: "Users", section: "main" })
   .children(
     ...prefix("users", [
       index("routes/users/page.tsx", { id: "users-index" })

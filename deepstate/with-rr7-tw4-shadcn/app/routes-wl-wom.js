@@ -110,10 +110,10 @@ const users = layout("routes/users/layout.tsx", { id: "users" })
 // —————————————————————————————————————————————————————————————
 const appShell = layout("routes/layout.tsx")
   .children(
-    index("routes/page.tsx")
-      .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
-    route("settings", "routes/settings/page.tsx")
-      .meta({ label: "Settings", iconName: "Settings", section: "main" }),
+    index("routes/page.tsx"),
+      // .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
+    route("settings", "routes/settings/page.tsx"),
+      // .meta({ label: "Settings", iconName: "Settings", section: "main" }),
     dashboard,
     users,
   );
