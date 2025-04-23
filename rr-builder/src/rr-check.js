@@ -3,170 +3,230 @@
 
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { pathToFileURL } from "url";
+import { timeStamp } from "console";
 
 /**
- * @typedef {import("@react-router/dev/routes").RouteConfigEntry} RouteConfigEntry
+ * @typedef {import("@react-router/dev/routes").RouteConfigEntry & { handle?: import("@m5nv/rr-builder").NavMeta, path?: string }} RouteEntry
  */
 
-/**
- * Dynamically import a module exporting a default RouteConfigEntry[] and return it.
- * @param {string} modulePath
- * @returns {Promise<RouteConfigEntry[]>}
- */
-async function loadRoutes(modulePath) {
-  const full = path.resolve(process.cwd(), modulePath);
-  const url = pathToFileURL(full).href;
+/** Dynamically import routes to bust ESM cache */
+async function loadRoutes(file) {
+  const filePath = path.resolve(process.cwd(), file);
+  const url = pathToFileURL(filePath).href + `?update=${Date.now()}`;
   const mod = await import(url);
-  return /** @type {RouteConfigEntry[]} */ (mod.default);
+  return /** @type {RouteEntry[]} */ (mod.default);
 }
 
-/**
- * Recursively count route ID occurrences.
- * @param {RouteConfigEntry[]} routes
- * @param {Map<string, number>} countMap
- */
-function collectIds(routes, countMap) {
+/** Collect duplicate IDs */
+function collectIds(routes, map = new Map()) {
   for (const r of routes) {
-    const id = r.id ?? r.file.replace(/\.[^/.]+$/, "");
-    countMap.set(id, (countMap.get(id) || 0) + 1);
-    if (Array.isArray(r.children)) {
-      collectIds(r.children, countMap);
-    }
+    if (r.id) map.set(r.id, (map.get(r.id) || 0) + 1);
+    if (r.children) collectIds(r.children, map);
   }
+  return map;
 }
 
-/**
- * Print the route forest, marking duplicates or missing files with '*'.
- * Optionally include route IDs and/or paths.
- * @param {RouteConfigEntry[]} routes
- * @param {Set<string>} dupIds
- * @param {boolean} showId
- * @param {boolean} showPath
- * @param {boolean} checkFiles
- * @param {string} fileBaseDir       // base directory of the routes file
- * @param {string} [basePath]
- * @param {string} [prefix]
- */
-function printTree(
-  routes,
-  dupIds,
-  showId,
-  showPath,
-  checkFiles,
-  fileBaseDir,
-  basePath = "",
-  prefix = ""
-) {
-  routes.forEach((r, idx) => {
-    const isLast = idx === routes.length - 1;
-    const conn = isLast ? "└── " : "├── ";
-
-    // Compute current path
-    let currentPath;
-    if (typeof r.path === "string") {
-      currentPath = basePath ? `/${basePath}/${r.path}` : `/${r.path}`;
-    } else if (r.index) {
-      currentPath = basePath ? `/${basePath}` : "/";
+/** Build a full tree with metadata */
+function buildTree(routes, parentPath = "") {
+  return routes.flatMap((r) => {
+    const hasPath = r.path !== undefined;
+    const segment = hasPath ? r.path : "";
+    const fullPath = hasPath
+      ? `${parentPath}/${segment}`.replace(/\/+/g, "/")
+      : parentPath || "/";
+    const node = {
+      id: r.id || fullPath,
+      label: r.handle?.label,
+      iconName: r.handle?.iconName,
+      end: r.handle?.end,
+      group: r.handle?.group,
+      section: r.handle?.section,
+      path: hasPath ? fullPath : undefined,
+      children: [],
+    };
+    if (r.children) {
+      node.children = buildTree(r.children, fullPath);
     }
-
-    // Determine next base path for children
-    let nextBase;
-    if (typeof r.path === "string") {
-      nextBase = basePath ? `${basePath}/${r.path}` : r.path;
-    } else if (r.index) {
-      nextBase = basePath;
-    } else {
-      nextBase = basePath;
-    }
-
-    // @ts-ignore: custom handle field doesn't exist in RouteConfigEntry (we know!)
-    const label = r.handle?.label || "(no label)";
-    const id = r.id ?? r.file.replace(/\.[^/.]+$/, "");
-
-    // Determine marking for duplicates or missing component files
-    let mark = dupIds.has(id) ? "*" : " ";
-    if (checkFiles) {
-      const filePath = path.resolve(fileBaseDir, r.file);
-      if (!fs.existsSync(filePath)) {
-        mark = "*";
-      }
-    }
-
-    // Build info parts
-    const info = [];
-    if (showPath) info.push(`path: ${currentPath}`);
-    if (showId) info.push(`id: ${id}`);
-    const infoStr = info.length ? ` (${info.join(", ")})` : "";
-
-    console.log(`${prefix}${conn}${mark} ${label}${infoStr}`);
-
-    if (Array.isArray(r.children) && r.children.length) {
-      const nextPrefix = prefix + (isLast ? "    " : "│   ");
-      printTree(
-        r.children,
-        dupIds,
-        showId,
-        showPath,
-        checkFiles,
-        fileBaseDir,
-        nextBase,
-        nextPrefix
-      );
-    }
+    return [node];
   });
 }
 
+/** Prune layout-only nodes */
+function pruneTree(nodes) {
+  return nodes.flatMap((n) => {
+    const isWrapper = n.label === undefined && n.path === undefined;
+    if (isWrapper) {
+      return pruneTree(n.children || []);
+    }
+    const children = n.children ? pruneTree(n.children) : undefined;
+    return [{ ...n, children }];
+  });
+}
+
+/** Strip empty children arrays */
+function stripEmpty(nodes) {
+  return nodes.map((n) => {
+    const node = { ...n };
+    if (Array.isArray(node.children)) {
+      if (node.children.length > 0) {
+        node.children = stripEmpty(node.children);
+      } else {
+        delete node.children;
+      }
+    }
+    return node;
+  });
+}
+
+function codegenJs(outFile, now, metaEntries, sections) {
+  const header = `// ⚠ AUTO-GENERATED — ${now} — do not edit`;
+  const content = `${header}
+// @ts-check
+import { useMatches } from 'react-router';
+/** @typedef {import("react-router").UIMatch} UIMatch */
+/** @typedef {import('@m5nv/rr-builder').NavMeta} NavMeta */
+
+/** @type {Map<string, NavMeta>} */
+export const metaMap = new Map([
+  ${metaEntries}
+]);
+
+/// TODO: need to type this data
+export const navigationTree = ${JSON.stringify(sections, null, 2)};
+
+/**
+ * Hook to hydrate matches with your navigation metadata
+ * @returns {UIMatch[]}
+ */
+export function useHydratedMatches() {
+  const matches = useMatches();
+  return matches.map(match => {
+    if (match.handle) return match;
+    const meta = metaMap.get(match.id);
+    return meta ? { ...match, handle: meta } : match;
+  });
+}
+`;
+
+  fs.writeFileSync(outFile, content, "utf8");
+  console.error(`✏️ Generated nav module: ${outFile}`);
+}
+
+function codegenTs(outFile, now, metaEntries, sections) {
+  const header = `// ⚠ AUTO-GENERATED — ${now} — do not edit`;
+  const content = `${header}
+import { useMatches, type UIMatch } from 'react-router';
+import type { NavMeta } from "@m5nv/rr-builder";
+
+export const metaMap = new Map<string, NavMeta>([
+${metaEntries}
+]);
+
+/// TODO: need to type this data
+export const navigationTree = ${JSON.stringify(sections, null, 2)};
+
+/**
+ * Hook to hydrate matches with your navigation metadata
+ */
+export function useHydratedMatches()  : UIMatch[] {
+  const matches = useMatches();
+  return matches.map(match => {
+    // If match.handle is already populated (e.g. from module handle exports), keep it
+    if (match.handle) return match;
+    const meta = metaMap.get(match.id);
+    return meta ? { ...match, handle: meta } : match;
+  });
+}
+`;
+
+  fs.writeFileSync(outFile, content, "utf8");
+  console.error(`✏️ Generated nav module: ${outFile}`);
+}
+
+/** Generate nav code artifact */
+function codegen(outFile, routes) {
+  const raw = buildTree(routes);
+  const pruned = pruneTree(raw);
+  const tree = stripEmpty(pruned);
+
+  // Build metaMap array
+
+  let metaEntries = tree.map((n) => [n.id, {
+    ...(n.label !== undefined && { label: n.label }),
+    ...(n.iconName !== undefined && { iconName: n.iconName }),
+    ...(n.end !== undefined && { end: n.end }),
+    ...(n.group !== undefined && { group: n.group }),
+    ...(n.section !== undefined && { section: n.section }),
+  }]);
+
+  // Group by section
+  const sections = {};
+  tree.forEach((n) => {
+    const sec = n.section || "main";
+    sections[sec] = sections[sec] || [];
+    sections[sec].push(n);
+  });
+
+  // Remove hoisted 'section' prop from nodes
+  function removeSection(nodes) {
+    return nodes.map((n) => {
+      const { section, ...rest } = n;
+      if (rest.children) rest.children = removeSection(rest.children);
+      return rest;
+    });
+  }
+  for (const key of Object.keys(sections)) {
+    sections[key] = removeSection(sections[key]);
+  }
+  const ext = path.extname(outFile).toLowerCase();
+  const now = new Date().toISOString();
+  metaEntries = metaEntries.map(
+    ([id, m]) => `  [${JSON.stringify(id)}, ${JSON.stringify(m)}],`,
+  ).join("\n");
+  if (ext === ".ts") {
+    codegenTs(outFile, now, metaEntries, sections);
+  } else {
+    codegenJs(outFile, now, metaEntries, sections);
+  }
+}
+
+/** CLI entry */
 async function main() {
-  const args = process.argv.slice(2);
-  if (args.length < 1) {
-    console.error(
-      "Usage: rr-check <routes.js> [--show-id] [--show-path] [--check-files]"
-    );
+  const argv = process.argv.slice(2);
+  if (argv.length < 1) {
+    console.error("Usage: rr-check <routes> [--out <file>] [--watch]");
     process.exit(1);
   }
-
-  const [file, ...flags] = args;
-  const showId = flags.includes("--show-id");
-  const showPath = flags.includes("--show-path");
-  const checkFiles = flags.includes("--check-files");
-
-  // Determine the directory of the routes file for relative file checks
-  const routesFilePath = path.resolve(process.cwd(), file);
-  const baseDir = path.dirname(routesFilePath);
+  const file = argv[0];
+  const outIdx = argv.indexOf("--out");
+  const out = outIdx >= 0 ? argv[outIdx + 1] : null;
+  const watch = argv.includes("--watch");
 
   try {
-    // 1) Load and flatten routes
     let routes = await loadRoutes(file);
-    if (
-      routes.length === 1 &&
-      !routes[0].handle?.label &&
-      Array.isArray(routes[0].children)
-    ) {
-      routes = routes[0].children;
+    if (out) codegen(out, routes);
+    if (watch) {
+      console.error(`👀 Watching ${file} for changes...`);
+      let lastHash = crypto.createHash("sha256").update(JSON.stringify(routes))
+        .digest("hex");
+      fs.watch(path.resolve(process.cwd(), file), async (evt) => {
+        if (evt !== "change") return;
+        const upd = await loadRoutes(file);
+        const hash = crypto.createHash("sha256").update(JSON.stringify(upd))
+          .digest("hex");
+        if (hash !== lastHash) {
+          lastHash = hash;
+          console.error("🔄 Change detected, regenerating...");
+          codegen(out, upd);
+        }
+      });
     }
-
-    // 2) Collect duplicate IDs
-    const idMap = new Map();
-    collectIds(routes, idMap);
-    const dupIds = new Set(
-      [...idMap.entries()].filter(([, count]) => count > 1).map(([id]) => id)
-    );
-    if (dupIds.size) {
-      console.error("⚠ Duplicate route IDs detected:");
-      for (const idVal of dupIds) {
-        console.error(`  • ${idVal} appears ${idMap.get(idVal)} times`);
-      }
-      console.error("Tree marks duplicates or missing files with *");
-    }
-
-    // 3) Print forest
-    printTree(routes, dupIds, showId, showPath, checkFiles, baseDir);
-  } catch (err) {
-    console.error("Error:", err.message);
+  } catch (e) {
+    console.error("Error:", e.message);
     process.exit(1);
   }
 }
 
-// go!
-await main();
+main();

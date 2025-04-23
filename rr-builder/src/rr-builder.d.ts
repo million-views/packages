@@ -12,9 +12,9 @@ export interface NavMeta {
   iconName?: string;
   /** If true, active matching requires an exact path match */
   end?: boolean;
-  /** UI container or region for this item (e.g. 'main', 'footer', 'sidebar'). */
-  group?: string;
   /**  Logical feature area or domain (e.g. 'dashboard', 'users') */
+  group?: string;
+  /** UI container or region for this item (e.g. 'main', 'footer', 'sidebar'). */
   section?: string;
 }
 
