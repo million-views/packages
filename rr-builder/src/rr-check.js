@@ -5,10 +5,14 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { pathToFileURL } from "url";
-import { timeStamp } from "console";
 
 /**
- * @typedef {import("@react-router/dev/routes").RouteConfigEntry & { handle?: import("@m5nv/rr-builder").NavMeta, path?: string }} RouteEntry
+ * @typedef {import("@m5nv/rr-builder").NavMeta} NavMeta
+ * @typedef {import("@react-router/dev/routes").RouteConfigEntry &
+ *  {
+ *    handle?: NavMeta
+ *  }
+ * } ExtendedRouteConfigEntry
  */
 
 /** Dynamically import routes to bust ESM cache */
@@ -16,7 +20,7 @@ async function loadRoutes(file) {
   const filePath = path.resolve(process.cwd(), file);
   const url = pathToFileURL(filePath).href + `?update=${Date.now()}`;
   const mod = await import(url);
-  return /** @type {RouteEntry[]} */ (mod.default);
+  return /** @type {ExtendedRouteConfigEntry[]} */ (mod.default);
 }
 
 /** Collect duplicate IDs */
@@ -37,7 +41,7 @@ function buildTree(routes, parentPath = "") {
       ? `${parentPath}/${segment}`.replace(/\/+/g, "/")
       : parentPath || "/";
     const node = {
-      id: r.id || fullPath,
+      id: r.id, /*|| fullPath*/
       label: r.handle?.label,
       iconName: r.handle?.iconName,
       end: r.handle?.end,
@@ -80,6 +84,26 @@ function stripEmpty(nodes) {
   });
 }
 
+/**
+ * Generate a map of route ID → NavMeta for all routes in the tree
+ * @param {ExtendedRouteConfigEntry[]} routes
+ * @returns {Map<string, NavMeta>}
+ */
+export function createMetaMap(routes) {
+  const map = new Map();
+  for (const r of routes) {
+    const id = r.id ?? r.file.replace(/\.[^/.]+$/, "");
+    if (r.handle) {
+      map.set(id, r.handle);
+    }
+    if (Array.isArray(r.children)) {
+      const childMap = createMetaMap(r.children);
+      for (const [k, v] of childMap) map.set(k, v);
+    }
+  }
+  return map;
+}
+
 function codegenJs(outFile, now, metaEntries, sections) {
   const header = `// ⚠ AUTO-GENERATED — ${now} — do not edit`;
   const content = `${header}
@@ -90,7 +114,7 @@ import { useMatches } from 'react-router';
 
 /** @type {Map<string, NavMeta>} */
 export const metaMap = new Map([
-  ${metaEntries}
+${metaEntries}
 ]);
 
 /// TODO: need to type this data
@@ -103,6 +127,7 @@ export const navigationTree = ${JSON.stringify(sections, null, 2)};
 export function useHydratedMatches() {
   const matches = useMatches();
   return matches.map(match => {
+    // If match.handle is already populated (e.g. from module handle exports), keep it
     if (match.handle) return match;
     const meta = metaMap.get(match.id);
     return meta ? { ...match, handle: meta } : match;
@@ -151,15 +176,15 @@ function codegen(outFile, routes) {
   const pruned = pruneTree(raw);
   const tree = stripEmpty(pruned);
 
-  // Build metaMap array
+  // // Build metaMap array
 
-  let metaEntries = tree.map((n) => [n.id, {
-    ...(n.label !== undefined && { label: n.label }),
-    ...(n.iconName !== undefined && { iconName: n.iconName }),
-    ...(n.end !== undefined && { end: n.end }),
-    ...(n.group !== undefined && { group: n.group }),
-    ...(n.section !== undefined && { section: n.section }),
-  }]);
+  // let metaEntries = tree.map((n) => [n.id, {
+  //   ...(n.label !== undefined && { label: n.label }),
+  //   ...(n.iconName !== undefined && { iconName: n.iconName }),
+  //   ...(n.end !== undefined && { end: n.end }),
+  //   ...(n.group !== undefined && { group: n.group }),
+  //   ...(n.section !== undefined && { section: n.section }),
+  // }]);
 
   // Group by section
   const sections = {};
@@ -182,7 +207,9 @@ function codegen(outFile, routes) {
   }
   const ext = path.extname(outFile).toLowerCase();
   const now = new Date().toISOString();
-  metaEntries = metaEntries.map(
+  // Build metaMap array
+  let metamap = createMetaMap(routes);
+  let metaEntries = [...metamap.entries()].map(
     ([id, m]) => `  [${JSON.stringify(id)}, ${JSON.stringify(m)}],`,
   ).join("\n");
   if (ext === ".ts") {
