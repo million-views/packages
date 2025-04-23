@@ -8,7 +8,7 @@ import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 // 1) Dashboard feature routes
 // —————————————————————————————————————————————————————————————
 const overview = layout("layouts/content.tsx", { id: "overview" })
-  // .meta({ label: "Overview", iconName: "BarChart", section: "main" })
+  .meta({ label: "Overview|Layout", iconName: "BarChart", group: "dashboard" })
   .children(
     ...prefix("overview", [
       index("routes/dashboard/overview/summary.tsx")
@@ -76,7 +76,7 @@ const dashboard = layout(
 // —————————————————————————————————————————————————————————————
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
-const roles = layout("routes/users/layout.tsx", { id: "roles"} )
+const roles = layout("routes/users/layout.tsx", { id: "roles" })
   // .meta({ label: "Roles", section: "users" })
   .children(
     ...prefix("roles", [
@@ -84,9 +84,13 @@ const roles = layout("routes/users/layout.tsx", { id: "roles"} )
         .meta({ label: "All Roles", iconName: "Shield", end: true }),
       route("admin", "routes/users/roles/page.tsx", { id: "users-roles-admin" })
         .meta({ label: "Administrators", iconName: "ShieldAlert" }),
-      route("editor", "routes/users/roles/page.tsx", { id: "users-roles-editor" })
+      route("editor", "routes/users/roles/page.tsx", {
+        id: "users-roles-editor",
+      })
         .meta({ label: "Editors", iconName: "Edit" }),
-      route("viewer", "routes/users/roles/page.tsx", { id: "users-roles-viewer" })
+      route("viewer", "routes/users/roles/page.tsx", {
+        id: "users-roles-viewer",
+      })
         .meta({ label: "Viewers", iconName: "Eye" }),
     ]),
   );

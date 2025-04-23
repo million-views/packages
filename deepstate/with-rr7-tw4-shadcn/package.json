@@ -43,6 +43,6 @@
     "typescript": "^5.8.3",
     "vite": "^6.3.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "@m5nv/rr-builder": "^1.0.0"
+    "@m5nv/rr-builder": "file:../../rr-builder"
   }
 }

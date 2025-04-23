@@ -1,17 +1,23 @@
-import { Outlet, useLocation, useMatches } from "react-router";
-import { Navigator } from "@/components/navigator";
-import routes from "@/routes";
+import { Outlet, useNavigation } from "react-router";
+import { Loader } from "lucide-react";
+import Navigator from "@/components/navigator3";
 
+/**
+ * Root layout component that includes the Navigator and content area
+ */
 export default function RootLayout() {
-  const location = useLocation();
-  // console.log("routes", routes);
-  // const matches = useMatches();
-  // matches.forEach((element) => console.log("Root.Layout", element));
-
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
   return (
     <div className="min-h-screen flex flex-col">
-      <Navigator routes={routes} appName="App" />
-      <main className="flex-1 container py-8">
+      {/* Global navigation loading indicator */}
+      {isNavigating && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
+          <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+        </div>
+      )}
+      <Navigator />
+      <main className="flex-1 container p-6">
         <Outlet />
       </main>
     </div>

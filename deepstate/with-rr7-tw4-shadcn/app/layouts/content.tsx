@@ -1,7 +1,8 @@
 import { Outlet, type UIMatch, useMatches } from "react-router";
 import { Icon } from "@/components/icon-mapper";
 import { type NavMeta } from "@m5nv/rr-builder";
-import { useHydratedMatches } from "~/hooks/use-hydrated-matches";
+// import { useHydratedMatches } from "~/hooks/use-hydrated-matches";
+import { useHydratedMatches } from "~/lib/nav5";
 // Credit:
 // [How to pass props to Layout component...?](https://stackoverflow.com/a/79537911/20360913)
 
