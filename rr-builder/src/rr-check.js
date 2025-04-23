@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 
+import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 
@@ -36,22 +37,26 @@ function collectIds(routes, countMap) {
 }
 
 /**
- * Print the route forest, marking duplicates with '*' before the label.
+ * Print the route forest, marking duplicates or missing files with '*'.
  * Optionally include route IDs and/or paths.
  * @param {RouteConfigEntry[]} routes
  * @param {Set<string>} dupIds
  * @param {boolean} showId
  * @param {boolean} showPath
- * @param {string} basePath
- * @param {string} prefix
+ * @param {boolean} checkFiles
+ * @param {string} fileBaseDir       // base directory of the routes file
+ * @param {string} [basePath]
+ * @param {string} [prefix]
  */
 function printTree(
   routes,
   dupIds,
   showId,
   showPath,
+  checkFiles,
+  fileBaseDir,
   basePath = "",
-  prefix = "",
+  prefix = ""
 ) {
   routes.forEach((r, idx) => {
     const isLast = idx === routes.length - 1;
@@ -78,7 +83,15 @@ function printTree(
     // @ts-ignore: custom handle field doesn't exist in RouteConfigEntry (we know!)
     const label = r.handle?.label || "(no label)";
     const id = r.id ?? r.file.replace(/\.[^/.]+$/, "");
-    const mark = dupIds.has(id) ? "*" : " ";
+
+    // Determine marking for duplicates or missing component files
+    let mark = dupIds.has(id) ? "*" : " ";
+    if (checkFiles) {
+      const filePath = path.resolve(fileBaseDir, r.file);
+      if (!fs.existsSync(filePath)) {
+        mark = "*";
+      }
+    }
 
     // Build info parts
     const info = [];
@@ -90,7 +103,16 @@ function printTree(
 
     if (Array.isArray(r.children) && r.children.length) {
       const nextPrefix = prefix + (isLast ? "    " : "│   ");
-      printTree(r.children, dupIds, showId, showPath, nextBase, nextPrefix);
+      printTree(
+        r.children,
+        dupIds,
+        showId,
+        showPath,
+        checkFiles,
+        fileBaseDir,
+        nextBase,
+        nextPrefix
+      );
     }
   });
 }
@@ -98,19 +120,26 @@ function printTree(
 async function main() {
   const args = process.argv.slice(2);
   if (args.length < 1) {
-    console.error("Usage: rr-check <routes.js> [--show-id] [--show-path]");
+    console.error(
+      "Usage: rr-check <routes.js> [--show-id] [--show-path] [--check-files]"
+    );
     process.exit(1);
   }
 
   const [file, ...flags] = args;
   const showId = flags.includes("--show-id");
   const showPath = flags.includes("--show-path");
+  const checkFiles = flags.includes("--check-files");
+
+  // Determine the directory of the routes file for relative file checks
+  const routesFilePath = path.resolve(process.cwd(), file);
+  const baseDir = path.dirname(routesFilePath);
+
   try {
     // 1) Load and flatten routes
     let routes = await loadRoutes(file);
     if (
       routes.length === 1 &&
-      // @ts-ignore: custom handle field doesn't exist in RouteConfigEntry (we know!)
       !routes[0].handle?.label &&
       Array.isArray(routes[0].children)
     ) {
@@ -121,20 +150,18 @@ async function main() {
     const idMap = new Map();
     collectIds(routes, idMap);
     const dupIds = new Set(
-      [...idMap.entries()]
-        .filter(([, count]) => count > 1)
-        .map(([id]) => id),
+      [...idMap.entries()].filter(([, count]) => count > 1).map(([id]) => id)
     );
     if (dupIds.size) {
       console.error("⚠ Duplicate route IDs detected:");
       for (const idVal of dupIds) {
         console.error(`  • ${idVal} appears ${idMap.get(idVal)} times`);
       }
-      console.error("Tree marks duplicates with *");
+      console.error("Tree marks duplicates or missing files with *");
     }
 
     // 3) Print forest
-    printTree(routes, dupIds, showId, showPath);
+    printTree(routes, dupIds, showId, showPath, checkFiles, baseDir);
   } catch (err) {
     console.error("Error:", err.message);
     process.exit(1);
