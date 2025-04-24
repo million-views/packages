@@ -1,0 +1,190 @@
+export const navigationTree = {
+  main: [
+    {
+      id: "/",
+      label: "Home",
+      iconName: "Home",
+      path: "/",
+      end: true,
+    },
+    {
+      id: "/settings",
+      label: "Settings",
+      iconName: "Settings",
+      path: "/settings",
+    },
+    {
+      id: "main",
+      label: "Dashboard",
+      iconName: "LayoutDashboard",
+      path: "/dashboard",
+      children: [
+        {
+          id: "/dashboard",
+          label: "Dashboard",
+          iconName: "LayoutDashboard",
+          path: "/dashboard",
+          end: true,
+        },
+        {
+          id: "overview",
+          label: "Overview",
+          iconName: "BarChart",
+          path: "/dashboard/overview",
+          children: [
+            {
+              id: "/dashboard/overview",
+              label: "Overview",
+              iconName: "CircleDot",
+              path: "/dashboard/overview",
+              end: true,
+            },
+            {
+              id: "/dashboard/overview/performance",
+              label: "Performance",
+              iconName: "TrendingUp",
+              path: "/dashboard/overview/performance",
+            },
+            {
+              id: "/dashboard/overview/metrics",
+              label: "Metrics",
+              iconName: "Clock",
+              path: "/dashboard/overview/metrics",
+            },
+          ],
+        },
+        {
+          id: "analytics",
+          label: "Analytics",
+          iconName: "FileText",
+          path: "/dashboard/analytics",
+          children: [
+            {
+              id: "/dashboard/analytics",
+              label: "Analytics",
+              iconName: "BarChart",
+              path: "/dashboard/analytics",
+              end: true,
+            },
+            {
+              id: "/dashboard/analytics/traffic",
+              label: "Traffic",
+              iconName: "Activity",
+              path: "/dashboard/analytics/traffic",
+            },
+            {
+              id: "/dashboard/analytics/conversion",
+              label: "Conversion",
+              iconName: "PieChart",
+              path: "/dashboard/analytics/conversion",
+            },
+          ],
+        },
+        {
+          id: "reports",
+          label: "Reports",
+          iconName: "PieChart",
+          path: "/dashboard/reports",
+          children: [
+            {
+              id: "/dashboard/reports",
+              label: "Reports",
+              iconName: "FileText",
+              path: "/dashboard/reports",
+              end: true,
+            },
+            {
+              id: "reports-monthly",
+              label: "Monthly",
+              iconName: "Calendar",
+              path: "/dashboard/reports/monthly",
+            },
+            {
+              id: "reports-quarterly",
+              label: "Quarterly",
+              iconName: "CalendarDays",
+              path: "/dashboard/reports/quarterly",
+            },
+            {
+              id: "reports-annual",
+              label: "Annual",
+              iconName: "CalendarRange",
+              path: "/dashboard/reports/annual",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "users",
+      label: "Users",
+      iconName: "Users",
+      path: "/users",
+      children: [
+        {
+          id: "users-index",
+          label: "All Users",
+          iconName: "Users",
+          path: "/users",
+          end: true,
+        },
+        {
+          id: "users-active",
+          label: "Active Users",
+          iconName: "UserCheck",
+          path: "/users/active",
+        },
+        {
+          id: "users-inactive",
+          label: "Inactive Users",
+          iconName: "UserMinus",
+          path: "/users/inactive",
+        },
+        {
+          id: "roles",
+          label: "Roles",
+          path: "/users/roles",
+          children: [
+            {
+              id: "users-roles-index",
+              label: "All Roles",
+              iconName: "Shield",
+              path: "/users/roles",
+              end: true,
+            },
+            {
+              id: "users-roles-admin",
+              label: "Administrators",
+              iconName: "ShieldAlert",
+              path: "/users/roles/admin",
+            },
+            {
+              id: "users-roles-editor",
+              label: "Editors",
+              iconName: "Edit",
+              path: "/users/roles/editor",
+            },
+            {
+              id: "users-roles-viewer",
+              label: "Viewers",
+              iconName: "Eye",
+              path: "/users/roles/viewer",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "/simple-page",
+      label: "Simple Page",
+      iconName: "FileText",
+      path: "/simple-page",
+    },
+    {
+      id: "/messages",
+      label: "Messages",
+      iconName: "Mail",
+      path: "/messages",
+    },
+  ],
+};
