@@ -2,7 +2,7 @@ import { Outlet, type UIMatch, useMatches } from "react-router";
 import { Icon } from "@/components/icon-mapper";
 import { type NavMeta } from "@m5nv/rr-builder";
 // import { useHydratedMatches } from "~/hooks/use-hydrated-matches";
-import { useHydratedMatches } from "~/lib/nav5";
+import { useHydratedMatches } from "@/lib/nav5";
 // Credit:
 // [How to pass props to Layout component...?](https://stackoverflow.com/a/79537911/20360913)
 
@@ -14,11 +14,10 @@ interface RouteMatch extends UIMatch {
 /// A simple layout for content
 export default function ContentLayout() {
   const matches = useHydratedMatches();
-  console.log(matches);
+  // console.log(matches);
   const match = matches.at(-1) as RouteMatch;
   console.log("Content.Layout", match);
-  const handle = match.handle;
-  let { label, iconName } = handle ??
+  let { label, iconName } = match?.handle ??
     { label: "Who are we?", iconName: "ShieldQuestion" };
   return (
     <article className="flex flex-col">
