@@ -1,6 +1,6 @@
 import { Outlet, useNavigation } from "react-router";
 import { Loader } from "lucide-react";
-import Navigator from "@/components/navigator3";
+import Navigator from "@/components/navigator4";
 
 /**
  * Root layout component that includes the Navigator and content area

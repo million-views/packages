@@ -14,7 +14,6 @@ interface RouteMatch extends UIMatch {
 /// A simple layout for content
 export default function ContentLayout() {
   const matches = useHydratedMatches();
-  // console.log(matches);
   const match = matches.at(-1) as RouteMatch;
   console.log("Content.Layout", match);
   let { label, iconName } = match?.handle ??

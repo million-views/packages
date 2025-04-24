@@ -59,8 +59,7 @@ const reports = layout("layouts/content.tsx", {
   );
 
 const dashboard = layout(
-  "layouts/content.tsx",
-  { id: "main" },
+  "routes/dashboard/layout.tsx",
 )
   // .meta({ label: "Dashboard", iconName: "LayoutDashboard", section: "main" })
   .children(
