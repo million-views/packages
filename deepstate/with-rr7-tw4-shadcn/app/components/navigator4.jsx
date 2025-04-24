@@ -80,63 +80,6 @@ export function useBreadcrumbs() {
     }));
 }
 
-// Custom hook to determine active group
-export function useActiveGroup() {
-  const hydratedMatches = useHydratedMatches();
-  const location = useLocation();
-  const pathSegments = location.pathname.split("/").filter(Boolean);
-
-  // First try to find a match with a group defined
-  const groupMatch = [...hydratedMatches]
-    .reverse()
-    .find((match) => match.handle?.group);
-
-  if (groupMatch?.handle?.group) {
-    return groupMatch.handle.group;
-  }
-
-  // If no group found, try to find the top-level active item
-  if (pathSegments.length > 0) {
-    const firstSegment = `/${pathSegments[0]}`;
-
-    // Find the top-level item that matches this path
-    const topLevelItem = navigationTree.main?.find((item) =>
-      item.path === firstSegment ||
-      (item.path === "/" && firstSegment === "/") ||
-      (item.id === "main" && firstSegment === "/dashboard")
-    );
-
-    return topLevelItem?.id || null;
-  }
-
-  return null;
-}
-
-// Utility function to find an active parent item
-function findActiveParent(items, currentPath) {
-  if (!items || !Array.isArray(items)) return null;
-
-  for (const item of items) {
-    // Check if this item is active based on path
-    if (
-      item.path && (
-        item.path === currentPath ||
-        (item.path !== "/" && currentPath.startsWith(item.path))
-      )
-    ) {
-      return item;
-    }
-
-    // Check children recursively
-    if (item.children && item.children.length > 0) {
-      const foundInChildren = findActiveParent(item.children, currentPath);
-      if (foundInChildren) return item; // Return the parent, not the child
-    }
-  }
-
-  return null;
-}
-
 // Main Navigator component
 const Navigator = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -146,9 +89,7 @@ const Navigator = () => {
   // React Router hooks
   const navigation = useNavigation();
   const location = useLocation();
-  const matches = useHydratedMatches();
   const activePage = location.pathname;
-  const activeGroup = useActiveGroup();
 
   // Show loading indicator during navigation
   const isNavigating = navigation.state !== "idle";
@@ -215,8 +156,72 @@ const Navigator = () => {
     return activePage.startsWith(path + "/");
   };
 
-  // Use the navigation tree directly - it already has the proper hierarchy
-  const navigationItems = navigationTree.main || [];
+  // Helper function to find the deepest active parent in navigation tree
+  const findActiveParentItem = (items, path) => {
+    // Try to find exact match first
+    const exactMatch = items.find((item) => item.path === path);
+    if (exactMatch) return exactMatch;
+
+    // Find the best parent match (item whose path is a prefix of current path)
+    let bestMatch = null;
+    let bestMatchLength = 0;
+
+    const findMatch = (itemList, currentPath) => {
+      for (const item of itemList) {
+        if (
+          item.path && item.path !== "/" && currentPath.startsWith(item.path)
+        ) {
+          // This is a potential match - check if it's better than our current best
+          const pathLength = item.path.length;
+          if (pathLength > bestMatchLength) {
+            bestMatch = item;
+            bestMatchLength = pathLength;
+          }
+        }
+
+        // Recursively check children
+        if (item.children?.length > 0) {
+          findMatch(item.children, currentPath);
+        }
+      }
+    };
+
+    findMatch(items, path);
+    return bestMatch;
+  };
+
+  // Get the true top-level navigation items (no children of other items)
+  const getTopLevelItems = () => {
+    const allItems = navigationTree.main || [];
+
+    // Create a Set of all item IDs that are children of any item
+    const childrenIds = new Set();
+    const processChildren = (items) => {
+      for (const item of items) {
+        if (item.children?.length > 0) {
+          item.children.forEach((child) => childrenIds.add(child.id));
+          processChildren(item.children);
+        }
+      }
+    };
+
+    processChildren(allItems);
+
+    // Filter to only include items that aren't children of other items
+    return allItems.filter((item) => !childrenIds.has(item.id));
+  };
+
+  // Get secondary navigation items based on current active parent
+  const getSecondaryItems = () => {
+    const activeParent = findActiveParentItem(
+      navigationTree.main || [],
+      activePage,
+    );
+    return activeParent?.children || [];
+  };
+
+  const topLevelItems = getTopLevelItems();
+  const secondaryItems = getSecondaryItems();
 
   // Render navigation items recursively (for mobile sidebar)
   const renderNavItems = (items, depth = 0) => {
@@ -278,21 +283,12 @@ const Navigator = () => {
     });
   };
 
-  // Find items in the active parent's children for secondary nav
-  const getGroupItems = () => {
-    // Find the active parent item
-    const activeParentItem = findActiveParent(navigationItems, activePage);
-
-    // Return its children if found
-    return activeParentItem?.children || [];
-  };
-
   // Top level navigation bar component
   const TopLevelNav = () => {
     return (
       <div className="flex items-center space-x-1 overflow-x-auto px-2 py-1 border-b border-gray-200">
-        {navigationItems.map((item) => {
-          // Skip items without paths (they're just containers)
+        {topLevelItems.map((item) => {
+          // Skip items without paths
           if (!item.path) return null;
 
           const isItemActive = isActive(item.path);
@@ -320,14 +316,12 @@ const Navigator = () => {
 
   // Secondary level navigation
   const SecondaryNav = () => {
-    const groupItems = getGroupItems();
-
-    if (groupItems.length === 0) return null;
+    if (secondaryItems.length === 0) return null;
 
     return (
       <div className="border-b border-gray-200 py-1">
         <div className="flex items-center space-x-8 px-4 overflow-x-auto">
-          {groupItems.map((item) => {
+          {secondaryItems.map((item) => {
             // Skip items without paths
             if (!item.path) return null;
 
@@ -418,7 +412,7 @@ const Navigator = () => {
             <h3 className="text-gray-500 text-sm font-medium mb-2">
               Main Navigation
             </h3>
-            {renderNavItems(navigationItems)}
+            {renderNavItems(navigationTree.main || [])}
           </div>
         </div>
       </div>
