@@ -29,7 +29,7 @@ const analytics = route("analytics", "layouts/content.tsx", { id: "analytics" })
       .meta({ label: "Conversion", iconName: "PieChart" }),
   );
 
-const reports = route("reports", "layouts/content.tsx", {id: "reports"})
+const reports = route("reports", "layouts/content.tsx", { id: "reports" })
   .meta({ label: "Reports", iconName: "PieChart", section: "main" })
   .children(
     index("routes/dashboard/reports/summary.tsx")
@@ -48,7 +48,9 @@ const reports = route("reports", "layouts/content.tsx", {id: "reports"})
       .meta({ label: "Annual", iconName: "CalendarRange" }),
   );
 
-const dashboard = route("dashboard", "layouts/content.tsx", { id: "main" })
+const dashboard = route("dashboard", "routes/dashboard/layout.tsx", {
+  id: "main",
+})
   .meta({ label: "Dashboard", iconName: "LayoutDashboard", section: "main" })
   .children(
     index("routes/dashboard/page.tsx")
@@ -61,7 +63,7 @@ const dashboard = route("dashboard", "layouts/content.tsx", { id: "main" })
 // —————————————————————————————————————————————————————————————
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
-const roles = route("roles", "routes/users/layout.tsx", { id: "roles"})
+const roles = route("roles", "routes/users/layout.tsx", { id: "roles" })
   .meta({ label: "Roles", section: "users" })
   .children(
     index("routes/users/roles/page.tsx", { id: "users-roles-index" })

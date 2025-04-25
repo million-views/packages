@@ -1,6 +1,9 @@
 import { Outlet, useNavigation } from "react-router";
 import { Loader } from "lucide-react";
-import Navigator from "@/components/navigator4";
+import { navigationTree, useHydratedMatches } from "@/lib/nav5";
+
+// import Navigator from "@/components/navigator5";
+import Navigator from "@/components/navigator6";
 
 /**
  * Root layout component that includes the Navigator and content area
@@ -16,7 +19,10 @@ export default function RootLayout() {
           <Loader className="w-8 h-8 text-blue-500 animate-spin" />
         </div>
       )}
-      <Navigator />
+      <Navigator
+        navigationTree={navigationTree}
+        useHydratedMatches={useHydratedMatches}
+      />
       <main className="flex-1 container p-6">
         <Outlet />
       </main>

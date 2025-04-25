@@ -59,7 +59,7 @@ const reports = layout("layouts/content.tsx", {
   );
 
 const dashboard = layout(
-  "layouts/content.tsx",
+  "routes/dashboard/layout.tsx",
   { id: "main" },
 )
   // .meta({ label: "Dashboard", iconName: "LayoutDashboard", section: "main" })
@@ -76,7 +76,7 @@ const dashboard = layout(
 // —————————————————————————————————————————————————————————————
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
-const roles = layout("routes/users/layout.tsx", { id: "roles"} )
+const roles = layout("routes/users/layout.tsx", { id: "roles" })
   // .meta({ label: "Roles", section: "users" })
   .children(
     ...prefix("roles", [
@@ -84,9 +84,13 @@ const roles = layout("routes/users/layout.tsx", { id: "roles"} )
         .meta({ label: "All Roles", iconName: "Shield", end: true }),
       route("admin", "routes/users/roles/page.tsx", { id: "users-roles-admin" })
         .meta({ label: "Administrators", iconName: "ShieldAlert" }),
-      route("editor", "routes/users/roles/page.tsx", { id: "users-roles-editor" })
+      route("editor", "routes/users/roles/page.tsx", {
+        id: "users-roles-editor",
+      })
         .meta({ label: "Editors", iconName: "Edit" }),
-      route("viewer", "routes/users/roles/page.tsx", { id: "users-roles-viewer" })
+      route("viewer", "routes/users/roles/page.tsx", {
+        id: "users-roles-viewer",
+      })
         .meta({ label: "Viewers", iconName: "Eye" }),
     ]),
   );
@@ -111,9 +115,9 @@ const users = layout("routes/users/layout.tsx", { id: "users" })
 const appShell = layout("routes/layout.tsx")
   .children(
     index("routes/page.tsx"),
-      // .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
+    // .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
     route("settings", "routes/settings/page.tsx"),
-      // .meta({ label: "Settings", iconName: "Settings", section: "main" }),
+    // .meta({ label: "Settings", iconName: "Settings", section: "main" }),
     dashboard,
     users,
   );
