@@ -76,6 +76,602 @@ function collectIdsForDuplicateCheck(routes, countMap) {
 }
 
 /**
+ * Print the path-based navigation tree structure to the console.
+ * This version focuses on displaying paths and their hierarchical relationships.
+ *
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
+ * @param {Set<string>} dupIds - Set of duplicate IDs detected.
+ * @param {boolean} showId - Whether to include route IDs in the output.
+ * @param {boolean} showPath - Whether to include route paths in the output.
+ * @param {boolean} checkFiles - Whether to check if component files exist.
+ * @param {string} fileBaseDir - The base directory to resolve route file paths against.
+ */
+function printPathBasedTree(
+  routes,
+  dupIds,
+  showId,
+  showPath,
+  checkFiles,
+  fileBaseDir,
+) {
+  // First, extract all navigable routes with their paths
+  const navigableRoutes = extractNavigableRoutes(routes);
+
+  // Then build the path-based tree
+  const pathTree = buildTreeForSection(navigableRoutes);
+
+  // Print the tree
+  console.log("\nPath-based Navigation Tree:");
+  printPathTreeNodes(
+    pathTree,
+    "",
+    dupIds,
+    showId,
+    showPath,
+    checkFiles,
+    fileBaseDir,
+  );
+
+  // Add a legend
+  console.log("\nLegend:");
+  console.log("(P) - Path-based node (derived from URL structure)");
+  console.log("(R) - Route node (actual navigable route)");
+
+  if (checkFiles || dupIds.size > 0) {
+    if (checkFiles && dupIds.size > 0) {
+      console.log("(*) - Indicates duplicate ID or missing file.");
+    } else if (checkFiles) {
+      console.log("(*) - Indicates missing file.");
+    } else if (dupIds.size > 0) {
+      console.log("(*) - Indicates duplicate ID.");
+    }
+  }
+}
+
+/**
+ * Recursively print the nodes of a path-based tree.
+ *
+ * @param {Array} nodes - The array of tree nodes to print.
+ * @param {string} prefix - The prefix string for tree indentation.
+ * @param {Set<string>} dupIds - Set of duplicate IDs detected.
+ * @param {boolean} showId - Whether to include route IDs in the output.
+ * @param {boolean} showPath - Whether to include route paths in the output.
+ * @param {boolean} checkFiles - Whether to check if component files exist.
+ * @param {string} fileBaseDir - The base directory to resolve route file paths against.
+ */
+function printPathTreeNodes(
+  nodes,
+  prefix,
+  dupIds,
+  showId,
+  showPath,
+  checkFiles,
+  fileBaseDir,
+) {
+  if (!Array.isArray(nodes)) return;
+
+  nodes.forEach((node, idx) => {
+    const isLast = idx === nodes.length - 1;
+    const conn = isLast ? "└── " : "├── "; // Tree connection characters
+
+    // Determine marking for duplicates or missing component files
+    let mark = " ";
+    if (node.id && dupIds.has(node.id)) {
+      mark = "*";
+    }
+    if (checkFiles && node.file) {
+      const filePath = path.resolve(fileBaseDir, node.file);
+      if (!fs.existsSync(filePath)) {
+        mark = "*";
+      }
+    }
+
+    // Build info parts (path and ID) - only show ID if it actually exists and showId is true
+    const info = [];
+    if (showPath) info.push(`path: ${node.path}`);
+    if (showId && node.id) info.push(`id: ${node.id}`);
+    const infoStr = info.length ? ` (${info.join(", ")})` : "";
+
+    // Print the current node line
+    console.log(`${prefix}${conn}${mark} ${node.label}${infoStr}`);
+
+    // Recurse into children if they exist
+    if (Array.isArray(node.children) && node.children.length) {
+      const nextPrefix = prefix + (isLast ? "    " : "│   "); // Adjust prefix for children
+      printPathTreeNodes(
+        node.children,
+        nextPrefix,
+        dupIds,
+        showId,
+        showPath,
+        checkFiles,
+        fileBaseDir,
+      );
+    }
+  });
+}
+
+/**
+ * Builds a navigation tree based on path structure rather than route hierarchy.
+ * This creates a tree that's ideal for site navigation menus.
+ *
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
+ * @param {boolean} [verbose=false] - Whether to log debugging information.
+ * @returns {Object} - Object with sections as keys and arrays of NavTreeNode as values.
+ */
+function buildPathBasedNavigationTree(routes, verbose = false) {
+  // Step 1: Extract all navigable routes with complete path and metadata
+  const navigableRoutes = extractNavigableRoutes(routes);
+
+  if (verbose) {
+    console.log("Extracted navigable routes:");
+    console.log(JSON.stringify(navigableRoutes, null, 2));
+  }
+
+  // Step 2: Group by section
+  const sectionMap = {};
+  for (const route of navigableRoutes) {
+    const section = route.section || "main";
+    sectionMap[section] = sectionMap[section] || [];
+    sectionMap[section].push(route);
+  }
+
+  // Step 3: Build path-based tree for each section
+  const result = {};
+  for (const section in sectionMap) {
+    result[section] = buildTreeForSection(sectionMap[section]);
+
+    if (verbose) {
+      console.log(`Tree for section '${section}':`);
+      console.log(JSON.stringify(result[section], null, 2));
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Extract navigable routes with their complete paths by traversing the route tree.
+ * Handles layout routes and resolves paths properly.
+ *
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array
+ * @param {string} [basePath=""] - The base path for the current level
+ * @returns {Array} - Array of navigable routes with complete paths and metadata
+ */
+function extractNavigableRoutes(routes, basePath = "") {
+  if (!Array.isArray(routes)) return [];
+
+  const result = [];
+
+  for (const route of routes) {
+    // Calculate the full path for this route
+    let path = route.path !== undefined ? String(route.path) : "";
+    let fullPath;
+
+    if (route.index && basePath) {
+      // Index routes inherit parent path
+      fullPath = basePath;
+    } else if (path.startsWith("/")) {
+      // Absolute path - use as is
+      fullPath = path;
+    } else if (path) {
+      // Relative path - append to base path
+      fullPath = basePath === "" ? `/${path}` : `${basePath}/${path}`;
+    } else {
+      // Layout routes with empty path - use parent path
+      fullPath = basePath;
+    }
+
+    // Clean up path (remove double slashes, trailing slash)
+    fullPath = fullPath.replace(/\/+/g, "/").replace(/\/+$/, "") || "/";
+
+    // Get the ID using standard derivation
+    const id = route.id ??
+      (route.file ? route.file.replace(/\.[^/.]+$/, "") : undefined) ??
+      fullPath;
+
+    // Get or derive label
+    let label = route.handle?.label;
+    if (!label && route.id) {
+      // Derive label from ID as a fallback
+      label = route.id
+        .replace(/[-_]/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    // Only include routes with actual paths (not layout routes with path="/")
+    // Layout routes are "/" and not index routes
+    const isLayoutRoute = (path === "/" || path === "") && !route.index;
+
+    // Include if it's not a layout route or it's an index route
+    if (!isLayoutRoute || route.index) {
+      result.push({
+        id,
+        path: fullPath,
+        label: label || (route.index ? "(index)" : "(no label)"),
+        iconName: route.handle?.iconName,
+        end: route.handle?.end,
+        group: route.handle?.group,
+        section: route.handle?.section,
+      });
+    }
+
+    // Process children recursively, passing the current full path as the base
+    if (Array.isArray(route.children)) {
+      result.push(...extractNavigableRoutes(route.children, fullPath));
+    }
+  }
+
+  return result;
+}
+
+/**
+ * First pass: Analyze routes to infer paths for layout routes based on their children
+ *
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array
+ * @param {string} [basePath=""] - The base path for the current level
+ * @returns {Map<string, string>} - Map of layout route IDs to their inferred paths
+ */
+function inferLayoutPathsFromChildren(routes, basePath = "") {
+  const layoutPathMap = new Map();
+
+  // Process the route tree to collect child paths for layout routes
+  function processRoutes(routes, currentPath = "") {
+    if (!Array.isArray(routes)) return;
+
+    for (const route of routes) {
+      // Calculate the full path for this route
+      let path = route.path !== undefined ? String(route.path) : "";
+      let fullPath;
+
+      if (route.index && currentPath) {
+        // Index routes inherit parent path
+        fullPath = currentPath;
+      } else if (path) {
+        // Regular path routes
+        fullPath = currentPath === "" ? `/${path}` : `${currentPath}/${path}`;
+        fullPath = fullPath.replace(/\/+/g, "/").replace(/\/+$/, "") || "/";
+      } else {
+        // Layout routes with empty path
+        fullPath = currentPath;
+      }
+
+      // For layout routes, examine direct child paths
+      const isLayout = (path === "" || path === "/") && !route.index;
+      if (isLayout && route.id && Array.isArray(route.children)) {
+        // Extract direct child paths, ignoring nested layout routes
+        const childPaths = [];
+
+        for (const child of route.children) {
+          // Skip nested layout routes
+          const childIsLayout = (child.path === "" || child.path === "/") &&
+            !child.index;
+          if (!childIsLayout) {
+            // For direct children with actual paths, calculate their full paths
+            if (child.path && child.path !== "/") {
+              // Correctly handle path joining
+              let childPath;
+              if (child.path.startsWith("/")) {
+                // Absolute path
+                childPath = child.path;
+              } else {
+                // Relative path
+                childPath = fullPath === "/"
+                  ? `/${child.path}`
+                  : `${fullPath}/${child.path}`;
+              }
+              childPath = childPath.replace(/\/+/g, "/").replace(/\/+$/, "") ||
+                "/";
+              childPaths.push(childPath);
+            }
+          }
+        }
+
+        // If we have child paths, determine common prefix
+        if (childPaths.length > 0) {
+          // Find the common path prefix
+          const inferredPath = findCommonPathPrefix(childPaths);
+
+          if (inferredPath && inferredPath !== "/") {
+            layoutPathMap.set(route.id, inferredPath);
+          } else {
+            // Fallback: If we can't infer a path from direct children,
+            // look at the parent path as context
+            layoutPathMap.set(route.id, fullPath);
+          }
+        } else {
+          // No direct child paths, use parent context
+          layoutPathMap.set(route.id, fullPath);
+        }
+      }
+
+      // Recurse into children with correct path context
+      if (Array.isArray(route.children)) {
+        processRoutes(route.children, fullPath);
+      }
+    }
+  }
+
+  processRoutes(routes, basePath);
+  return layoutPathMap;
+}
+
+/**
+ * Find the common path prefix shared by multiple paths
+ * @param {string[]} paths - Array of paths
+ * @returns {string} - Common path prefix
+ */
+function findCommonPathPrefix(paths) {
+  if (paths.length === 0) return "/";
+  if (paths.length === 1) {
+    // If there's only one path, use its parent path
+    const segments = paths[0].split("/").filter(Boolean);
+    segments.pop(); // Remove the last segment (the specific page)
+    return segments.length === 0 ? "/" : `/${segments.join("/")}`;
+  }
+
+  // Split all paths into segments
+  const segmentArrays = paths.map((path) => path.split("/").filter(Boolean));
+
+  // Find the common prefix segments
+  const commonSegments = [];
+  const firstPath = segmentArrays[0];
+
+  for (let i = 0; i < firstPath.length; i++) {
+    const segment = firstPath[i];
+    // Check if this segment exists in all paths at the same position
+    if (segmentArrays.every((segments) => segments[i] === segment)) {
+      commonSegments.push(segment);
+    } else {
+      break;
+    }
+  }
+
+  return commonSegments.length === 0 ? "/" : `/${commonSegments.join("/")}`;
+}
+
+/**
+ * Second pass: Extract navigable routes with correct paths
+ *
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array
+ * @param {string} basePath - The base path for the current level
+ * @param {Map<string, string>} layoutPathMap - Map of layout route IDs to their inferred paths
+ * @returns {Array} - Array of navigable routes with correct paths
+ */
+function extractRoutesWithCorrectPaths(routes, basePath = "", layoutPathMap) {
+  if (!Array.isArray(routes)) return [];
+
+  let result = [];
+
+  for (const route of routes) {
+    // Calculate the full path for this route
+    let path = route.path !== undefined ? String(route.path) : "";
+    let fullPath;
+
+    // Handle layout routes specifically based on inferred paths
+    const isLayout = (path === "" || path === "/") && !route.index;
+
+    if (isLayout && route.id && layoutPathMap.has(route.id)) {
+      // Use the inferred path for this layout
+      fullPath = layoutPathMap.get(route.id);
+    } else if (route.index && basePath) {
+      // Index routes inherit parent path
+      fullPath = basePath;
+    } else if (path === "/" || path === "") {
+      // Layout routes without inferred paths use parent path
+      fullPath = basePath;
+    } else {
+      // Handle path segments correctly
+      if (path.startsWith("/")) {
+        // Absolute path - don't append to basePath
+        fullPath = path;
+      } else {
+        // Relative path - append to basePath
+        fullPath = basePath === "" ? `/${path}` : `${basePath}/${path}`;
+      }
+    }
+
+    // Clean up path (remove double slashes, trailing slash)
+    fullPath = fullPath.replace(/\/+/g, "/").replace(/\/+$/, "") || "/";
+
+    // Get the ID using standard derivation
+    const id = route.id ??
+      (route.file ? route.file.replace(/\.[^/.]+$/, "") : undefined) ??
+      fullPath;
+
+    // Get or derive label
+    let label = route.handle?.label;
+    if (!label && route.id) {
+      // Derive label from ID as a fallback
+      label = route.id
+        .replace(/[-_]/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    // Skip layout routes at the root level (path="/")
+    // but include layout routes that have been given a meaningful path
+    const shouldInclude = !isLayout ||
+      (isLayout && route.id && layoutPathMap.has(route.id) &&
+        layoutPathMap.get(route.id) !== "/");
+
+    if (shouldInclude || route.index) {
+      // Include this route in the result
+      result.push({
+        id,
+        path: fullPath,
+        label: label || (route.index ? "(index)" : "(no label)"),
+        iconName: route.handle?.iconName,
+        end: route.handle?.end,
+        group: route.handle?.group,
+        section: route.handle?.section,
+      });
+    }
+
+    // Calculate the path to pass to children
+    let childBasePath;
+    if (isLayout && route.id && layoutPathMap.has(route.id)) {
+      // Use inferred path for layout routes
+      childBasePath = layoutPathMap.get(route.id);
+    } else {
+      childBasePath = fullPath;
+    }
+
+    // Process children recursively
+    if (Array.isArray(route.children)) {
+      result = result.concat(
+        extractRoutesWithCorrectPaths(
+          route.children,
+          childBasePath,
+          layoutPathMap,
+        ),
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Build a navigation tree for a section based on paths
+ * @param {Array} routes - Array of routes for this section
+ * @returns {Array} - Navigation tree for this section
+ */
+function buildTreeForSection(routes) {
+  // Filter out layout routes that have path="/" but aren't supposed to be at the root level
+  // We can identify these by looking for specific IDs or patterns in the ID
+  const filteredRoutes = routes.filter((route) => {
+    // Only filter routes with path="/"
+    if (route.path !== "/") return true;
+
+    // Keep the real root route (often the home page)
+    if (
+      route.id === "routes/page" || route.id === "index" || route.id === "home"
+    ) {
+      return true;
+    }
+
+    // Filter out layout routes that actually belong under subpaths
+    // Check ID patterns that suggest they're subpath layouts
+    if (route.id) {
+      // Check for IDs like "overview", "analytics", "reports" which are likely layout containers
+      // or IDs that end with "layout"
+      if (
+        route.id === "overview" ||
+        route.id === "analytics" ||
+        route.id === "reports" ||
+        route.id === "users" ||
+        route.id === "roles" ||
+        route.id.endsWith("layout")
+      ) {
+        return false;
+      }
+
+      // Check if ID contains a path structure that suggests it's a subpath
+      // e.g., "routes/dashboard/overview/summary"
+      if (
+        route.id.includes("/") &&
+        (route.id.includes("/overview/") ||
+          route.id.includes("/analytics/") ||
+          route.id.includes("/reports/") ||
+          route.id.includes("/users/") ||
+          route.id.includes("/roles/"))
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Sort routes by path to ensure correct nesting
+  filteredRoutes.sort((a, b) => {
+    // Sort by path segments length first (shorter paths come first)
+    const aSegments = a.path.split("/").filter(Boolean);
+    const bSegments = b.path.split("/").filter(Boolean);
+
+    if (aSegments.length !== bSegments.length) {
+      return aSegments.length - bSegments.length;
+    }
+
+    // If paths have the same depth, sort alphabetically
+    return a.path.localeCompare(b.path);
+  });
+
+  // Create a tree structure
+  const root = { children: [] };
+
+  // Process each route
+  for (const route of filteredRoutes) {
+    // Special handling for the root route - only include the main home page
+    if (route.path === "/") {
+      // Only include the actual home page at the root
+      if (
+        route.id === "routes/page" || route.id === "index" ||
+        route.id === "home"
+      ) {
+        root.children.unshift({
+          ...route,
+          children: [],
+        });
+      }
+      continue;
+    }
+
+    // Split the path into segments
+    const segments = route.path.split("/").filter(Boolean);
+
+    // Start at the root
+    let currentNode = root;
+    let currentPath = "";
+
+    // Build the path segment by segment and create/find nodes
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      currentPath = currentPath ? `${currentPath}/${segment}` : `/${segment}`;
+
+      // Check if this is the final segment (the actual route)
+      const isFinalSegment = i === segments.length - 1;
+
+      // Find or create a node for this segment
+      let node = currentNode.children.find((child) =>
+        child.path === currentPath
+      );
+
+      if (!node) {
+        // If this is an intermediate segment, create a placeholder
+        if (!isFinalSegment) {
+          node = {
+            id: `placeholder-${currentPath.replace(/\//g, "-")}`,
+            path: currentPath,
+            label: segment.charAt(0).toUpperCase() + segment.slice(1),
+            children: [],
+          };
+          currentNode.children.push(node);
+        } else {
+          // If this is the final segment, add the actual route
+          node = {
+            ...route,
+            children: [],
+          };
+          currentNode.children.push(node);
+        }
+      } else if (isFinalSegment) {
+        // If we found a node but it's a placeholder and we're at the final segment,
+        // update it with the actual route data
+        Object.assign(node, route);
+      }
+
+      // Move down the tree
+      currentNode = node;
+    }
+  }
+
+  return root.children;
+}
+
+/**
  * Print the route forest structure to the console.
  * Marks duplicates (*) or missing files (*) based on checks.
  * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
@@ -174,130 +770,6 @@ function printTree(
 }
 
 /**
- * Recursively builds the navigation tree by traversing the route configuration,
- * including only navigable nodes and preserving hierarchy.
- * @param {ExtendedRouteConfigEntry[]} routes - The list of route configuration objects at the current level.
- * @param {string} parentPath - The path accumulated from parent routes.
- * @returns {NavTreeNode[]} - An array of NavTreeNode for the current level of the final tree.
- */
-function buildNavTreeRecursive(routes, parentPath = "") {
-  if (!Array.isArray(routes)) {
-    return [];
-  }
-
-  const currentLevelNavNodes = [];
-
-  // Debug output to help troubleshoot - can be removed later
-  console.log(`Processing ${routes.length} routes at path: '${parentPath}'`);
-
-  for (const route of routes) {
-    const hasPath = route.path !== undefined && route.path !== null;
-    const segment = hasPath ? String(route.path) : "";
-    const hasNonEmptyPath = segment !== "" && segment !== "/"; // Check if it has a specific path (not root)
-    const isRootPath = segment === "" || segment === "/"; // Check if it's a root path ('/' or empty)
-    const isLayoutRoute = isRootPath && !route.index; // Layout routes have root path but aren't index routes
-    const hasChildren = Array.isArray(route.children) &&
-      route.children.length > 0;
-    const hasId = route.id !== undefined;
-    const hasLabel = route.handle?.label !== undefined;
-
-    // Calculate the full path for this node
-    const fullPath = (parentPath === "" && segment === "")
-      ? "/" // Root route without path segment
-      : (parentPath === "" ? `/${segment}` : `${parentPath}/${segment}`); // Append segment
-    const cleanedPath = fullPath.replace(/\/{2,}/g, "/").replace(/\/+$/, "") ||
-      "/"; // Clean multiple/trailing slashes
-
-    // Debug output - can be removed later
-    console.log(
-      `Route ${
-        route.id || "unknown"
-      }: path='${route.path}', cleanedPath='${cleanedPath}', isLayoutRoute=${isLayoutRoute}`,
-    );
-
-    // A route is considered part of the navigation tree if:
-    // 1. It has a non-empty path (directly navigable), OR
-    // 2. It is an index route (navigable to parent's path), OR
-    // 3. It is a "container" route (layout or route) with:
-    //    a. An ID (developer explicitly named it)
-    //    b. Children (serves as a container for other routes)
-    //    c. Either has a label or we can derive a label from its ID
-    const isNavigable = hasNonEmptyPath || route.index === true ||
-      (hasId && hasChildren);
-
-    // Debug output - can be removed later
-    console.log(
-      `Route ${
-        route.id || "unknown"
-      }: isNavigable=${isNavigable}, hasLabel=${hasLabel}, hasId=${hasId}, hasChildren=${hasChildren}`,
-    );
-
-    // Determine the parent path for children recursive call
-    const nextParentPath = hasPath ? cleanedPath : parentPath;
-
-    // Recursively process children
-    const childrenNavigableNodes = buildNavTreeRecursive(
-      route.children || [],
-      nextParentPath,
-    );
-
-    if (isNavigable) {
-      // If the current route is navigable, create its node
-      const id = route.id ??
-        (route.file ? route.file.replace(/\.[^/.]+$/, "") : undefined) ??
-        cleanedPath;
-
-      // For the label, use the handle's label if available
-      // If not, and this is a container route (with ID and children),
-      // convert the ID to a display name (e.g., "user-profile" -> "User Profile")
-      let label = route.handle?.label;
-      if (!label && hasId && hasChildren) {
-        // Convert ID to a display name (camelCase/kebab-case to Title Case)
-        label = route.id
-          .replace(/[-_]/g, " ") // Replace hyphens/underscores with spaces
-          .replace(/([a-z])([A-Z])/g, "$1 $2") // Insert space before capital letters (camelCase)
-          .replace(/\b\w/g, (c) => c.toUpperCase()); // Capitalize first letter of each word
-      }
-
-      /** @type {NavTreeNode} */
-      const node = {
-        id: id,
-        label: label,
-        iconName: route.handle?.iconName,
-        end: route.handle?.end,
-        group: route.handle?.group,
-        section: route.handle?.section, // Keep section for top-level grouping
-        path: cleanedPath,
-        // Attach the navigable children nodes found recursively
-        ...(childrenNavigableNodes.length > 0 &&
-          { children: childrenNavigableNodes }), // Only add children property if not empty
-      };
-
-      // Debug output - can be removed later
-      console.log(
-        `Created node for ${id} with label "${label}", with ${childrenNavigableNodes.length} children`,
-      );
-
-      currentLevelNavNodes.push(node); // Add this navigable node to the current level's list
-    } else {
-      // If the current route is NOT navigable,
-      // promote its children to the current level
-
-      // Debug output - can be removed later
-      console.log(
-        `Route ${
-          route.id || "unknown"
-        } not navigable, promoting ${childrenNavigableNodes.length} children`,
-      );
-
-      currentLevelNavNodes.push(...childrenNavigableNodes); // Spread the children nodes into the current level
-    }
-  }
-
-  return currentLevelNavNodes; // Return the array of navigable nodes for this level
-}
-
-/**
  * Generate a map of route ID → NavMeta for all routes in the tree.
  * This map is used to generate the `metaMap` artifact.
  * Uses the standard React Router ID derivation.
@@ -361,6 +833,7 @@ ${metaEntries}
  * Processed navigation tree grouped by section.
  * Keys are section names, values are arrays of tree nodes.
  * Any route node without a 'section' prop defaults to the 'main' section.
+ * The tree structure is based on URL paths for intuitive navigation hierarchy.
  * @type {Record<string, NavTreeNode[]>}
  */
 export const navigationTree = ${sectionsStr};
@@ -387,7 +860,7 @@ export function useHydratedMatches() {
  * @property {string | undefined} [label] - Nav label from handle
  * @property {string | undefined} [iconName] - Icon name from handle
  * @property {boolean | undefined} [end] - End flag from handle
- * @property {string | undefined] [group] - Group name from handle
+ * @property {string | undefined} [group] - Group name from handle
  * // section?: string; // Section is hoisted to the top-level keys
  * @property {string} path - The full path of the route
  * @property {NavTreeNode[]} [children] - Child nodes
@@ -426,7 +899,6 @@ export interface NavTreeNode {
   children?: NavTreeNode[];
 }
 
-
 export const metaMap = new Map<string, NavMeta>([
 ${metaEntries}
 ]);
@@ -435,6 +907,7 @@ ${metaEntries}
  * Processed navigation tree grouped by section.
  * Keys are section names, values are arrays of tree nodes.
  * Any route node without a 'section' prop defaults to the 'main' section.
+ * The tree structure is based on URL paths for intuitive navigation hierarchy.
  */
 export const navigationTree: Record<string, NavTreeNode[]> = ${sectionsStr};
 
@@ -463,76 +936,31 @@ export function useHydratedMatches()  : Array<UIMatch & { handle?: NavMeta }> { 
  */
 function codegen(outFile, routes) {
   try {
-    // Add pre-processing step: Inspect route structure before building the tree
-    console.log("\n--- Route Structure Debug ---");
-    const debugRouteStructure = (routes, level = 0) => {
-      if (!Array.isArray(routes)) return;
+    // 1. Extract navigable routes
+    const navigableRoutes = extractNavigableRoutes(routes);
 
-      const indent = " ".repeat(level * 2);
-      routes.forEach((route) => {
-        const hasPath = route.path !== undefined && route.path !== null;
-        const segment = hasPath ? String(route.path) : "";
-        const hasLabel = route.handle?.label;
+    // 2. Group routes by section
+    const routesBySections = {};
+    for (const route of navigableRoutes) {
+      const section = route.section || "main";
+      routesBySections[section] = routesBySections[section] || [];
+      routesBySections[section].push(route);
+    }
 
-        console.log(
-          `${indent}Route: id=${
-            route.id || "unknown"
-          }, path='${segment}', hasLabel=${!!hasLabel}`,
-        );
+    // 3. Build tree for each section
+    const sections = {};
+    for (const section in routesBySections) {
+      sections[section] = buildTreeForSection(routesBySections[section]);
+    }
 
-        if (Array.isArray(route.children) && route.children.length > 0) {
-          console.log(`${indent}Children:`);
-          debugRouteStructure(route.children, level + 1);
-        }
-      });
-    };
-
-    debugRouteStructure(routes);
-
-    // 1. Build the navigation tree by processing the top-level routes
-    console.log("\n--- Building Navigation Tree ---");
-    const navTree = buildNavTreeRecursive(routes, "");
-
-    console.log("\n--- Final Built Nav Tree (before grouping) ---");
-    console.log(JSON.stringify(navTree, null, 2)); // Log the built tree structure
-
-    // 2. Create the metaMap from the original routes (includes all routes with handles)
+    // 4. Create the metaMap from the original routes (includes all routes with handles)
     const metamap = createMetaMap(routes);
     // Format metaMap entries for code generation
     const metaEntries = [...metamap.entries()].map(
       ([id, m]) => `  [${JSON.stringify(id)}, ${JSON.stringify(m)}],`,
     ).join("\n");
 
-    // 3. Group the top-level navigation tree nodes by 'section' property.
-    /** @type {Record<string, NavTreeNode[]>} */
-    const sections = {};
-
-    navTree.forEach((topLevelNode) => {
-      // Use the section from the node, defaulting to 'main' if not present.
-      // This is where the constraint on the 'section' prop is applied for grouping.
-      const sec = topLevelNode.section || "main";
-      sections[sec] = sections[sec] || [];
-
-      // Create a copy of the top-level node, removing the 'section' property
-      // as it's used for the top-level key in the generated output.
-      // Use destructuring to ensure we create a proper shallow copy that preserves children
-      const { section, ...nodeWithoutSection } = topLevelNode;
-
-      // Add the node (with its children already nested) to the appropriate section array
-      sections[sec].push(nodeWithoutSection);
-    });
-
-    console.log("\n--- Final Grouped Sections ---");
-    console.log(JSON.stringify(sections, null, 2)); // Log the grouped sections
-
-    // Ensure sections with no nodes are not included
-    for (const key in sections) {
-      if (sections[key].length === 0) {
-        delete sections[key];
-      }
-    }
-
-    // 4. Generate the code content (JS or TS)
+    // 5. Generate the code content (JS or TS)
     const ext = path.extname(outFile).toLowerCase();
     const now = new Date().toISOString();
     let codeContent;
@@ -543,32 +971,9 @@ function codegen(outFile, routes) {
       codeContent = codegenJsContent(outFile, now, metaEntries, sections);
     }
 
-    // 5. Write the code to the output file
+    // 6. Write the code to the output file
     fs.writeFileSync(outFile, codeContent, "utf8");
-    console.error(`✏️ Generated nav module: ${outFile}`);
-
-    // 6. Debug: Verify the written content
-    const writtenContent = fs.readFileSync(outFile, "utf8");
-    const treeStart = writtenContent.indexOf("export const navigationTree =");
-    const treeEnd = writtenContent.indexOf(";", treeStart);
-    if (treeStart !== -1 && treeEnd !== -1) {
-      const treeJson = writtenContent.substring(
-        treeStart + "export const navigationTree =".length,
-        treeEnd,
-      ).trim();
-      try {
-        const parsedTree = JSON.parse(treeJson);
-        console.log("\n--- Verification: Final Tree in Generated File ---");
-        console.log(
-          "Tree has hierarchy:",
-          Object.values(parsedTree).some((section) =>
-            section.some((node) => node.children && node.children.length)
-          ),
-        );
-      } catch (e) {
-        console.error("Error parsing tree from generated file:", e.message);
-      }
-    }
+    console.error(`✏️ Generated path-based nav module: ${outFile}`);
   } catch (error) {
     console.error("Error during code generation:", error.message);
     // Don't exit here, allow watch mode to continue if possible
@@ -603,6 +1008,7 @@ async function main() {
   const showId = flags.includes("--show-id");
   const showPath = flags.includes("--show-path");
   const checkFiles = flags.includes("--check-files");
+  const verbose = flags.includes("--verbose");
 
   // Determine mode: Codegen/Watch OR Check/Print
   // Codegen mode is active if --out or --watch is present.
@@ -689,7 +1095,7 @@ async function main() {
         routes = routes[0].children;
       }
 
-      // 2) Collect duplicate IDs for reporting
+      // Collect duplicate IDs for reporting
       const idMap = new Map();
       collectIdsForDuplicateCheck(routes, idMap);
       // Filter for IDs that appear more than once
@@ -708,21 +1114,20 @@ async function main() {
         console.error("✅ No duplicate route IDs found.");
       }
 
-      // 3) Print the route forest structure
-      console.log("\nRoute Tree:");
+      // Print the traditional route forest structure (for backward compatibility)
+      console.log("\nTraditional Route Tree:");
       printTree(routes, dupIds, showId, showPath, checkFiles, baseDir);
 
-      // Add a legend if any markers were used
-      if (checkFiles || dupIds.size > 0) {
-        console.error("\nLegend:");
-        if (checkFiles && dupIds.size > 0) {
-          console.error("(*) indicates duplicate ID or missing file.");
-        } else if (checkFiles) {
-          console.error("(*) indicates missing file.");
-        } else if (dupIds.size > 0) {
-          console.error("(*) indicates duplicate ID.");
-        }
-      }
+      // Print the path-based navigation tree (for navigation purposes)
+      printPathBasedTree(
+        routes,
+        dupIds,
+        showId,
+        showPath,
+        checkFiles,
+        baseDir,
+        verbose,
+      );
     }
   } catch (err) {
     // Catch errors during initial load or setup

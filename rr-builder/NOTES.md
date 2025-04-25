@@ -77,3 +77,49 @@ component.
 
 But more importantly, this is just part of the puzzle. To be able to build
 `grand-central` style navbars, we still need access to all the navigable routes.
+
+npx rr-check app/routes.js --show-id --show-path ✅ No duplicate route IDs
+found.
+
+Route Tree: ├── [L] Home (path: /, id: routes/page) ├── [N] Settings (path:
+/settings, id: routes/settings/page) ├── [S] (no label) (path: /, id:
+routes/dashboard/layout) │ ├── [N]↑ Dashboard (path: /dashboard, id:
+routes/dashboard/page) │ ├── [S]↑ Overview|Layout (path: /, id: overview) │ │
+├── [N]↑ Overview (path: /dashboard/overview, id:
+routes/dashboard/overview/summary) │ │ ├── [N]↑ Performance (path:
+/dashboard/overview/performance, id: routes/dashboard/overview/performance) │ │
+└── [N]↑ Metrics (path: /dashboard/overview/metrics, id:
+routes/dashboard/overview/metrics) │ ├── [S]↑ (no label) (path: /, id:
+analytics) │ │ ├── [N]↑ Analytics (path: /dashboard/analytics, id:
+routes/dashboard/analytics/summary) │ │ ├── [N]↑ Traffic (path:
+/dashboard/analytics/traffic, id: routes/dashboard/analytics/traffic) │ │ └──
+[N]↑ Conversion (path: /dashboard/analytics/conversion, id:
+routes/dashboard/analytics/conversion) │ └── [S]↑ (no label) (path: /, id:
+reports) │ ├── [N]↑ Reports (path: /dashboard/reports, id:
+routes/dashboard/reports/summary) │ ├── [N]↑ Monthly (path:
+/dashboard/reports/monthly, id: reports-monthly) │ ├── [N]↑ Quarterly (path:
+/dashboard/reports/quarterly, id: reports-quarterly) │ └── [N]↑ Annual (path:
+/dashboard/reports/annual, id: reports-annual) └── [S] (no label) (path: /, id:
+users) ├── [N]↑ All Users (path: /users, id: users-index) ├── [N]↑ Active Users
+(path: /users/active, id: users-active) ├── [N]↑ Inactive Users (path:
+/users/inactive, id: users-inactive) └── [S]↑ (no label) (path: /, id: roles)
+├── [N]↑ All Roles (path: /users/roles, id: users-roles-index) ├── [N]↑
+Administrators (path: /users/roles/admin, id: users-roles-admin) ├── [N]↑
+Editors (path: /users/roles/editor, id: users-roles-editor) └── [N]↑ Viewers
+(path: /users/roles/viewer, id: users-roles-viewer)
+
+/ [Home] ├── settings [Settings] ├── dashboard [Dashboard] │ ├── overview
+[Overview] │ │ ├── performance [Performance] │ │ └── metrics [Metrics] │ ├──
+analytics [Analytics] │ │ ├── traffic [Traffic] │ │ └── conversion [Conversion]
+│ └── reports [Reports] │ ├── monthly [Monthly] │ ├── quarterly [Quarterly] │
+└── annual [Annual] └── users [Users] ├── active [Active Users] ├── inactive
+[Inactive Users] └── roles [All Roles] ├── admin [Administrators] ├── editor
+[Editors] └── viewer [Viewers]
+
+/ [Home] ├── settings [Settings] ├── dashboard [Dashboard] │ ├── overview
+[Overview] │ │ ├── performance [Performance] │ │ └── metrics [Metrics] │ ├──
+analytics [Analytics] │ │ ├── traffic [Traffic] │ │ └── conversion [Conversion]
+│ └── reports [Reports] │ ├── monthly [Monthly] │ ├── quarterly [Quarterly] │
+└── annual [Annual] └── users [Users] ├── active [Active Users] ├── inactive
+[Inactive Users] └── roles [All Roles] ├── admin [Administrators] ├── editor
+[Editors] └── viewer [Viewers]
