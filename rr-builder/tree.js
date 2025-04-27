@@ -20,7 +20,7 @@ const inputData = [
   { path: "/users/roles/admin", label: "[Administrators]" },
   { path: "/users/roles/editor", label: "[Editors]" },
   { path: "/users/roles/viewer", label: "[Viewers]" },
-  { path: "/users", label: "[Tricked You!]" }, // Add/remove this entry for testing the new logic
+  // { path: "/users", label: "[Tricked You!]" }, // Add/remove this entry for testing the new logic
 ];
 
 /**

@@ -6,6 +6,10 @@ import path from "path";
 import crypto from "crypto";
 import { pathToFileURL } from "url";
 
+// =============================================================================
+// Configuration & Types
+// =============================================================================
+
 /**
  * @typedef {import("@react-router/dev/routes").RouteConfigEntry} RouteConfigEntry
  */
@@ -15,64 +19,82 @@ import { pathToFileURL } from "url";
  */
 
 /**
- * @typedef {RouteConfigEntry &
- * {
- * handle?: NavMeta
- * }
- * } ExtendedRouteConfigEntry
+ * @typedef {RouteConfigEntry & {
+ *   handle?: NavMeta
+ *   normalizedPath?: string
+ * }} ExtendedRouteConfigEntry
  */
 
 /**
  * Type for the nodes in the final navigation tree used for codegen.
  * @typedef {Object} NavTreeNode
- * @property {string} id - The route ID, consistent with metaMap keys
+ * @property {string} [id] - The route ID, consistent with metaMap keys
  * @property {string | undefined} [label] - Nav label from handle
  * @property {string | undefined} [iconName] - Icon name from handle
  * @property {boolean | undefined} [end] - End flag from handle
- * @property {string | undefined] [group] - Group name from handle
- * // section?: string; // Section is hoisted to the top-level keys in navigationTree
+ * @property {string | undefined} [group] - Group name from handle
+ * @property {string | undefined} [section] - Section name from handle
  * @property {string} path - The full path of the route
  * @property {NavTreeNode[]} [children] - Child nodes
  */
 
 /**
- * Dynamically import a module exporting a default RouteConfigEntry[].
- * Includes cache busting for watch mode.
- * @param {string} modulePath - Path to the routes file.
- * @returns {Promise<ExtendedRouteConfigEntry[]>}
+ * @typedef {Object} ErrorReport
+ * @property {string[]} missingFiles - Array of missing component files
+ * @property {Set<string>} missingFileIds - Set of IDs of routes with missing files
+ * @property {Map<string, number>} duplicateIds - Map of duplicate IDs with occurrence counts
+ * @property {boolean} hasErrors - Whether any errors were detected
  */
-async function loadRoutes(modulePath) {
-  const full = path.resolve(process.cwd(), modulePath);
-  // Add cache busting query param to the URL to ensure fresh import in watch mode
-  const url = pathToFileURL(full).href + `?update=${Date.now()}`;
-  const mod = await import(url);
-  // Expecting default export to be an array of RouteConfigEntry
-  return /** @type {ExtendedRouteConfigEntry[]} */ (mod.default);
-}
+
+// Global CLI options with default values
+const options = {
+  /** @type {string | null} */
+  file: null, // Input routes file path
+  /** @type {string | null} */
+  outFile: null, // Output file path for code generation
+  watch: false, // Watch mode flag
+  showRouteTree: false, // Show raw routes tree
+  showNavTree: false, // Show navigation tree
+  showId: false, // Show route IDs in trees
+  showPath: false, // Show paths in trees
+};
+
+// Global App State
+const AppState = {
+  /** @type {Set<string> | null} */
+  dupIds: null,
+  /** @type {Map<string, number> | null} */
+  duplicateIds: null,
+  /** @type {string[] | null} */
+  missingFiles: null,
+  /** @type {Set<string> | null} */
+  missingFileIds: null,
+  /** @type {string | null} */
+  routesFilePath: null,
+  /** @type {string | null} */
+  baseDir: null,
+  /** @type {boolean} */
+  hasErrors: false,
+};
+
+// =============================================================================
+// Core Utility Functions
+// =============================================================================
 
 /**
- * Recursively count route ID occurrences for duplicate detection.
- * Uses the standard React Router ID derivation.
- * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
- * @param {Map<string, number>} countMap - Map to store ID counts.
+ * Simple debounce function.
+ * @param {Function} func - The function to debounce.
+ * @param {number} delay - The debounce delay in milliseconds.
+ * @returns {Function} - The debounced function.
  */
-function collectIdsForDuplicateCheck(routes, countMap) {
-  if (!Array.isArray(routes)) return;
-
-  for (const r of routes) {
-    // Use the standard ID derivation logic (id ?? file-based)
-    const id = r.id ?? (r.file ? r.file.replace(/\.[^/.]+$/, "") : undefined);
-
-    // Only count if a valid ID could be determined
-    if (id) {
-      countMap.set(id, (countMap.get(id) || 0) + 1);
-    }
-
-    // Recurse into children
-    if (Array.isArray(r.children)) {
-      collectIdsForDuplicateCheck(r.children, countMap);
-    }
-  }
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
 }
 
 /**
@@ -85,6 +107,65 @@ function toPascalCase(str) {
   return str
     .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : "")) // Remove hyphens/underscores and capitalize next char
     .replace(/^(.)/, (_, c) => c.toUpperCase()); // Capitalize the first character
+}
+
+/**
+ * Determines the marker string for a tree node based on duplicate and missing file status.
+ * Shows both markers if applicable.
+ * @param {string} [node_id] - The id of the node (either ExtendedRouteConfigEntry or NavTreeNode).
+ * @returns {string} - The marker string (" ", "*", "!", or "*!").
+ */
+function getMarker(node_id) {
+  let mark = " ";
+  // Use the node's ID (either from NavTreeNode or ExtendedRouteConfigEntry)
+  if (node_id && AppState.dupIds && AppState.missingFileIds) {
+    const isDuplicate = AppState.dupIds.has(node_id);
+    const isMissingFile = AppState.missingFileIds.has(node_id);
+
+    if (isDuplicate && isMissingFile) {
+      mark = "(*!)"; // Indicate both duplicate and missing file
+    } else if (isDuplicate) {
+      mark = "(*)"; // Indicate only duplicate
+    } else if (isMissingFile) {
+      mark = "(!)"; // Indicate only missing file
+    }
+  }
+
+  return mark;
+}
+
+// =============================================================================
+// Route Processing Functions
+// =============================================================================
+
+/**
+ * Dynamically import a module exporting a default RouteConfigEntry[].
+ * Includes cache busting for watch mode.
+ * @returns {Promise<ExtendedRouteConfigEntry[]>}
+ */
+async function loadRoutes() {
+  // Add cache busting query param to the URL to ensure fresh import in watch mode
+  const url =
+    pathToFileURL(/**@type {string} */ (AppState.routesFilePath)).href +
+    `?update=${Date.now()}`;
+  try {
+    const mod = await import(url);
+    // Expecting default export to be an array of RouteConfigEntry
+    if (!Array.isArray(mod.default)) {
+      console.error(
+        `Error: Routes file ${AppState.routesFilePath} does not export a default array.`,
+      );
+      // Return an empty array to allow subsequent checks to run without crashing
+      return [];
+    }
+    return /** @type {ExtendedRouteConfigEntry[]} */ (mod.default);
+  } catch (error) {
+    console.error(
+      `Error loading routes file ${AppState.routesFilePath}: ${error.message}`,
+    );
+    // Return an empty array on load failure to prevent crashes in subsequent steps
+    return [];
+  }
 }
 
 /**
@@ -179,6 +260,7 @@ function extractRoutesWithNormalizedPaths(routes, basePath = "") {
  * @returns {Record<string, ExtendedRouteConfigEntry>} - Map of routes keyed by path.
  */
 function flattenRoutes(routes) {
+  /** @type {Record<string, ExtendedRouteConfigEntry>} */
   const flatMap = {};
 
   // First pass: collect all routes by their normalized path
@@ -203,6 +285,149 @@ function flattenRoutes(routes) {
 
   return flatMap;
 }
+
+// =============================================================================
+// Error Checking Functions
+// =============================================================================
+
+/**
+ * Recursively count route ID occurrences for duplicate detection.
+ * Uses the standard React Router ID derivation.
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
+ * @param {Map<string, number>} countMap - Map to store ID counts.
+ */
+function collectIdsForDuplicateCheck(routes, countMap) {
+  if (!Array.isArray(routes)) return;
+
+  for (const r of routes) {
+    // Use the standard ID derivation logic (id ?? file-based)
+    const id = r.id ?? (r.file ? r.file.replace(/\.[^/.]+$/, "") : undefined);
+
+    // Only count if a valid ID could be determined
+    if (id) {
+      countMap.set(id, (countMap.get(id) || 0) + 1);
+    }
+
+    // Recurse into children
+    if (Array.isArray(r.children)) {
+      collectIdsForDuplicateCheck(r.children, countMap);
+    }
+  }
+}
+
+/**
+ * Recursively collect missing files.
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
+ */
+function collectMissingFiles(
+  routes,
+) {
+  if (!Array.isArray(routes)) return;
+  if (!AppState.baseDir || !AppState.missingFileIds || !AppState.missingFiles) {
+    return;
+  }
+  for (const r of routes) {
+    if (r.file) {
+      const filePath = path.resolve(AppState.baseDir, r.file);
+      if (!fs.existsSync(filePath)) {
+        AppState.missingFiles.push(r.file);
+
+        // Store the ID of the route with missing file
+        const id = r.id ?? r.file.replace(/\.[^/.]+$/, "");
+        if (id) {
+          AppState.missingFileIds.add(id);
+        }
+      }
+    }
+
+    // Recurse into children
+    if (Array.isArray(r.children)) {
+      collectMissingFiles(
+        r.children,
+      );
+    }
+  }
+}
+
+/**
+ * Check for errors in routes configuration.
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
+ * @returns {boolean}} - true if errors were found
+ */
+function checkForErrors(routes) {
+  // !! reset fields that contain analysis data
+  // Collect duplicate IDs
+  const idMap = new Map();
+  collectIdsForDuplicateCheck(routes, idMap);
+  AppState.duplicateIds = new Map(
+    [...idMap.entries()].filter(([, count]) => count > 1),
+  );
+
+  // Collect missing files
+  AppState.missingFiles = [];
+  AppState.missingFileIds = new Set();
+
+  collectMissingFiles(routes);
+  AppState.dupIds = new Set([...AppState.duplicateIds.keys()]);
+  AppState.hasErrors = AppState.duplicateIds.size > 0 ||
+    AppState.missingFiles.length > 0;
+
+  return AppState.hasErrors;
+}
+
+/**
+ * Print error report.
+ */
+function printErrorReport() {
+  if (!AppState.hasErrors) {
+    console.log("✅ No errors detected");
+    return;
+  }
+
+  if (!AppState.duplicateIds || !AppState.missingFiles) {
+    console.log("⚠️ Out of sync!");
+    return;
+  }
+
+  // Always show error count summary
+  const dupCount = AppState.duplicateIds.size;
+  const missingCount = AppState.missingFiles.length;
+
+  if (dupCount > 0) {
+    console.error(
+      `⚠️ Found ${dupCount} duplicate route ID${dupCount > 1 ? "s" : ""}`,
+    );
+  }
+
+  if (missingCount > 0) {
+    console.error(
+      `⚠️ Found ${missingCount} missing component file${
+        missingCount > 1 ? "s" : ""
+      }`,
+    );
+  }
+
+  // Show detailed errors only in verbose mode
+  if (dupCount > 0) {
+    console.error("\nDuplicate IDs:");
+    for (const [id, count] of AppState.duplicateIds.entries()) {
+      console.error(`  * ${id} appears ${count} times`);
+    }
+  }
+
+  if (missingCount > 0) {
+    console.error("\nMissing component files:");
+    for (const file of AppState.missingFiles) {
+      console.error(`  ! ${file}`);
+    }
+  }
+
+  // printLegend();
+}
+
+// =============================================================================
+// Tree Building Functions
+// =============================================================================
 
 /**
  * Builds a hierarchical tree structure using path-based organization.
@@ -308,8 +533,8 @@ function buildNavigationTree(routesMap) {
 
     // Convert children object to sorted array
     const childrenArray = Object.entries(node.children)
-      .map(([key, child]) => convertToArrays(child))
-      .sort((a, b) => a.label?.localeCompare(b.label) || 0);
+      .map(([, child]) => convertToArrays(child))
+      .sort((a, b) => (a.label?.localeCompare(b.label || "") || 0));
 
     node.children = childrenArray;
     return node;
@@ -330,8 +555,9 @@ function buildNavigationTree(routesMap) {
  * @returns {NavTreeNode} - The navigation tree node.
  */
 function createNavTreeNode(route) {
+  /** @type {NavTreeNode} */
   const node = {
-    path: route.normalizedPath || route.path,
+    path: route.normalizedPath || route.path || "",
   };
 
   // Only add properties that exist
@@ -351,6 +577,7 @@ function createNavTreeNode(route) {
  * @returns {Record<string, NavTreeNode[]>} - Map of nodes grouped by section.
  */
 function groupNodesBySection(nodes) {
+  /** @type {Record<string, NavTreeNode[]>} */
   const sections = {};
 
   for (const node of nodes) {
@@ -363,7 +590,7 @@ function groupNodesBySection(nodes) {
     // Remove section from node as it's hoisted to the sections map
     const { section: _, ...nodeWithoutSection } = node;
 
-    sections[section].push(nodeWithoutSection);
+    sections[section].push(/** @type {NavTreeNode} */ (nodeWithoutSection));
   }
 
   // Clean up the nodes to remove empty children arrays
@@ -387,103 +614,151 @@ function groupNodesBySection(nodes) {
   return sections;
 }
 
+// function printLegend() {
+//   if (!AppState.dupIds || !AppState.missingFileIds || !AppState.missingFiles) {
+//     return;
+//   }
+
+//   // Only show legend if we have duplicates or missing files
+//   if (AppState.dupIds.size > 0 || AppState.missingFileIds.size > 0) {
+//     console.log("\nLegend:");
+//     if (AppState.dupIds.size > 0) {
+//       console.log("(*)  - Indicates duplicate ID");
+//     }
+//     if (AppState.missingFileIds.size > 0) {
+//       console.log("(!)  - Indicates missing file");
+//     }
+//     if (AppState.dupIds.size > 0 && AppState.missingFileIds.size > 0) {
+//       console.log("(*!) - Indicates both duplicate ID and missing file");
+//     }
+//   }
+// }
+
 /**
- * Recursively print the tree structure to the console.
- * @param {NavTreeNode[]} nodes - The array of nodes to print.
- * @param {string} prefix - The prefix string for tree indentation.
- * @param {Set<string>} dupIds - Set of duplicate IDs.
- * @param {boolean} showId - Whether to show IDs.
- * @param {boolean} showPath - Whether to show paths.
- * @param {boolean} checkFiles - Whether to check for missing files.
- * @param {string} fileBaseDir - Base directory for file checking.
+ * Print the navigation tree.
+ * @param {NavTreeNode[]} tree - The navigation tree.
  */
-function printTreeNodes(
-  nodes,
-  prefix,
-  dupIds,
-  showId,
-  showPath,
-  checkFiles,
-  fileBaseDir,
-) {
-  if (!Array.isArray(nodes)) return;
+function printNavigationTree(tree) {
+  console.log("\nNavigation Tree:");
 
-  nodes.forEach((node, idx) => {
-    const isLast = idx === nodes.length - 1;
-    const connector = isLast ? "└── " : "├── ";
+  /**
+   * Internal recursive function to print tree nodes
+   * @param {NavTreeNode[]} nodes - The nodes to print
+   * @param {string} prefix - The prefix for indentation
+   */
+  function printNodes(nodes, prefix = "") {
+    if (!Array.isArray(nodes)) return;
 
-    // Determine marking for duplicates or missing component files
-    let mark = " ";
-    if (node.id && dupIds.has(node.id)) {
-      mark = "*";
-    }
-    if (checkFiles && node.file) {
-      const filePath = path.resolve(fileBaseDir, node.file);
-      if (!fs.existsSync(filePath)) {
-        mark = "*";
+    nodes.forEach((node, idx) => {
+      const isLast = idx === nodes.length - 1;
+      const connector = isLast ? "└── " : "├── ";
+      // Print the current line
+      console.log(
+        `${prefix}${connector}${Node2String(node)}`,
+      );
+
+      // Process children
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        const nextPrefix = prefix + (isLast ? "    " : "│   ");
+        printNodes(node.children, nextPrefix);
       }
+    });
+  }
+
+  // Start printing from the root
+  printNodes(tree);
+}
+/**
+ * Converts a navigation node to a formatted string representation.
+ * @param {Object} node - The navigation node to format.
+ * @param {string} node.path - The path of the node.
+ * @param {string} [node.id] - The optional ID of the node.
+ * @param {string} [node.label] - The optional label of the node.
+ * @returns {string} The formatted string representation of the node.
+ */
+function Node2String({ label, path, id }) {
+  const mark = getMarker(id);
+  const info = [];
+  if (options.showPath) info.push(`path: ${path}`);
+  if (options.showId && id) info.push(`id: ${id}`);
+  const infoStr = info.length ? ` [${info.join(", ")}]` : "";
+  label = label || "(no label)";
+  return `${label}${mark}${infoStr}`;
+}
+
+/**
+ * Print the route tree structure.
+ * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
+ * @param {string} [basePath=""] - Base path for current level.
+ * @param {string} [prefix=""] - Prefix for indentation.
+ */
+function printRouteTree(
+  routes,
+  basePath = "",
+  prefix = "",
+) {
+  if (!Array.isArray(routes)) return;
+
+  routes.forEach((r, idx) => {
+    const isLast = idx === routes.length - 1;
+    const conn = isLast ? "└── " : "├── "; // Tree connection characters
+
+    // Compute the full path for display
+    let currentPath = basePath;
+    if (typeof r.path === "string") {
+      // Append current segment, handle root case, clean slashes
+      currentPath = basePath === "" ? `/${r.path}` : `${basePath}/${r.path}`;
+      currentPath = currentPath.replace(/\/{2,}/g, "/").replace(/\/+$/, "") ||
+        "/"; // Clean multiple/trailing slashes, ensure '/' for root
+    } else if (r.index) {
+      // Index routes inherit parent path, ensure '/' for root index
+      currentPath = basePath === "" ? "/" : basePath.replace(/\/+$/, "") || "/"; // Clean trailing slash on parent path
+    } else {
+      // Layout routes without a path segment inherit parent path
+      currentPath = basePath.replace(/\/+$/, "") || "/"; // Clean trailing slash on parent path
     }
 
-    // Build info parts (path and ID)
-    const info = [];
-    if (showPath) info.push(`path: ${node.path}`);
-    if (showId && node.id) info.push(`id: ${node.id}`);
-    const infoStr = info.length ? ` (${info.join(", ")})` : "";
+    // Determine the base path for children
+    let nextBase;
+    if (typeof r.path === "string") {
+      // Children build on the current route's path segment
+      nextBase = basePath === "" ? r.path : `${basePath}/${r.path}`;
+      nextBase = nextBase.replace(/\/{2,}/g, "/").replace(/\/+$/, ""); // Clean and remove trailing slash for base path
+    } else {
+      // Children of layout/index routes without a path segment inherit the parent's base path
+      nextBase = basePath.replace(/\/+$/, ""); // Just clean parent base path
+    }
 
-    // Display label or fallback
-    const displayLabel = node.label || "(no label)";
+    // Get the label from handle or use a default
+    const label = r.handle?.label || (r.index ? "(index)" : "(no label)"); // Indicate index routes
 
-    // Print the current line
-    console.log(`${prefix}${connector}${mark} ${displayLabel}${infoStr}`);
+    // Use the standard ID derivation for display and checks
+    const id = r.id ?? (r.file ? r.file.replace(/\.[^/.]+$/, "") : undefined);
 
-    // Process children
-    if (Array.isArray(node.children) && node.children.length > 0) {
-      const nextPrefix = prefix + (isLast ? "    " : "│   ");
-      printTreeNodes(
-        node.children,
+    const tnode = {
+      id,
+      label,
+      path: currentPath,
+    };
+
+    // Print the current node line
+    console.log(`${prefix}${conn}${Node2String(tnode)}`);
+
+    // Recurse into children if they exist
+    if (Array.isArray(r.children) && r.children.length) {
+      const nextPrefix = prefix + (isLast ? "    " : "│   "); // Adjust prefix for children
+      printRouteTree(
+        r.children,
+        nextBase,
         nextPrefix,
-        dupIds,
-        showId,
-        showPath,
-        checkFiles,
-        fileBaseDir,
       );
     }
   });
 }
 
-/**
- * Print the navigation tree.
- * @param {NavTreeNode[]} tree - The navigation tree.
- * @param {Set<string>} dupIds - Set of duplicate IDs.
- * @param {boolean} showId - Whether to show IDs.
- * @param {boolean} showPath - Whether to show paths.
- * @param {boolean} checkFiles - Whether to check for missing files.
- * @param {string} fileBaseDir - Base directory for file checking.
- */
-function printNavigationTree(
-  tree,
-  dupIds,
-  showId,
-  showPath,
-  checkFiles,
-  fileBaseDir,
-) {
-  console.log("\nPath-based Navigation Tree:");
-  printTreeNodes(tree, "", dupIds, showId, showPath, checkFiles, fileBaseDir);
-
-  // Only show legend if we have duplicates or file checks
-  if (dupIds.size > 0 || checkFiles) {
-    console.log("\nLegend:");
-    if (dupIds.size > 0 && checkFiles) {
-      console.log("(*) - Indicates duplicate ID or missing file.");
-    } else if (dupIds.size > 0) {
-      console.log("(*) - Indicates duplicate ID.");
-    } else if (checkFiles) {
-      console.log("(*) - Indicates missing file.");
-    }
-  }
-}
+// =============================================================================
+// Code Generation Functions
+// =============================================================================
 
 /**
  * Generate a map of route ID → NavMeta for all routes in the tree.
@@ -577,7 +852,7 @@ export function useHydratedMatches() {
  * @property {string | undefined} [iconName] - Icon name from handle
  * @property {boolean | undefined} [end] - End flag from handle
  * @property {string | undefined} [group] - Group name from handle
- * // section?: string; // Section is hoisted to the top-level keys
+ * @property {string | undefined} [section] - Section name from handle
  * @property {string} path - The full path of the route
  * @property {NavTreeNode[]} [children] - Child nodes
  */
@@ -675,261 +950,208 @@ function codegen(outFile, navigationNodes, routes) {
 
     // 4. Write the code to the output file
     fs.writeFileSync(outFile, codeContent, "utf8");
-    console.error(`✏️ Generated path-based nav module: ${outFile}`);
+    console.log(`✏️ Generated path-based nav module: ${outFile}`);
   } catch (error) {
     console.error("Error during code generation:", error.message);
     // Don't exit here, allow watch mode to continue if possible
   }
 }
 
+// =============================================================================
+// Main Control Flow Functions
+// =============================================================================
+
 /**
- * Print the traditional route tree structure.
- * @param {ExtendedRouteConfigEntry[]} routes - The route configuration array.
- * @param {Set<string>} dupIds - Set of duplicate IDs.
- * @param {boolean} showId - Whether to show IDs.
- * @param {boolean} showPath - Whether to show paths.
- * @param {boolean} checkFiles - Whether to check for missing files.
- * @param {string} fileBaseDir - Base directory for file checking.
- * @param {string} [basePath=""] - Base path for current level.
- * @param {string} [prefix=""] - Prefix for indentation.
+ * Processes the routes: checks for errors, builds trees, and performs codegen.
+ * @returns {Promise<boolean>} - True if processing was successful (no errors or in watch mode), false otherwise.
  */
-function printRouteTree(
-  routes,
-  dupIds,
-  showId,
-  showPath,
-  checkFiles,
-  fileBaseDir,
-  basePath = "",
-  prefix = "",
-) {
-  if (!Array.isArray(routes)) return;
+async function processRoutes() {
+  AppState.routesFilePath = path.resolve(
+    process.cwd(),
+    /**@type {string}*/ (options.file),
+  );
+  AppState.baseDir = path.dirname(AppState.routesFilePath);
 
-  routes.forEach((r, idx) => {
-    const isLast = idx === routes.length - 1;
-    const conn = isLast ? "└── " : "├── "; // Tree connection characters
-
-    // Compute the full path for display
-    let currentPath = basePath;
-    if (typeof r.path === "string") {
-      // Append current segment, handle root case, clean slashes
-      currentPath = basePath === "" ? `/${r.path}` : `${basePath}/${r.path}`;
-      currentPath = currentPath.replace(/\/{2,}/g, "/").replace(/\/+$/, "") ||
-        "/"; // Clean multiple/trailing slashes, ensure '/' for root
-    } else if (r.index) {
-      // Index routes inherit parent path, ensure '/' for root index
-      currentPath = basePath === "" ? "/" : basePath.replace(/\/+$/, "") || "/"; // Clean trailing slash on parent path
-    } else {
-      // Layout routes without a path segment inherit parent path
-      currentPath = basePath.replace(/\/+$/, "") || "/"; // Clean trailing slash on parent path
+  // Load routes
+  const currentRoutes = await loadRoutes();
+  if (!Array.isArray(currentRoutes) || currentRoutes.length === 0) {
+    // loadRoutes already logs the error if import fails
+    if (!options.watch) {
+      console.error(
+        "❌ Failed to load routes or routes file is empty/invalid.",
+      );
+      return false; // Indicate processing failure
     }
+    console.error("Continuing watch despite route loading issue...");
+    return true; // Indicate that watch mode is active
+  }
 
-    // Determine the base path for children
-    let nextBase;
-    if (typeof r.path === "string") {
-      // Children build on the current route's path segment
-      nextBase = basePath === "" ? r.path : `${basePath}/${r.path}`;
-      nextBase = nextBase.replace(/\/{2,}/g, "/").replace(/\/+$/, ""); // Clean and remove trailing slash for base path
-    } else {
-      // Children of layout/index routes without a path segment inherit the parent's base path
-      nextBase = basePath.replace(/\/+$/, ""); // Just clean parent base path
-    }
+  // Check for errors
+  const errorReport = checkForErrors(currentRoutes);
 
-    // Get the label from handle or use a default
-    const label = r.handle?.label || (r.index ? "(index)" : "(no label)"); // Indicate index routes
+  // Print error report
+  printErrorReport();
 
-    // Use the standard ID derivation for display and checks
-    const id = r.id ?? (r.file ? r.file.replace(/\.[^/.]+$/, "") : undefined);
+  if (options.showRouteTree) {
+    // Show Routes Tree if explicitly requested
+    console.log("\nRoute Tree:");
+    printRouteTree(currentRoutes);
+  }
 
-    // Determine marking for duplicates or missing component files
-    let mark = " ";
-    if (id && dupIds.has(id)) { // Only mark duplicates if a valid ID was found
-      mark = "*";
-    }
-    if (checkFiles && r.file) {
-      const filePath = path.resolve(fileBaseDir, r.file);
-      if (!fs.existsSync(filePath)) {
-        mark = "*"; // Mark if file is missing
-      }
-    }
+  // Extract and normalize routes for path-based tree
+  const normalizedRoutes = extractRoutesWithNormalizedPaths(currentRoutes);
 
-    // Build info parts (path and ID)
-    const info = [];
-    if (showPath) info.push(`path: ${currentPath}`);
-    if (showId && id) info.push(`id: ${id}`); // Only show ID if a valid ID was determined
-    const infoStr = info.length ? ` (${info.join(", ")})` : "";
+  // Flatten routes by path
+  const routesMap = flattenRoutes(normalizedRoutes);
 
-    // Print the current node line
-    console.log(`${prefix}${conn}${mark} ${label}${infoStr}`);
+  // Build the navigation tree based on paths
+  const navigationTree = buildNavigationTree(routesMap);
 
-    // Recurse into children if they exist
-    if (Array.isArray(r.children) && r.children.length) {
-      const nextPrefix = prefix + (isLast ? "    " : "│   "); // Adjust prefix for children
-      printRouteTree(
-        r.children,
-        dupIds,
-        showId,
-        showPath,
-        checkFiles,
-        fileBaseDir,
-        nextBase,
-        nextPrefix,
+  // Show Navigation Tree only if explicitly requested
+  if (options.showNavTree) {
+    printNavigationTree(navigationTree);
+  }
+
+  // Only perform codegen if there are no errors or we're in watch mode
+  if (options.outFile && (!AppState.hasErrors || options.watch)) {
+    if (!AppState.hasErrors) {
+      codegen(options.outFile, navigationTree, currentRoutes);
+    } else if (options.watch) {
+      console.error(
+        "⚠️ Skipping code generation due to errors (will retry on changes)",
       );
     }
-  });
+  } else if (options.outFile && AppState.hasErrors && !options.watch) {
+    console.error("⚠️ Skipping code generation due to errors");
+    return false; // Indicate processing failure in non-watch codegen mode
+  }
+
+  // Return true if processing was successful or in watch mode
+  return !AppState.hasErrors || options.watch;
 }
 
-/** Main CLI entry point */
-async function main() {
+/**
+ * Parse command line arguments and setup options
+ * @returns {boolean} - True if arguments are valid, false otherwise
+ */
+function parseCommandLineArgs() {
   // Remove node executable path and script path from arguments
   const argv = process.argv.slice(2);
 
-  // Basic argument parsing
-  const file = argv[0]; // The first argument is expected to be the routes file path
-  if (!file) {
+  // Check if we have at least a file path
+  if (argv.length === 0) {
     console.error(
-      "Usage: node script.js <routes.js> [--out <file>] [--watch] [--show-id] [--show-path] [--check-files]",
+      "Usage: node script.js <routes.js> [--out <file>] [--watch] [--show-route-tree] [--show-nav-tree] [--show-id] [--show-path]",
     );
+    return false;
+  }
+
+  // The first argument is expected to be the routes file path
+  options.file = argv[0];
+
+  // Parse flags after the file name
+  const flags = argv.slice(1);
+
+  // Check for output file
+  const outIdx = flags.indexOf("--out");
+  options.outFile = (outIdx >= 0 && outIdx + 1 < flags.length)
+    ? flags[outIdx + 1]
+    : null;
+
+  // Parse boolean flags
+  options.watch = flags.includes("--watch");
+  options.showRouteTree = flags.includes("--show-route-tree");
+  options.showNavTree = flags.includes("--show-nav-tree");
+  options.showId = flags.includes("--show-id");
+  options.showPath = flags.includes("--show-path");
+
+  return true;
+}
+
+/**
+ * Main function that runs the React Router route checker tool
+ */
+async function main() {
+  // Parse command line arguments
+  if (!parseCommandLineArgs()) {
     process.exit(1);
   }
 
-  // Flags are everything after the file name
-  const flags = argv.slice(1);
-
-  // Determine codegen/watch flags
-  const outIdx = flags.indexOf("--out");
-  const outFile = outIdx >= 0 && outIdx + 1 < flags.length
-    ? flags[outIdx + 1]
-    : null;
-  const watch = flags.includes("--watch");
-
-  // Determine print/check flags
-  const showId = flags.includes("--show-id");
-  const showPath = flags.includes("--show-path");
-  const checkFiles = flags.includes("--check-files");
-  const verbose = flags.includes("--verbose");
-
-  // Determine mode: Codegen/Watch OR Check/Print
-  // Codegen mode is active if --out or --watch is present.
-  // Otherwise, it's Check/Print mode.
-  const isCodegenMode = outFile !== null || watch;
-
   try {
-    // Determine the directory of the routes file for relative file checks if needed
-    const routesFilePath = path.resolve(process.cwd(), file);
-    const baseDir = path.dirname(routesFilePath);
+    // Initial processing
+    await processRoutes();
 
-    // Load routes initially
-    let currentRoutes = await loadRoutes(file);
-
-    // Collect duplicate IDs for reporting
-    const idMap = new Map();
-    collectIdsForDuplicateCheck(currentRoutes, idMap);
-    const dupIds = new Set(
-      [...idMap.entries()].filter(([, count]) => count > 1).map(([id]) => id),
-    );
-
-    // Report duplicate IDs if found
-    if (dupIds.size > 0) {
-      console.error("⚠ Duplicate route IDs detected:");
-      for (const idVal of dupIds) {
-        console.error(`  • ${idVal} appears ${idMap.get(idVal)} times`);
-      }
-      console.error("Tree marks duplicates or missing files with *");
-    } else {
-      console.error("✅ No duplicate route IDs found.");
+    // If not in watch mode and initial processing failed (errors prevented codegen), exit with error
+    if (!options.watch) {
+      process.exit(1);
     }
 
-    // Print the traditional route tree
-    console.log("\nTraditional Route Tree:");
-    printRouteTree(
-      currentRoutes,
-      dupIds,
-      showId,
-      showPath,
-      checkFiles,
-      baseDir,
-    );
+    // Set up watch mode if requested
+    if (options.watch) {
+      console.log(`👀 Watching ${options.file} for changes...`);
 
-    // Extract and normalize routes for path-based tree
-    const normalizedRoutes = extractRoutesWithNormalizedPaths(currentRoutes);
-
-    // Flatten routes by path
-    const routesMap = flattenRoutes(normalizedRoutes);
-
-    // Build the navigation tree based on paths
-    const navigationTree = buildNavigationTree(routesMap);
-
-    // Print the navigation tree
-    printNavigationTree(
-      navigationTree,
-      dupIds,
-      showId,
-      showPath,
-      checkFiles,
-      baseDir,
-    );
-
-    if (isCodegenMode) {
-      // Perform initial codegen if output file is specified
-      if (outFile) {
-        codegen(outFile, navigationTree, currentRoutes);
+      // Calculate initial hash of the routes structure
+      let lastHash = "";
+      try {
+        const initialRoutesForHash = await loadRoutes();
+        // Only calculate hash if routes loaded successfully and are not empty
+        if (
+          Array.isArray(initialRoutesForHash) && initialRoutesForHash.length > 0
+        ) {
+          lastHash = crypto.createHash("sha256").update(
+            JSON.stringify(initialRoutesForHash),
+          ).digest("hex");
+        }
+      } catch (hashError) {
+        console.error(
+          `Warning: Could not calculate initial hash for watch mode: ${hashError.message}`,
+        );
+        // lastHash remains empty, which means the first change will always trigger regeneration
       }
 
-      // Set up watch mode if requested
-      if (watch) {
-        console.error(`👀 Watching ${file} for changes...`);
-        // Calculate initial hash of the routes structure
-        let lastHash = crypto.createHash("sha256").update(
-          JSON.stringify(currentRoutes),
-        )
-          .digest("hex");
+      // Watch the routes file for changes using a debounced handler
+      const debouncedProcess = debounce(async () => {
+        try {
+          const updatedRoutes = await loadRoutes();
+          // Only proceed if routes loaded successfully and are not empty
+          if (!Array.isArray(updatedRoutes) || updatedRoutes.length === 0) {
+            console.error(
+              "Skipping processing due to route loading issues or empty file.",
+            );
+            // Reset hash on load failure to ensure next successful load triggers regeneration
+            lastHash = "";
+            return;
+          }
 
-        // Watch the routes file for changes
-        fs.watch(routesFilePath, async (evt) => {
-          // Only react to 'change' events
-          if (evt !== "change") return;
+          // Calculate hash of the updated routes structure
+          const hash = crypto.createHash("sha256").update(
+            JSON.stringify(updatedRoutes),
+          ).digest("hex");
 
-          // Add a small delay to allow file system to settle and file to be fully written
-          setTimeout(async () => {
-            try {
-              // Load the updated routes
-              const updatedRoutes = await loadRoutes(file);
-              // Calculate hash of the updated routes structure
-              const hash = crypto.createHash("sha256").update(
-                JSON.stringify(updatedRoutes),
-              )
-                .digest("hex");
+          // If the structure has changed (hash is different)
+          if (hash !== lastHash) {
+            lastHash = hash; // Update the last hash
+            console.log("🔄 Change detected, regenerating...");
 
-              // If the structure has changed (hash is different)
-              if (hash !== lastHash) {
-                lastHash = hash; // Update the last hash
-                console.error("🔄 Change detected, regenerating...");
+            // Process the updated routes
+            await processRoutes();
+          }
+        } catch (watchErr) {
+          // Log error but continue watching
+          console.error(
+            `Error during watch processing: ${watchErr.message}`,
+          );
+        }
+      }, 200); // Debounce delay (200ms)
 
-                // Re-extract normalized routes
-                const updatedNormalizedRoutes =
-                  extractRoutesWithNormalizedPaths(updatedRoutes);
-
-                // Re-flatten routes by path
-                const updatedRoutesMap = flattenRoutes(updatedNormalizedRoutes);
-
-                // Re-build the navigation tree
-                const updatedNavTree = buildNavigationTree(updatedRoutesMap);
-
-                // Regenerate code if an output file is specified
-                if (outFile) {
-                  codegen(outFile, updatedNavTree, updatedRoutes);
-                }
-              }
-            } catch (readErr) {
-              // Log error but continue watching
-              console.error(
-                `Error reading file during watch: ${readErr.message}`,
-              );
-            }
-          }, 100); // 100ms delay
-        });
-      }
+      // Use the routesFilePath determined earlier
+      // @ts-ignore
+      fs.watch(AppState.routesFilePath, (evt) => {
+        // Only react to 'change' events and trigger the debounced function
+        if (evt === "change") {
+          debouncedProcess();
+        }
+      });
     }
   } catch (err) {
     // Catch errors during initial load or setup
