@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/stl)
 
+## v1.2.7 - NEXT
+
+- chore: update dependencies
+
 ## v1.2.6 - 07MAR2025
 
 - chore: update dependencies

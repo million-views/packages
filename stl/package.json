@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/stl",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "SQL function tagged template literal library",
   "type": "module",
   "main": "src/index.js",
@@ -44,8 +44,8 @@
     "test:coverage": "vitest --dir test run --coverage"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^3.0.8",
-    "@vitest/ui": "^3.0.8",
-    "vitest": "^3.0.8"
+    "@vitest/coverage-v8": "^3.1.2",
+    "@vitest/ui": "^3.1.2",
+    "vitest": "^3.1.2"
   }
 }
