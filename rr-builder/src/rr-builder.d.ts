@@ -4,18 +4,79 @@ import type {
   RouteConfigEntry,
 } from "@react-router/dev/routes";
 
-/** Meta information for use by menu and navigational UI components */
+/** Meta information for use by layout and navigational UI components */
 export interface NavMeta {
   /** Display text for the navigation item */
   label?: string;
+
   /** Icon key for the navigation item */
   iconName?: string;
+
   /** If true, active matching requires an exact path match */
   end?: boolean;
-  /**  Logical feature area or domain (e.g. 'dashboard', 'users') */
-  group?: string;
-  /** UI container or region for this item (e.g. 'main', 'footer', 'sidebar'). */
+
+  /**
+   * Primary partition key for your navigation tree.
+   *
+   * At build time we **partition** the full route forest into
+   * disjoint sub-trees—one per `section`. Each node lives in exactly
+   * one section bucket (inherit from parent, root defaults to "main").
+   */
   section?: string;
+
+  /**
+   * Secondary classifier **within** a section.
+   * This string is carried through into each generated NavTreeNode,
+   * so at _runtime_ you can cluster or tabulate items by `group`
+   * (e.g. “Analytics” vs “Reports” panels inside the dashboard menu).
+   */
+  group?: string;
+}
+
+/**
+ * Represents an extended route configuration entry, combining RouteConfigEntry 
+ * with navigation/layout metadata.
+ */
+export type ExtendedRouteConfigEntry = RouteConfigEntry & {
+  handle?: NavMeta;
+};
+
+/**
+ * Type for the nodes in the final navigation tree used by UI components
+ * to render menu and grand-central type nav bars.
+ * 
+ * Note: The 'section' property in `meta` is hoisted and not present in the
+ * final nav tree node.
+ */
+export type NavTreeNode = {
+  /**
+   * The route ID, consistent with metaMap keys
+   */
+  id?: string;
+  /**
+   * Nav label from handle
+   */
+  label?: string;
+  /**
+   * Icon name from handle
+   */
+  iconName?: string;
+  /**
+   * End flag from handle
+   */
+  end?: boolean;
+  /**
+   * Group name from handle
+   */
+  group?: string;
+  /**
+   * The full path of the route
+   */
+  path: string;
+  /**
+   * Child nodes
+   */
+  children?: NavTreeNode[];
 }
 
 /** Fluent API wrapper over react-router helper methods */
