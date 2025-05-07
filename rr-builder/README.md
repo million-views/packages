@@ -279,7 +279,7 @@ The `end` prop is useful in specific scenarios:
 ## Check configuration and generate code
 
 `rr-check` tool can check for errors and generate code for inclusion in the
-runtime bundle for use by by layout and menu components.
+runtime bundle for use by layout and menu components.
 
 ```bash
 npx rr-check <routes.js> \
