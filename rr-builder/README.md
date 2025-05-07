@@ -1,9 +1,15 @@
 # Fluent Route Configuration for React Router v7
 
-A tiny, intuitive fluent builder for React Router v7 that serves as a **single
-source of truth** for both your routing configuration and navigation metadata,
-plus a companion CLI tool to visualize, debug routes config for duplicate route
-IDs and generate navigation data for layouts and menu components.
+A tiny, fluent builder API to configure React Router v7 framework mode routes,
+for a seamless, unified route & navigation authoring experience.
+
+Comes with a companion CLI tool, `rr-check` to visualize, debug, and routes for
+and generate navigation data for layouts and menu components.
+
+**Motivation:**
+
+- **Single source of truth** for routes + navigation metadata.
+- **Codegen**: catch errors and generate boilerplate code with `rr-check`.
 
 ## Introduction
 
@@ -27,13 +33,6 @@ metadata on each route’s `.handle`. A companion tool **`rr-check`** let's you
 check for common mistakes such as routes with duplicate IDs and misspelled or
 missing component files; and generates 'navigation' code module that helps in
 reducing boiler plate code in layouts and menu components.
-
-## Motivation
-
-- **Single source of truth** for routes + navigation metadata.
-- **Fluent syntax**: resulting in fewer nested arrays, clearer intent.
-- **IDE‑friendly**: autocomplete on `.children()` and `.meta()`.
-- **Codegen**: catch errors and generate boilerplate code with `rr-check`.
 
 ## Installation
 
@@ -546,7 +545,3 @@ function Sidebar({ section }) {
 ## License
 
 Distributed under the MIT License. See [LICENSE](../LICENSE) for details.
-
----
-
-Built with ♥ for a seamless, unified route & navigation authoring experience.
