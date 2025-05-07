@@ -3,8 +3,8 @@
 A tiny, fluent builder API to configure React Router v7 framework mode routes,
 for a seamless, unified route & navigation authoring experience.
 
-Comes with a companion CLI tool, `rr-check` to visualize, debug, and routes for
-and generate navigation data for layouts and menu components.
+Comes with a companion CLI tool, `rr-check` to visualize, debug, and and
+generate navigation data for use by layout and menu components.
 
 **Motivation:**
 
