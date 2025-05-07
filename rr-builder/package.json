@@ -29,7 +29,8 @@
   "files": [
     "src/rr-builder.js",
     "src/rr-builder.d.ts",
-    "src/rr-check.js"
+    "src/rr-check.js",
+    "src/tree-utils.js"
   ],
   "bugs": {
     "url": "https://github.com/million-views/packages/issues"
@@ -64,9 +65,9 @@
     "esm"
   ],
   "scripts": {
-    "check-api-routes": "node ./src/rr-check.js test/api-routes.js --show-id --show-path",
-    "check-crud-routes": "node ./src/rr-check.js test/crud-routes.js --show-id --show-path",
-    "check-app-routes": "node ./src/rr-check.js test/app-routes.js --show-id --show-path"
+    "check-api-routes": "node ./src/rr-check.js test/api-routes.js --print:nav-tree,include-id,include-path",
+    "check-crud-routes": "node ./src/rr-check.js test/crud-routes.js --print:nav-tree,include-id,include-path",
+    "check-app-routes": "node ./src/rr-check.js test/app-routes.js --print:nav-tree,include-id,include-path"
   },
   "peerDependencies": {
     "@react-router/dev": ">=7.0.0 <8.0.0"
