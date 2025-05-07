@@ -574,7 +574,26 @@ function createLoader(filePath) {
 async function main() {
   if (!parseArgs()) {
     console.error(
-      "Usage: node rr-check <routes.js> [--out <file>] [--watch] …",
+      `
+Usage: node rr-check <routes-file> [--print:<FLAGS>] [--out <file>] [--watch]
+
+Arguments:
+  <routes-file>             Path to your routes config file (e.g. routes.js or routes.ts).
+
+Options:
+  --print:<FLAGS>           Comma-separated list of output types (no spaces). Available flags:
+                              route-tree     Print an ASCII tree of all routes.
+                              nav-tree       Print an ASCII tree of navigable routes.
+                              include-id     Append each node’s unique ID in the tree leaves.
+                              include-path   Append each node’s URL path in the tree leaves.
+  --watch                   Watch the routes-file for changes and rerun automatically.
+  --out=<file>              Write code (navigationTree, useHydratedMatches()) to <file>.
+
+Examples:
+  npx rr-check routes.js --print:route-tree
+  npx rr-check src/routes.js --print:nav-tree,include-path --out=app/lib/navigation.js
+  deno rr-check src/routes.ts --print:route-tree,include-id --watch 
+`,
     );
     return process.exit(1);
   }

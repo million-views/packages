@@ -3,8 +3,8 @@
 A tiny, fluent builder API to configure React Router v7 framework mode routes,
 for a seamless, unified route & navigation authoring experience.
 
-Comes with a companion CLI tool, `rr-check` to visualize, debug, and and
-generate navigation data for use by layout and menu components.
+Comes with a companion CLI tool, `rr-check` to visualize, debug, and generate
+navigation data for use by layout and menu components.
 
 **Motivation:**
 
@@ -29,7 +29,7 @@ Typical chores in maintaining the `routes` file include:
 
 **rr-builder** eases these chores by providing a **fluent API** that wraps React
 Router’s own `route`, `index`, `layout`, and `prefix` helpers, and stashes menu
-metadata on each route’s `.handle`. A companion tool **`rr-check`** let's you
+metadata on each route’s `.handle`. A companion tool **`rr-check`** lets you
 check for common mistakes such as routes with duplicate IDs and misspelled or
 missing component files; and generates 'navigation' code module that helps in
 reducing boiler plate code in layouts and menu components.
@@ -241,14 +241,15 @@ export default build([
 
 When building complex applications, it’s useful to embed metadata into your
 route definitions so that UI components can render context-aware menus, footers,
-or sitemaps without hand-rolling recursive logic at runtime. We accomplish this
-by augmenting each route with two distinct keys in its handle (using `meta`):
+or sitemaps without hard coding some of the information that is already
+available in the route configuration. We accomplish this by augmenting each
+route with two distinct keys in its handle (using `meta()`):
 
-- section – A build-time partition key: splits the full route forest into
+- **section** – A build-time partition key: splits the full route forest into
   disjoint sub-trees (e.g. main, dashboard, reports).
 
-- group – A runtime classifier: carried through each node so UI code can cluster
-  related items within a section (e.g. “Analytics” vs “Reports” panels).
+- **group** – A runtime classifier: carried through each node so UI code can
+  cluster related items within a section (e.g. “Analytics” vs “Reports” panels).
 
 ### "Exact" vs "Prefix" matching, and the use of `end` prop
 

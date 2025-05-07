@@ -1,6 +1,10 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/rr-builder)
 
-## v1.1.0 - 22APR2025
+## v1.1.1 - 07MAY2025
+
+- Detailed usage help output
+
+## v1.1.0 - 07MAY2025
 
 ### Added
 
