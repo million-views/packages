@@ -298,7 +298,7 @@ Options:
 
 Examples:
   npx rr-check routes.js --print:route-tree
-  npx rr-check src/routes.js --print:nav-tree,include-path --out=app/lib/navigation.js
+  npx rr-check src/routes.js --print:nav-tree,include-path --out app/lib/navigation.js
   deno rr-check src/routes.ts --print:route-tree,include-id --watch
 ```
 
