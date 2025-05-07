@@ -282,17 +282,24 @@ The `end` prop is useful in specific scenarios:
 runtime bundle for use by layout and menu components.
 
 ```bash
-npx rr-check <routes.js> \
-  --print=route-tree,include-id,include-path \
-  [--watch] [--out=navigation.generated.js]
+Usage: npx rr-check <routes-file> [--print:<FLAGS>] [--out <file>] [--watch]
 
---print: comma-separated (no spaces):
-    - route-tree → ASCII tree
-    - nav-tree → JSON navigation-tree
-    - include-id → append (id:…)
-    - include-path → append (path:…)
---watch → rerun on file changes
---out → generate code for use in layout and menu components
+Arguments:
+  <routes-file>             Path to your routes config file (e.g. routes.js or routes.ts).
+
+Options:
+  --print:<FLAGS>           Comma-separated list of output types (no spaces). Available flags:
+                              route-tree     Print an ASCII tree of all routes.
+                              nav-tree       Print an ASCII tree of navigable routes.
+                              include-id     Append each node’s unique ID in the tree leaves.
+                              include-path   Append each node’s URL path in the tree leaves.
+  --watch                   Watch the routes-file for changes and rerun automatically.
+  --out=<file>              Write code (navigationTree, useHydratedMatches()) to <file>.
+
+Examples:
+  npx rr-check routes.js --print:route-tree
+  npx rr-check src/routes.js --print:nav-tree,include-path --out=app/lib/navigation.js
+  deno rr-check src/routes.ts --print:route-tree,include-id --watch
 ```
 
 > **NOTE:** Node's native ESM loader doesn't understand .ts files. If your route
