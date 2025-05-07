@@ -30,7 +30,8 @@
     "src/rr-builder.js",
     "src/rr-builder.d.ts",
     "src/rr-check.js",
-    "src/tree-utils.js"
+    "src/tree-utils.js",
+    "src/tree-utils.d.ts"
   ],
   "bugs": {
     "url": "https://github.com/million-views/packages/issues"
