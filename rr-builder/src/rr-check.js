@@ -11,7 +11,7 @@ import path from "path";
 import crypto from "crypto";
 import { pathToFileURL } from "url";
 
-import { flatMap, walk, workflow } from "./tree-utils.js";
+import { flatMap, walk, workflow } from "@m5nv/rr-builder/tree-utils";
 
 // state + options
 const state = {
@@ -26,13 +26,12 @@ const state = {
    * @type {string | null}
    */
   out: null,
+  forcegen: false,
   watch: false,
   show: { route: false, nav: false, id: false, path: false },
   base: "",
   hasErrors: false,
-
-  /** @type {Set<string> | null} */
-  dupIds: null,
+  irrecoverableError: false,
   /** @type {Map<string, number> | null} */
   duplicateIds: null,
   /** @type {string[] | null} */
@@ -47,32 +46,51 @@ function parseArgs() {
   if (args.length < 1 || args[0].startsWith("-")) {
     return false;
   }
+  // first positional arg is the input file
   state.file = args[0];
   state.routesFilePath = path.resolve(process.cwd(), state.file);
   state.base = path.dirname(state.routesFilePath);
 
   for (let i = 1; i < args.length; i++) {
-    switch (args[i]) {
-      case "--out":
-        if (args[i + 1]) state.out = args[++i];
-        break;
-      case "--watch":
-        state.watch = true;
-        break;
-      case "--show-route-tree":
-        state.show.route = true;
-        break;
-      case "--show-nav-tree":
-        state.show.nav = true;
-        break;
-      case "--show-id":
-        state.show.id = true;
-        break;
-      case "--show-path":
-        state.show.path = true;
-        break;
+    const arg = args[i];
+    if (arg.startsWith("--print:")) {
+      // e.g. --print:route-tree,include-id,include-path
+      // or   "--print: route-tree, include-id, include-path"
+      const opts = arg
+        .slice("--print:".length)
+        .split(",")
+        .map((s) => s.trim());
+      for (const o of opts) {
+        switch (o) {
+          case "route-tree":
+            state.show.route = true;
+            break;
+          case "nav-tree":
+            state.show.nav = true;
+            break;
+          case "include-id":
+            state.show.id = true;
+            break;
+          case "include-path":
+            state.show.path = true;
+            break;
+        }
+      }
+    } else {
+      switch (arg) {
+        case "--out":
+          if (args[i + 1]) state.out = args[++i];
+          break;
+        case "--watch":
+          state.watch = true;
+          break;
+        case "--force":
+          state.forcegen = true;
+          break;
+      }
     }
   }
+
   return true;
 }
 
@@ -86,8 +104,8 @@ function toPascalCase(str) {
 function getMarker(node_id) {
   let mark = " ";
   // Use the node's ID (either from NavTreeNode or ExtendedRouteConfigEntry)
-  if (node_id && state.dupIds && state.missingFileIds) {
-    const isDuplicate = state.dupIds.has(node_id);
+  if (node_id && state.duplicateIds && state.missingFileIds) {
+    const isDuplicate = state.duplicateIds.has(node_id);
     const isMissingFile = state.missingFileIds.has(node_id);
 
     if (isDuplicate && isMissingFile) {
@@ -103,7 +121,7 @@ function getMarker(node_id) {
 }
 
 function NodeNormalize(node) {
-  let { handle, path, id, index, file } = node;
+  let { handle, path, id, index, file } = node || {};
   let label = handle?.label;
   if (!path && index) {
     // Special case for root path "/"
@@ -201,9 +219,8 @@ function pruneLayouts(nodes) {
 }
 
 function printErrorReport() {
-  const { duplicateIds, missingFiles, dupIds, multiIdxs } = state;
-  if (duplicateIds && missingFiles && dupIds && multiIdxs) {
-  } else {
+  const { duplicateIds, missingFiles, multiIdxs } = state;
+  if (!(duplicateIds && missingFiles && multiIdxs)) {
     console.log("⚠️  Out of sync!");
     return;
   }
@@ -245,7 +262,7 @@ function checkForErrors(routes) {
   function findDuplicateIds(nodes, ctx) {
     const counts = new Map();
     walk(nodes, (n) => {
-      const id = n.id ?? (n.file ? n.file.replace(/\.[^/.]+$/, "") : undefined);
+      const id = n?.id ?? n?.file?.replace(/\.[^/.]+$/, "");
       // count iff id could be determined
       if (id) counts.set(id, (counts.get(id) || 0) + 1);
     });
@@ -254,7 +271,6 @@ function checkForErrors(routes) {
       [...counts.entries()].filter(([, count]) => count > 1),
     );
 
-    ctx.dupIds = new Set([...ctx.duplicateIds.keys()]);
     return nodes;
   }
 
@@ -262,11 +278,18 @@ function checkForErrors(routes) {
     ctx.missingFiles = [];
     ctx.missingFileIds = new Set();
     walk(nodes, (node) => {
-      const file = path.resolve(ctx.base, node.file);
-      if (!fs.existsSync(file)) {
-        ctx.missingFiles.push(node.file);
-        const id = node.id ?? node.file.replace(/\.[^/.]+$/, "");
-        ctx.missingFileIds.add(id);
+      if (!node) {
+        console.log(
+          "⚠️  Irrecoverably out of sync; check your route configuration!",
+        );
+        state.irrecoverableError = true;
+      } else {
+        const file = path.resolve(ctx.base, node.file);
+        if (!fs.existsSync(file)) {
+          ctx.missingFiles.push(node.file);
+          const id = node.id ?? node.file.replace(/\.[^/.]+$/, "");
+          ctx.missingFileIds.add(id);
+        }
       }
     });
     return nodes;
@@ -277,7 +300,7 @@ function checkForErrors(routes) {
     walk(nodes, (node, depth, siblings) => {
       // only inspect a sibling‐group once, at its first node
       if (siblings[0] === node) {
-        const idxs = siblings.filter((n) => n.index);
+        const idxs = siblings.filter((n) => n?.index);
         if (idxs.length > 1) {
           ctx.multiIdxs.push(
             ...idxs.map((n) => ({
@@ -303,8 +326,8 @@ function checkForErrors(routes) {
   const result = run(routes);
 
   // have to check first to keep ts-check happy :-(
-  const { duplicateIds, missingFiles, dupIds, multiIdxs } = ctx;
-  if (duplicateIds && missingFiles && dupIds && multiIdxs) {
+  const { duplicateIds, missingFiles, multiIdxs } = ctx;
+  if (duplicateIds && missingFiles && multiIdxs) {
     if (duplicateIds.size > 0 || missingFiles.length > 0 || multiIdxs.length) {
       state.hasErrors = true;
     }
@@ -464,14 +487,6 @@ function codegen(routes) {
 
   const metaMap = createMetaMap(routes);
   const navTree = buildNavigationTree(routes);
-
-  // console.log(metaMap);
-  // console.log(navTree);
-  // for (const [k, v] of Object.entries(navTree)) {
-  //   console.log("~~~~~~~~", k, "~~~~~~~");
-  //   printTree(v);
-  // }
-
   const header = `
 // ⚠ AUTO-GENERATED — ${new Date().toISOString()} — do not edit by hand!
 // Consult @m5nv/rr-builder docs to keep this file in sync with your routes. 
@@ -492,7 +507,7 @@ function codegen(routes) {
   try {
     // 4. Write the code to the output file
     fs.writeFileSync(state.out, code, "utf8");
-    console.log(`✏️ Generated path-based nav module: ${state.out}`);
+    console.log(`✏️  Generated navigation module: ${state.out}`);
   } catch (error) {
     console.error("Error during code generation:", error.message);
     // Don't exit here, allow watch mode to continue if possible
@@ -502,7 +517,7 @@ function codegen(routes) {
 async function processRoutes(routes) {
   // reset run state
   state.hasErrors = false;
-  state.dupIds = null;
+  state.irrecoverableError = false;
   state.duplicateIds = null;
   state.missingFiles = null;
   state.missingFileIds = null;
@@ -510,13 +525,20 @@ async function processRoutes(routes) {
   checkForErrors(routes);
   if (state.hasErrors) {
     printErrorReport();
-    console.error("⚠️  Skipping code generation due to errors");
+    if (state.out && !state.forcegen) {
+      console.error("⚠️  Skipping code generation due to errors");
+    } else if (state.out && state.forcegen) {
+      console.error("⚠️  Forcing code generation despite detected errors");
+    }
   } else {
     console.log("✅  No errors detected");
+  }
+
+  if (!state.hasErrors || state.forcegen) {
     codegen(routes);
   }
 
-  if (state.show.route) {
+  if (state.show.route || state.irrecoverableError) {
     printTree(routes);
   }
 

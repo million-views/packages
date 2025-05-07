@@ -6,7 +6,7 @@ export function walk(nodes, onNode) {
   function recurse(list, depth) {
     for (const node of list) {
       onNode(node, depth, list);
-      if (node.children) recurse(node.children, depth + 1);
+      if (node?.children) recurse(node.children, depth + 1);
     }
   }
   recurse(nodes, 0);
@@ -16,7 +16,7 @@ export function walk(nodes, onNode) {
 export function map(nodes, fn) {
   return nodes.map((node) => {
     const result = fn(node);
-    if (node.children) {
+    if (node?.children) {
       result.children = map(node.children, fn);
     }
     return result;
@@ -28,7 +28,7 @@ export function flatMap(nodes, fn) {
   return nodes.flatMap((node) => {
     const reps = fn(node);
     return reps.flatMap((rep) => {
-      if (rep.children) {
+      if (rep?.children) {
         const newChildren = flatMap(rep.children, fn);
         return [{ ...rep, children: newChildren }];
       }

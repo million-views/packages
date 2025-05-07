@@ -207,7 +207,8 @@
                 "handle": {
                   "label": "All Roles",
                   "iconName": "Shield",
-                  "end": true
+                  "end": true,
+                  "section": "users"
                 },
                 "path": "users/roles"
               },
@@ -241,8 +242,7 @@
             ],
             "id": "roles",
             "handle": {
-              "label": "Roles",
-              "section": "users"
+              "label": "Roles"
             }
           }
         ],

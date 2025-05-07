@@ -80,6 +80,15 @@ class Builder {
     if (this.entry.index) {
       throw new Error("Cannot add children to an index route");
     }
+
+    // Fail-fast check: ensure no one passed a Builder[] by mistake
+    for (const b of builders) {
+      if (Array.isArray(b)) {
+        throw new Error(
+          "You passed a Builder[] to children() — did you forget to spread your prefix() result?",
+        );
+      }
+    }
     this.entry.children = builders.map((b) => b.entry);
     return this;
   }

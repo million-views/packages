@@ -2,16 +2,14 @@
 
 A tiny, intuitive fluent builder for React Router v7 that serves as a **single
 source of truth** for both your routing configuration and navigation metadata,
-plus a companion CLI tool to visualize and debug routes config for duplicate
-route IDs.
+plus a companion CLI tool to visualize, debug routes config for duplicate route
+IDs and generate navigation data for layouts and menu components.
 
 ## Introduction
 
-Frameworks such as _Astro_ and _SvelteKit_ offer file based routing that mandate
-following conventions in order for the scheme to work; sooner or later one has
-to deal with the limitations of those conventions. On the other hand Framework
-mode of _React Router v7_ lets you configure your routes as you
-please&mdash;which is great.
+Framework mode of _React Router v7_ lets you configure your routes as you please
+in a single `routes` file in one location. This is way better than convention
+based file system layout dependendant routers (, we think).
 
 The downside is that as the app grows, managing deeply nested React Router
 configs—and keeping navigation menus in sync—becomes tedious and error‑prone.
@@ -25,18 +23,17 @@ Typical chores in maintaining the `routes` file include:
 
 **rr-builder** eases these chores by providing a **fluent API** that wraps React
 Router’s own `route`, `index`, `layout`, and `prefix` helpers, and stashes menu
-metadata on each route’s `.handle`. A companion tool **`rr-check`** prints an
-ASCII forest of your config—optionally annotating IDs and paths, and flagging
-duplicates—so you can catch mistakes early.
+metadata on each route’s `.handle`. A companion tool **`rr-check`** let's you
+check for common mistakes such as routes with duplicate IDs and misspelled or
+missing component files; and generates 'navigation' code module that helps in
+reducing boiler plate code in layouts and menu components.
 
 ## Motivation
 
 - **Single source of truth** for routes + navigation metadata.
-- **Familiar helper names** match React Router v7 (`route`, `index`, `layout`,
-  `prefix`).
 - **Fluent syntax**: resulting in fewer nested arrays, clearer intent.
 - **IDE‑friendly**: autocomplete on `.children()` and `.meta()`.
-- **Debug early**: catch duplicate IDs and path errors with `rr-check`.
+- **Codegen**: catch errors and generate boilerplate code with `rr-check`.
 
 ## Installation
 
@@ -95,45 +92,6 @@ import {
 - `build(builders: Builder[]): RouteConfigEntry[]` —final array for
   React Router.
 
-## Navigation Meta
-
-`NavMeta` type is used to colocate data needed to render menu and navigational
-UI with the route configuration. Currently it is typed as below:
-
-```js
-/**
- * @typedef {object} NavMeta
- * @property {string} [label] - Display text for the navigation item.
- * @property {string} [iconName] - Icon key for the navigation item.
- * @property {boolean} [end] - If true, active matching requires an exact path match.
- * @property {string} [group] - UI container or region for this item (e.g. 'main', 'footer', 'sidebar').
- * @property {string} [section] - Logical feature area or domain (e.g. 'dashboard', 'users').
- */
-```
-
-In general the concept of "exact" vs "prefix" matching is a fundamental pattern
-in hierarchical navigation systems because it solves a common problem:
-
-- **Prefix matching** (default): Useful for showing context - "you are somewhere
-  in this section"
-- **Exact matching**: Useful for precise location - "you are exactly here"
-
-The `end` prop is useful in specific scenarios:
-
-1. **Home or index routes** - You typically want these highlighted only when
-   you're exactly on that route:
-
-```js
-index("./app/home/page").meta({
-  label: "Home",
-  iconName: "Home",
-  end: true, // Only highlighted on exact match
-});
-```
-
-2. **When you want to prevent a parent route from being highlighted** when
-   viewing its children.
-
 ## React Router API vs `rr-builder` API
 
 <details>
@@ -186,67 +144,27 @@ export default build([
 
 Bottom line: **RR Builder API** is more linear, chainable, and IDE‑friendly.
 
-## Core Concepts
+# Core Concepts
 
 If you are working with `react-router`, you already know this; just in case this
 is your first encounter, here are some basic concepts you should know!
 
-### Route vs Layout
+## Route vs Layout
 
 - **`route()`**: owns a URL segment (`path`), can render its file and children
   via `<Outlet/>`.
 - **`layout()`**: convenience for `route(undefined, file)`, purely a wrapper for
   its children.
 
-### Index Routes
+## Index Routes
 
 - Defined via `index(file)` —renders at the parent URL (`/dashboard` when under
   `/dashboard`).
 
-### Prefixing
+## Prefixing
 
 - `prefix(prefixPath, builders[])` spreads into multiple
   `route(prefixPath + child.path)` entries.
-
-### Fluent Chaining
-
-- `.children(...)` for nesting; `.meta(...)` for nav metadata.
-
-## Feature‑Scoped Routing
-
-Partition your app into feature files, each exporting a Builder. Compose at the
-root with .children() to keep features decoupled. For example, group related
-routes in a module:
-
-```ts
-// dashboard.ts
-export const dashboard = route("dashboard","./layout.tsx").children(...);
-
-// root routes.ts
-import { dashboard } from "./dashboard";
-export default build([
-  index("./home.tsx"),
-  dashboard,
-]);
-```
-
-Keeps feature boundaries clear.
-
-## Navigation Metadata & `handle`
-
-Stash labels/icons via `.meta()`:
-
-```ts
-route("about", "routes/about.tsx").meta({ label: "About", iconName: "Info" });
-```
-
-In your navigation UI component, read route.handle via useMatches() or
-useRoutes():
-
-```tsx
-const match = useMatches().at(-1);
-const { label, iconName } = match.handle ?? {};
-```
 
 ## Reusable Components & Custom IDs
 
@@ -280,134 +198,350 @@ route("dashboard/*", "layout.tsx");
 </Routes>
 ```
 
-## Resource‑Style (CRUD) Routes
+# Practical application of `rr-builder` and `rr-check`
 
-In CRUD‑style workflows, you often want a **wrapper layout** that renders shared
-UI (e.g. list filters, breadcrumbs) and an `<Outlet/>` for the nested pages. Use
-`layout()` (or `route()` if you prefer) as that wrapper:
+## Augmented route configuration
 
-```ts
+```js
+/// file: routes.js
+import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
+
 export default build([
-  layout("routes/posts/layout.tsx")
-    .children(
-      // GET /posts — list view
-      index("routes/posts/index.tsx"),
-      // GET /posts/:postId — detail view
-      route(":postId", "routes/posts/[postId].tsx"),
-      // GET /posts/:postId/edit — edit view
-      route(":postId/edit", "routes/posts/[postId]/edit.tsx"),
-    ),
+  layout("./routes/layout.tsx").children(
+    index("./routes/page.tsx")
+      .meta({ label: "Home", section: "main", end: true }),
+    route("settings", "routes/settings/page.tsx")
+      .meta({ label: "Settings", iconName: "Settings", section: "main" }),
+    layout("./routes/dashboard/layout.tsx")
+      .meta({ label: "Dashboard" })
+      .children(
+        ...prefix("dashboard/overview", [
+          index("./routes/dashboard/overview/summary.tsx")
+            .meta({
+              label: "Overview",
+              iconName: "CircleDot",
+              group: "Overview",
+              section: "dashboard",
+            }),
+        ]),
+        ...prefix("dashboard/reports", [
+          route("annual", "./routes/dashboard/reports/annual.tsx")
+            .meta({
+              label: "Annual",
+              iconName: "CalendarRange",
+              group: "Reports",
+            }),
+        ]),
+      ),
+    // …add more children here as needed…
+  ),
 ]);
 ```
 
-- `routes/posts/layout.tsx` should include an `<Outlet/>` to render its
-  children.
-- The `index()` child becomes `/posts`, and the dynamic `route()` children map
-  to `/posts/:postId` and `/posts/:postId/edit`.
-- You can omit `.meta()` here if these resource routes are not navigable menu
-  items.
+### Partitioning and grouping navigation with `section` & `group` props
 
-If you don’t need a separate layout file (i.e. your index component already
-renders <Outlet/>), you can use route() in place of layout(). However, when you
-reuse the same component file for multiple routes, you must assign a unique id
-to each to avoid collisions:
+When building complex applications, it’s useful to embed metadata into your
+route definitions so that UI components can render context-aware menus, footers,
+or sitemaps without hand-rolling recursive logic at runtime. We accomplish this
+by augmenting each route with two distinct keys in its handle (using `meta`):
 
-```ts
-export default build([
-  route("posts", "routes/posts/index.tsx", { id: "posts-wrapper" })
-    .children(
-      index("routes/posts/index.tsx", { id: "posts-index" }),
-      route(":postId", "routes/posts/index.tsx", { id: "posts-detail" }),
-      route(":postId/edit", "routes/posts/index.tsx", { id: "posts-edit" }),
-    ),
-]);
-```
+- section – A build-time partition key: splits the full route forest into
+  disjoint sub-trees (e.g. main, dashboard, reports).
 
-Here, the same `routes/posts/index.tsx` component acts as both the list view and
-the wrapper (rendering <Outlet/>). By giving each route a distinct id, React
-Router can distinguish between /posts, /posts/:postId, and /posts/:postId/edit
-even though they share the same component file.
+- group – A runtime classifier: carried through each node so UI code can cluster
+  related items within a section (e.g. “Analytics” vs “Reports” panels).
 
-## API Routes (Data Endpoints)
+### "Exact" vs "Prefix" matching, and the use of `end` prop
 
-For purely data‑oriented endpoints (e.g. JSON API), define routes without
-layouts or navigation metadata. These routes typically export server or loader
-functions rather than UI components.
+In general the concept of "exact" vs "prefix" matching is a fundamental pattern
+in hierarchical navigation systems because it solves a common problem:
 
-```ts
-export default build([
-  ...prefix("api", [
-    // GET /api/posts
-    route("posts", "routes/api/posts.ts"),
+- **Prefix matching** (default): Useful for showing context - "you are somewhere
+  in this section"
+- **Exact matching**: Useful for precise location - "you are exactly here"
 
-    // GET /api/posts/:postId
-    route(":postId", "routes/api/posts/[postId].ts"),
+The `end` prop is useful in specific scenarios:
 
-    // GET /api/users
-    route("users", "routes/api/users.ts"),
-  ]),
-]);
-```
+1. **Home or index routes** - You typically want these highlighted only when
+   you're exactly on that route:
 
-- No `.meta()` is needed since these are not part of a UI menu.
-- Each file (e.g. `routes/api/posts.ts`) exports a handler function (e.g.
-  `export async function loader() { ... }`).
+   ```js
+   index("./app/home/page").meta({
+     label: "Home",
+     iconName: "Home",
+     end: true, // Only highlighted on exact match
+   });
+   ```
 
-## `rr-check` CLI: Visualize & Debug
+2. **When you want to prevent a parent route from being highlighted** when
+   viewing its children.
+
+## Check configuration and generate code
+
+`rr-check` tool can check for errors and generate code for inclusion in the
+runtime bundle for use by by layout and menu components.
 
 ```bash
-rr-check <routes.js> [--show-id] [--show-path]
+npx rr-check <routes.js> \
+  --print=route-tree,include-id,include-path \
+  [--watch] [--out=navigation.generated.js]
+
+--print: comma-separated (no spaces):
+    - route-tree → ASCII tree
+    - nav-tree → JSON navigation-tree
+    - include-id → append (id:…)
+    - include-path → append (path:…)
+--watch → rerun on file changes
+--out → generate code for use in layout and menu components
 ```
 
-- **`--show-id`**: append `(id: …)`
-- **`--show-path`**: append `(path: …)`
-- Flags duplicate IDs (first pass) and marks them with `*` in the tree.
+> **NOTE:** Node's native ESM loader doesn't understand .ts files. If your route
+> definitions are in TypeScript, use deno:
 
-**NOTE:**\
-Node's native ESM loader doesn't understand `.ts` files. If your route
-definitions are in TypeScript, use `deno`:
-
-```sh
+```bash
 # locate the script in your node_modules (assuming its installed locally)
 # typically found in ./node_modules/@m5nv/rr-builder/src/rr-check.js
 deno run --unstable-sloppy-imports --allow-read path-to/rr-check.js routes.ts
 ```
 
-Alternatively, compile your `routes.ts` to `routes.js` and use:
+Alternatively, compile your routes.ts to routes.js and use:
 
-```sh
+```bash
 npx rr-check routes.js
 ```
 
 Or if you want to use the tool without installing the package into your project:
 
-```sh
+```bash
 npx -p @m5nv/rr-builder rr-check routes.js
 ```
 
-### Duplicate‑ID Detection
+### `rr-check` for error checking
 
+A routes configuration with no error and no options produces the following
+output:
+
+```bash
+npx rr-check routes.js
+✅  No errors detected
 ```
-⚠ Duplicate route IDs detected: 
-• users-active appears 2 times
-Tree marks duplicates with *
+
+For the purpose of demonstration using an erroneous `routes.js` input produces
+the following output.
+
+```bash
+npx rr-check routes.js
+
+⚠️  Found 1 duplicate route ID
+⚠️  Found 6 missing component files
+
+Duplicate IDs:
+  * foo appears 2 times
+
+Missing component files:
+  ! ./routes/layout.tsx
+  ! ./routes/page.tsx
+  ! ./routes/settings/page.tsx
+  ! ./routes/dashboard/layout.tsx
+  ! ./routes/dashboard/overview/summary.tsx
+  ! ./routes/dashboard/reports/annual.tsx
 ```
 
-## Best Practices & Tips
+We can troubleshoot where the error is by using --print option as below:
 
-- **One `index()` per URL segment** for home/index pages.
-- **Use `route()`** for explicit path segments; **`layout()`** for pure
-  wrappers.
-- **Partition features** into separate modules and compose at the root.
-- **Assign custom `id`** whenever you reuse the same component file.
-- **Run `check`** after significant route changes.
-- **Labels/icons via `.meta()`** only on nav‑visible routes; omit on purely
-  API/resource routes.
+```bash
+npx rr-check routes.js --print:nav-tree,include-id
 
-## Troubleshooting
+⚠️  Found 1 duplicate route ID
+⚠️  Found 6 missing component files
 
-- **Appears blank at nested paths** → ensure parent layout renders `<Outlet/>`.
-- **Duplicate ID error at runtime** → run `rr-check`, fix IDs.
+Duplicate IDs:
+  * foo appears 2 times
+
+Missing component files:
+  ! ./routes/layout.tsx
+  ! ./routes/page.tsx
+  ! ./routes/settings/page.tsx
+  ! ./routes/dashboard/layout.tsx
+  ! ./routes/dashboard/overview/summary.tsx
+  ! ./routes/dashboard/reports/annual.tsx
+.
+├── Home(*!) [id: foo]
+├── Settings(!) [id: ./routes/settings/page]
+└── Overview(*!) [id: foo]
+    └── Annual(!) [id: ./routes/dashboard/reports/annual]
+```
+
+### `rr-check` for code generation
+
+And finally we can ask `rr-check` to generate code that can be included in your
+build for the purpose of reducing boilerplate in layout components and providing
+navigation using information that is in sync with your routes configuration.
+Based on the extension, `rr-check` can generate either `.ts` or `.js` output.
+
+```bash
+npx rr-check routes.js --out app/lib/navigation.generated.ts
+
+✅  No errors detected
+✏️  Generated navigation module: app/lib/navigation.generated.ts
+```
+
+The generated file for the demo `routes.js` example we are using will look as
+below; subsequent sections discuss how to use this information.
+
+```typescript
+// ⚠ AUTO-GENERATED — 2025-05-07T01:11:13.421Z — do not edit by hand!
+// Consult @m5nv/rr-builder docs to keep this file in sync with your routes.
+
+import { type UIMatch, useMatches } from "react-router";
+import type { NavMeta, NavTreeNode } from "@m5nv/rr-builder";
+
+export const metaMap = new Map<string, NavMeta>([
+  ["./routes/page", { "label": "Home", "section": "main", "end": true }],
+  ["./routes/settings/page", {
+    "label": "Settings",
+    "iconName": "Settings",
+    "section": "main",
+  }],
+  ["./routes/dashboard/layout", { "label": "Dashboard" }],
+  ["./routes/dashboard/overview/summary", {
+    "label": "Overview",
+    "iconName": "CircleDot",
+    "group": "Overview",
+    "section": "dashboard",
+  }],
+  ["./routes/dashboard/reports/annual", {
+    "label": "Annual",
+    "iconName": "CalendarRange",
+    "group": "Reports",
+  }],
+]);
+
+/**
+ * Processed navigation tree grouped by section.
+ * Keys are section names, values are arrays of tree nodes.
+ * Any route node without a 'section' prop defaults to the 'main' section.
+ */
+export const navigationTree: Record<string, NavTreeNode[]> = {
+  "main": [
+    {
+      "id": "./routes/page",
+      "path": "/",
+      "label": "Home",
+      "end": true,
+    },
+    {
+      "id": "./routes/settings/page",
+      "path": "settings",
+      "label": "Settings",
+      "iconName": "Settings",
+    },
+  ],
+  "dashboard": [
+    {
+      "id": "./routes/dashboard/overview/summary",
+      "path": "dashboard/overview",
+      "label": "Overview",
+      "iconName": "CircleDot",
+      "group": "Overview",
+      "children": [
+        {
+          "id": "./routes/dashboard/reports/annual",
+          "path": "dashboard/reports/annual",
+          "label": "Annual",
+          "iconName": "CalendarRange",
+          "group": "Reports",
+        },
+      ],
+    },
+  ],
+};
+
+/**
+ * Hook to hydrate matches with your navigation metadata
+ */
+export function useHydratedMatches(): Array<UIMatch<unknown, NavMeta>> {
+  const matches = useMatches();
+  return matches.map((match) => {
+    // If match.handle is already populated (e.g. from module handle exports), keep it
+    if (match.handle) return match as UIMatch<unknown, NavMeta>;
+    const meta = metaMap.get(match.id);
+    // Return a new object if handle is added to avoid mutating the original match
+    return meta
+      ? { ...match, handle: meta }
+      : match as UIMatch<unknown, NavMeta>;
+  });
+}
+```
+
+## Using generated `navigation` module in UI
+
+### Layout templates
+
+Often a layout needs to dynamically render content that is different for each
+route. This can be accomplished if we could pass in extra information into the
+layout at render time. In `react-router` framework mode, the recommended way is
+to `export function handle()` and get to that information using `useMatches()`.
+This can be tedious and the information can get scattered.
+
+The `navigation` module exposes `useHydratedMatches()` function that injects
+`meta` information found in your augmented route configuration, allowing you to
+create layout templates and bread crumbs without having to write and export a
+`handle()` function.
+
+```tsx
+import { Outlet, type UIMatch } from "react-router";
+import { Icon } from "@/components/icon-mapper";
+import { useHydratedMatches } from "@/lib/navigation.generated.ts";
+
+/// A simple "dynamic" layout for content
+export default function ContentLayout() {
+  const matches = useHydratedMatches();
+  const match = matches.at(-1) as RouteMatch;
+  let { label, iconName } = match?.handle ??
+    { label: "Who are we?", iconName: "ShieldQuestion" };
+  return (
+    <article className="flex flex-col">
+      <h2 className="flex flex-row gap-1 p-2">
+        <Icon name={iconName as string} />
+        {label}
+      </h2>
+      <section className="flex-1">
+        <Outlet />
+      </section>
+    </article>
+  );
+}
+```
+
+This layout can be reused in your routes configuration by providing unique `id`.
+
+### Navigation Sidebars
+
+```javascript
+import { navigationTree } from "./navigation.generated.ts";
+
+function Sidebar({ section }) {
+  const items = navigationTree[section] || [];
+
+  // cluster by `group` (default to “ungrouped”)
+  const byGroup = items.reduce((acc, node) => {
+    const key = node.group || "ungrouped";
+    (acc[key] ||= []).push(node);
+    return acc;
+  }, {});
+
+  return (
+    <nav>
+      {Object.entries(byGroup).map(([grp, nodes]) => (
+        <SectionPanel title={grp} key={grp}>
+          <MenuList items={nodes} />
+        </SectionPanel>
+      ))}
+    </nav>
+  );
+}
+```
 
 ## License
 
