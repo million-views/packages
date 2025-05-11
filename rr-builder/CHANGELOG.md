@@ -1,5 +1,10 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/rr-builder)
 
+## v1.1.2 - 11MAY2025
+
+- prefix path with "/" to reduce friction in using react-router's `pathMatch()`
+- use a function to generate `id` from `file` prop
+
 ## v1.1.1 - 07MAY2025
 
 - Detailed usage help output
