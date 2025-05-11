@@ -1,5 +1,5 @@
 
-// ⚠ AUTO-GENERATED — 2025-05-11T12:30:28.755Z — do not edit by hand!
+// ⚠ AUTO-GENERATED — 2025-05-11T12:53:07.343Z — do not edit by hand!
 // Consult @m5nv/rr-builder docs to keep this file in sync with your routes. 
 
 import { useMatches, type UIMatch } from 'react-router';
