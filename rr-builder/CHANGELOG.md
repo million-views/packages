@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/rr-builder)
 
+## v1.1.3 - NEXT
+
+- Fix README to use the latest example output from `rr-check` codegen
+
 ## v1.1.2 - 11MAY2025
 
 - prefix path with "/" to reduce friction in using react-router's `pathMatch()`

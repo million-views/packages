@@ -439,7 +439,7 @@ export const navigationTree: Record<string, NavTreeNode[]> = {
     },
     {
       "id": "./routes/settings/page",
-      "path": "settings",
+      "path": "/settings",
       "label": "Settings",
       "iconName": "Settings",
     },
@@ -447,14 +447,14 @@ export const navigationTree: Record<string, NavTreeNode[]> = {
   "dashboard": [
     {
       "id": "./routes/dashboard/overview/summary",
-      "path": "dashboard/overview",
+      "path": "/dashboard/overview",
       "label": "Overview",
       "iconName": "CircleDot",
       "group": "Overview",
       "children": [
         {
           "id": "./routes/dashboard/reports/annual",
-          "path": "dashboard/reports/annual",
+          "path": "/dashboard/reports/annual",
           "label": "Annual",
           "iconName": "CalendarRange",
           "group": "Reports",
