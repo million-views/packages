@@ -1,3 +1,5 @@
+/// file: routes-wr-wom.js (using route + no metadata)
+
 import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 /**
  * @typedef {import("@react-router/dev/routes").RouteConfigEntry} RouteConfigEntry
@@ -29,7 +31,7 @@ const analytics = route("analytics", "layouts/content.tsx", { id: "analytics" })
       .meta({ label: "Conversion", iconName: "PieChart" }),
   );
 
-const reports = route("reports", "layouts/content.tsx", {id: "reports"})
+const reports = route("reports", "layouts/content.tsx", { id: "reports" })
   // .meta({ label: "Reports", iconName: "PieChart", section: "main" })
   .children(
     index("routes/dashboard/reports/summary.tsx")
@@ -61,7 +63,7 @@ const dashboard = route("dashboard", "layouts/content.tsx", { id: "main" })
 // —————————————————————————————————————————————————————————————
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
-const roles = route("roles", "routes/users/layout.tsx", { id: "roles"})
+const roles = route("roles", "routes/users/layout.tsx", { id: "roles" })
   // .meta({ label: "Roles", section: "users" })
   .children(
     index("routes/users/roles/page.tsx", { id: "users-roles-index" })
@@ -92,9 +94,9 @@ const users = route("users", "routes/users/layout.tsx", { id: "users" })
 const appShell = layout("routes/layout.tsx")
   .children(
     index("routes/page.tsx"),
-      // .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
+    // .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
     route("settings", "routes/settings/page.tsx"),
-      // .meta({ label: "Settings", iconName: "Settings", section: "main" }),
+    // .meta({ label: "Settings", iconName: "Settings", section: "main" }),
     dashboard,
     users,
   );

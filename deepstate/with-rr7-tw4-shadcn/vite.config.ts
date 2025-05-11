@@ -8,7 +8,7 @@ import { reactRouterDevTools } from "react-router-devtools";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouterDevTools(), reactRouter(), tsconfigPaths()],
+  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./app"),

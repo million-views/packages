@@ -1,3 +1,4 @@
+/// file: routes-wl-wm.js (using layout + metadata)
 import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 /**
  * @typedef {import("@react-router/dev/routes").RouteConfigEntry} RouteConfigEntry
@@ -77,7 +78,7 @@ const dashboard = layout(
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
 const roles = layout("routes/users/layout.tsx", { id: "roles" })
-  .meta({ label: "Roles", section: "users" })
+  .meta({ label: "Roles" })
   .children(
     ...prefix("roles", [
       index("routes/users/roles/page.tsx", { id: "users-roles-index" })
@@ -100,7 +101,12 @@ const users = layout("routes/users/layout.tsx", { id: "users" })
   .children(
     ...prefix("users", [
       index("routes/users/page.tsx", { id: "users-index" })
-        .meta({ label: "All Users", iconName: "Users", end: true }),
+        .meta({
+          section: "users",
+          label: "All Users",
+          iconName: "Users",
+          end: true,
+        }),
       route("active", "routes/users/page.tsx", { id: "users-active" })
         .meta({ label: "Active Users", iconName: "UserCheck" }),
       route("inactive", "routes/users/page.tsx", { id: "users-inactive" })
@@ -113,12 +119,13 @@ const users = layout("routes/users/layout.tsx", { id: "users" })
 // 3) App shell
 // —————————————————————————————————————————————————————————————
 const appShell = layout("routes/layout.tsx")
+  .meta({ label: "Root Layout" })
   .children(
     index("routes/page.tsx")
       .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
+    dashboard,
     route("settings", "routes/settings/page.tsx")
       .meta({ label: "Settings", iconName: "Settings", section: "main" }),
-    dashboard,
     users,
   );
 

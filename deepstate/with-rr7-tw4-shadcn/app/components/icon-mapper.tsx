@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Menu,
   PieChart,
+  Search,
   Settings,
   Shield,
   ShieldAlert,
@@ -23,12 +24,14 @@ import {
   UserCheck,
   UserMinus,
   Users,
+  X,
 } from "lucide-react";
 
 // Map of icon names to components
 const iconMap = {
   Home,
   LayoutDashboard,
+  Dashboard: LayoutDashboard,
   Users,
   Settings,
   BarChart,
@@ -43,6 +46,7 @@ const iconMap = {
   CalendarRange,
   UserCheck,
   UserMinus,
+  Search,
   Shield,
   ShieldAlert,
   Edit,
@@ -51,6 +55,7 @@ const iconMap = {
   ChevronDown,
   Menu,
   ShieldQuestion,
+  X,
 };
 
 interface IconProps {
@@ -58,10 +63,22 @@ interface IconProps {
   className?: string;
 }
 
-export function Icon({ name, className = "h-5 w-5" }: IconProps) {
+export function Icon({ name, className = "h-6 w-6" }: IconProps) {
   // Get the icon component from the map
   const IconComponent = iconMap[name as keyof typeof iconMap];
 
   // Return the icon if it exists, otherwise null
   return IconComponent ? <IconComponent className={className} /> : null;
+}
+
+/**
+ * Given an array of icon names, return an object mapping those names to their components
+ */
+export function mapIcons(names: Array<keyof typeof iconMap>) {
+  // console.log("mapIcons: ", names);
+  return names.reduce((acc, name) => {
+    const comp = iconMap[name];
+    if (comp) acc[name] = comp;
+    return acc;
+  }, {} as Partial<typeof iconMap>);
 }

@@ -1,3 +1,5 @@
+/// file: routes-wl-wom.js (using layout + no metadata)
+
 import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 /**
  * @typedef {import("@react-router/dev/routes").RouteConfigEntry} RouteConfigEntry
