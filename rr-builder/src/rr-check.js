@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /// @ts-check
 /// <reference types="./tree-utils" />
 /// <reference types="./rr-builder" />
@@ -101,6 +102,12 @@ function toPascalCase(str) {
     .replace(/^(.)/, (_, c) => c.toUpperCase()); // Capitalize the first character
 }
 
+function makeId(filepath) {
+  return filepath
+    ?.replace(/^app[\\/]/, "") // drop the leading “app/” or “app\”
+    .replace(/\.[^/.]+$/, ""); // drop the extension
+}
+
 function getMarker(node_id) {
   let mark = " ";
   // Use the node's ID (either from NavTreeNode or ExtendedRouteConfigEntry)
@@ -126,10 +133,12 @@ function NodeNormalize(node) {
   if (!path && index) {
     // Special case for root path "/"
     path = "/";
+  } else if (path?.startsWith("/") === false) {
+    path = "/" + path;
   }
 
   if (!id) {
-    id = file?.replace(/\.[^/.]+$/, "");
+    id = makeId(file);
   }
 
   if (!label) {
@@ -262,7 +271,7 @@ function checkForErrors(routes) {
   function findDuplicateIds(nodes, ctx) {
     const counts = new Map();
     walk(nodes, (n) => {
-      const id = n?.id ?? n?.file?.replace(/\.[^/.]+$/, "");
+      const id = n?.id ?? makeId(n?.file);
       // count iff id could be determined
       if (id) counts.set(id, (counts.get(id) || 0) + 1);
     });
@@ -287,7 +296,7 @@ function checkForErrors(routes) {
         const file = path.resolve(ctx.base, node.file);
         if (!fs.existsSync(file)) {
           ctx.missingFiles.push(node.file);
-          const id = node.id ?? node.file.replace(/\.[^/.]+$/, "");
+          const id = node.id ?? makeId(node.file);
           ctx.missingFileIds.add(id);
         }
       }
@@ -305,7 +314,7 @@ function checkForErrors(routes) {
           ctx.multiIdxs.push(
             ...idxs.map((n) => ({
               file: n.file,
-              id: n.id ?? undefined,
+              id: n.id ?? makeId(n.file),
               label: n.handle?.label,
             })),
           );
@@ -343,8 +352,7 @@ export function createMetaMap(routes) {
   if (!Array.isArray(routes)) return meta;
 
   walk(routes, (node) => {
-    const id = node.id ??
-      (node.file ? node.file.replace(/\.[^/.]+$/, "") : undefined);
+    const id = node.id ?? makeId(node.file);
     if (id && node.handle && Object.keys(node.handle).length) {
       meta.set(id, node.handle);
     }
