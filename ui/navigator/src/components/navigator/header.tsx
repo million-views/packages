@@ -1,12 +1,10 @@
 // NavigationHeader.tsx
-import { isValidElement, useEffect, useState } from "react";
-import {
-  type HeaderProps,
-  NavigatorActions,
-  NavigatorAppSwitcher,
-  NavigatorSearch,
-  useNavigator,
-} from "./main";
+import React from "react";
+import { useNavigator } from "./context";
+import { NavigatorSearch } from "./search";
+import { NavigatorAppSwitcher } from "./switcher";
+import { NavigatorActions } from "./actions";
+import type { ActionGroup, HeaderProps } from "./types";
 
 export const NavigationHeader: React.FC<HeaderProps> = ({
   logo,
@@ -25,13 +23,14 @@ export const NavigationHeader: React.FC<HeaderProps> = ({
     onSectionChange,
     renderIcon,
     formatSectionName,
+    router,
   } = useNavigator();
 
   // Check if using mobile view (will be more sophisticated in real implementation)
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
 
   // Setup responsive detection
-  useEffect(() => {
+  React.useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handleResize = () => {
@@ -55,7 +54,7 @@ export const NavigationHeader: React.FC<HeaderProps> = ({
   const renderSearch = () => {
     if (search === true && onSearch) {
       return <NavigatorSearch onSearch={onSearch} renderIcon={renderIcon} />;
-    } else if (isValidElement(search)) {
+    } else if (React.isValidElement(search)) {
       return search;
     }
     return null;
@@ -73,7 +72,7 @@ export const NavigationHeader: React.FC<HeaderProps> = ({
           formatSectionName={formatSectionName}
         />
       );
-    } else if (isValidElement(appSwitcher)) {
+    } else if (React.isValidElement(appSwitcher)) {
       return appSwitcher;
     }
     return null;
@@ -82,8 +81,21 @@ export const NavigationHeader: React.FC<HeaderProps> = ({
   // Render actions component based on prop type
   const renderActions = () => {
     if (Array.isArray(actions)) {
+      // It's UserAction[]
       return <NavigatorActions items={actions} renderIcon={renderIcon} />;
-    } else if (isValidElement(actions)) {
+    } else if (
+      actions && typeof actions === "object" && "items" in actions &&
+      Array.isArray(actions.items)
+    ) {
+      // It's ActionGroup
+      return (
+        <NavigatorActions
+          items={actions as ActionGroup}
+          renderIcon={renderIcon}
+        />
+      );
+    } else if (React.isValidElement(actions)) {
+      // It's a React element
       return actions;
     }
     return null;
@@ -134,5 +146,3 @@ export const NavigationHeader: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
-export default NavigationHeader;

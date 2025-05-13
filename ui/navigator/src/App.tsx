@@ -118,26 +118,30 @@ const NavigatorDemo = () => {
   const [density, setDensity] = useState("default");
 
   // User actions for the header
-  const userActions = [
-    {
-      id: "signin",
-      label: "Sign in",
-      iconName: "LogIn",
-      onClick: () => alert("Sign in clicked"),
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      iconName: "Settings",
-      onClick: () => alert("Settings clicked"),
-    },
-    {
-      id: "help",
-      label: "Help",
-      iconName: "HelpCircle",
-      onClick: () => alert("Help clicked"),
-    },
-  ];
+  const userActions = {
+    label: "My Account",
+    iconName: "Users",
+    items: [
+      {
+        id: "signin",
+        label: "Sign in",
+        iconName: "LogIn",
+        onClick: () => alert("Sign in clicked"),
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        iconName: "Settings",
+        onClick: () => alert("Settings clicked"),
+      },
+      {
+        id: "help",
+        label: "Help",
+        iconName: "HelpCircle",
+        onClick: () => alert("Help clicked"),
+      },
+    ],
+  };
 
   // Get content based on current path
   const { pathname } = useLocation();
@@ -213,6 +217,7 @@ const NavigatorDemo = () => {
         actions={userActions}
         // Shared props
         darkMode={darkMode}
+        theme="corporate"
       />
 
       {/* Main Content Area */}

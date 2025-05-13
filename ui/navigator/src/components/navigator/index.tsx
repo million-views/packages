@@ -1,15 +1,17 @@
 // index.ts
+// Types
+export * from "./types";
+
 // Core components
-export { Navigator, useNavigator } from "./main";
+export { Navigator } from "./main";
+export { useNavigator } from "./context";
 export { NavigationHeader } from "./header";
 export { NavigationTiers } from "./tiers";
 
 // Customizable components
-export {
-  NavigatorActions,
-  NavigatorAppSwitcher,
-  NavigatorSearch,
-} from "./main";
+export { NavigatorSearch } from "./search";
+export { NavigatorAppSwitcher } from "./switcher";
+export { NavigatorActions } from "./actions";
 
 // Utility functions
 export {
@@ -22,18 +24,3 @@ export {
 
 // Helper components for conditional rendering
 export { Choose, Otherwise, When } from "./cwo";
-
-// Types
-export type {
-  ActionsProps,
-  AppSwitcherProps,
-  DisplayMode,
-  HeaderProps,
-  NavigationLevelDefaults,
-  NavigatorContextType,
-  NavigatorProps,
-  NavTreeNode,
-  RouterAdapter,
-  SearchProps,
-  UserAction,
-} from "./main";

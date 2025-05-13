@@ -19,11 +19,13 @@
   }
 
   .nav-header-light {
-    @apply bg-white border-gray-200;
+    background-color: var(--nav-light-bg, #ffffff);
+    border-color: var(--nav-light-border, #e5e7eb);
   }
 
   .nav-header-dark {
-    @apply bg-gray-900 border-gray-700;
+    background-color: var(--nav-dark-bg, #111827);
+    border-color: var(--nav-dark-border, #374151);
   }
 
   .nav-header-sticky {
@@ -105,11 +107,11 @@
   }
 
   .nav-row-empty-light {
-    @apply text-gray-500;
+    color: var(--nav-light-text-muted, #6b7280);
   }
 
   .nav-row-empty-dark {
-    @apply text-gray-400;
+    color: var(--nav-dark-text-muted, #9ca3af);
   }
 
   /* ===== Navigation Items ===== */
@@ -133,20 +135,33 @@
     @apply py-3;
   }
 
+  /* ===== Navigation Items ===== */
   .nav-item-active-primary-light {
-    @apply bg-gray-200 text-gray-900;
+    background-color: rgba(var(--nav-primary-rgb, 59, 130, 246), 0.15);
+    color: var(--nav-light-text, #1f2937);
   }
 
   .nav-item-active-primary-dark {
-    @apply bg-gray-700 text-white;
+    background-color: rgba(var(--nav-primary-rgb, 59, 130, 246), 0.3);
+    color: var(--nav-dark-text, #f9fafb);
   }
 
   .nav-item-inactive-primary-light {
-    @apply text-gray-700 hover:bg-gray-100 hover:text-gray-900;
+    color: var(--nav-light-text, #1f2937);
+  }
+
+  .nav-item-inactive-primary-light:hover {
+    background-color: rgba(var(--nav-primary-rgb, 59, 130, 246), 0.05);
+    color: var(--nav-primary, #3b82f6);
   }
 
   .nav-item-inactive-primary-dark {
-    @apply text-gray-300 hover:bg-gray-800 hover:text-white;
+    color: var(--nav-dark-text-muted, #9ca3af);
+  }
+
+  .nav-item-inactive-primary-dark:hover {
+    background-color: rgba(var(--nav-primary-rgb, 59, 130, 246), 0.15);
+    color: var(--nav-dark-text, #f9fafb);
   }
 
   .nav-item-active-secondary-light {
@@ -252,11 +267,21 @@
   }
 
   .nav-btn-primary-light {
-    @apply bg-blue-500 text-white hover:bg-blue-600;
+    @apply text-white;
+    background-color: var(--nav-primary, #3b82f6);
+  }
+
+  .nav-btn-primary-light:hover {
+    background-color: var(--nav-primary-hover, #2563eb);
   }
 
   .nav-btn-primary-dark {
-    @apply bg-blue-600 text-white hover:bg-blue-700;
+    @apply text-white;
+    background-color: var(--nav-primary, #3b82f6);
+  }
+
+  .nav-btn-primary-dark:hover {
+    background-color: var(--nav-primary-hover, #2563eb);
   }
 
   .nav-btn-secondary {
@@ -447,6 +472,7 @@
   /* Theme variables */
   :root {
     --nav-primary: #3b82f6;
+    --nav-primary-rgb: 59, 130, 246;
     --nav-primary-hover: #2563eb;
     --nav-secondary: #64748b;
     --nav-secondary-hover: #475569;
@@ -469,6 +495,7 @@
   /* Theme: Corporate */
   .nav-theme-corporate {
     --nav-primary: #4b6bfb;
+    --nav-primary-rgb: 75, 107, 251;
     --nav-primary-hover: #2952e3;
     --nav-secondary: #7b92b2;
     --nav-secondary-hover: #64748b;
@@ -491,6 +518,7 @@
   /* Theme: Night */
   .nav-theme-night {
     --nav-primary: #793ef9;
+    --nav-primary-rgb: 121, 62, 249;
     --nav-primary-hover: #570df8;
     --nav-secondary: #f000b8;
     --nav-secondary-hover: #d10a91;
@@ -513,6 +541,7 @@
   /* Theme: Pastel */
   .nav-theme-pastel {
     --nav-primary: #6da0e6;
+    --nav-primary-rgb: 109, 160, 230;
     --nav-primary-hover: #4a85d3;
     --nav-secondary: #e5b8e6;
     --nav-secondary-hover: #d29bd3;

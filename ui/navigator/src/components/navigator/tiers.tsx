@@ -1,11 +1,8 @@
 // NavigationTiers.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  type NavigationLevelDefaults,
-  type NavTreeNode,
-  useNavigator,
-} from "./main";
+import { useNavigator } from "./context";
 import { Choose, Otherwise, When } from "./cwo";
+import type { NavigationLevelDefaults, NavTreeNode } from "./types";
 
 type NavigationLevelType = "primary" | "secondary" | "tertiary";
 
@@ -187,7 +184,7 @@ const NavigationBreadcrumb: React.FC<BreadcrumbProps> = ({
 
 // Mobile Navigation List Component
 interface NavigationListProps {
-  items: NavTreeNode[];
+  items: NavTreeNode[] | undefined;
   depth?: number;
 }
 

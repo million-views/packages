@@ -1,6 +1,6 @@
 // NavigatorUtils.tsx
 import React from "react";
-import { type NavTreeNode } from "./main";
+import type { NavTreeNode, RouterAdapter } from "./types";
 
 /**
  * Format a section key into a display-friendly name
@@ -170,7 +170,7 @@ export function createRouterAdapter(
   useLocation: () => { pathname: string },
   matchPath: (pattern: any, pathname: string) => any | null,
   navigate?: (to: string) => void,
-) {
+): RouterAdapter {
   return {
     Link,
     useLocation,
