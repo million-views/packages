@@ -1,4 +1,4 @@
-// index.ts
+// file: index.ts
 // Types
 export * from "./types";
 

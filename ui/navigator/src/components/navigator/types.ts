@@ -155,6 +155,7 @@ export interface NavigatorProps {
 // Context Type
 // ========================================
 
+// Enhanced context type with mobile menu state
 export interface NavigatorContextType {
   // Navigation data
   navigationTree: Record<string, NavTreeNode[]>;
@@ -170,6 +171,24 @@ export interface NavigatorContextType {
   displayMode: DisplayMode;
 
   // Utilities
+  renderIcon: (iconName: string) => React.ReactNode;
+  formatSectionName: (section: string) => string;
+
+  // Mobile menu state - new properties
+  isMobileMenuOpen: boolean;
+  toggleMobileMenu: () => void;
+}
+
+// Props for the NavigatorProvider component
+export interface NavigatorContextProviderProps {
+  children: React.ReactNode;
+  navigationTree: Record<string, NavTreeNode[]>;
+  section: string;
+  availableSections: string[];
+  onSectionChange: (section: string) => void;
+  router: RouterAdapter;
+  darkMode: boolean;
+  displayMode: DisplayMode;
   renderIcon: (iconName: string) => React.ReactNode;
   formatSectionName: (section: string) => string;
 }

@@ -1,0 +1,99 @@
+/* src/navigator/templates/styles/dashboard.css */
+
+/* Dashboard template styles */
+.mv-dashboard-container {
+  font-family: var(--mv-nav-font-family);
+  color: var(--mv-nav-text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-dashboard-layout {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.mv-dashboard-content {
+  flex: 1;
+  padding: 24px;
+  background-color: #F9FAFB;
+}
+
+/* Custom dashboard styling - cards */
+.dashboard-card {
+  background-color: var(--mv-nav-surface-color);
+  border-radius: 8px;
+  border: 1px solid var(--mv-nav-border-color);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.dashboard-card-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.dashboard-card-text {
+  color: var(--mv-nav-muted-color);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.dashboard-stat-card {
+  background-color: var(--mv-nav-surface-color);
+  border-radius: 8px;
+  border: 1px solid var(--mv-nav-border-color);
+  padding: 24px;
+}
+
+.dashboard-stat-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.dashboard-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #6366F1;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .mv-dashboard-layout {
+    flex-direction: column;
+  }
+}
+
+/* Dark mode support */
+.dark-mode .mv-dashboard-container {
+  --mv-nav-surface-color: #1F2937;
+  --mv-nav-text-color: #F9FAFB;
+  --mv-nav-muted-color: #9CA3AF;
+  --mv-nav-border-color: #374151;
+  --mv-nav-active-bg: #2D3748;
+
+  background-color: #111827;
+}
+
+.dark-mode .mv-dashboard-content {
+  background-color: #111827;
+}
+
+.dark-mode .dashboard-card,
+.dark-mode .dashboard-stat-card {
+  background-color: #1F2937;
+  border-color: #374151;
+}
+
+.dark-mode .dashboard-stat-value {
+  color: #818CF8;
+}

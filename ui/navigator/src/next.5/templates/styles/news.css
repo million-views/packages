@@ -1,0 +1,235 @@
+/* src/navigator/templates/styles/news.css */
+
+/* Google News-like template styles */
+.mv-news-container {
+  font-family: "Google Sans", "Roboto", var(--mv-nav-font-family);
+  color: var(--mv-nav-text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-news-layout {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.mv-news-content {
+  flex: 1;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Google news logo */
+.news-google-logo {
+  display: flex;
+  align-items: center;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.news-logo-g {
+  color: #4285F4;
+}
+
+.news-logo-o1 {
+  color: #EA4335;
+}
+
+.news-logo-o2 {
+  color: #FBBC05;
+}
+
+.news-logo-g2 {
+  color: #4285F4;
+}
+
+.news-logo-l {
+  color: #34A853;
+}
+
+.news-logo-e {
+  color: #EA4335;
+}
+
+/* News signin button */
+.news-signin-button {
+  background-color: #1A73E8;
+  color: white;
+  border-radius: 4px;
+  padding: 0 24px;
+  height: 36px;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* Section header */
+.news-section-header {
+  display: flex;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--mv-nav-border-color);
+}
+
+.news-section-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #F59E0B;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.news-section-title {
+  font-size: 28px;
+  font-weight: 400;
+  margin: 0;
+  flex: 1;
+}
+
+.news-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.news-follow-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 24px;
+  border: 1px solid var(--mv-nav-border-color);
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.news-share-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* News stories */
+.news-stories {
+  margin-top: 24px;
+}
+
+.news-top-stories {
+  color: #1A73E8;
+  font-size: 20px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+}
+
+.news-top-stories span {
+  font-size: 24px;
+  margin-left: 4px;
+}
+
+.news-story-card {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--mv-nav-border-color);
+}
+
+.news-story-title {
+  font-size: 18px;
+  font-weight: 400;
+  margin: 8px 0;
+  line-height: 1.4;
+}
+
+.news-story-source {
+  font-size: 13px;
+  color: var(--mv-nav-muted-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .news-section-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .news-section-icon {
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
+
+  .news-section-actions {
+    margin-top: 16px;
+  }
+}
+
+/* Dark mode support */
+.dark-mode .mv-news-container {
+  --mv-nav-surface-color: #202124;
+  --mv-nav-text-color: #E8EAED;
+  --mv-nav-muted-color: #9AA0A6;
+  --mv-nav-border-color: #3C4043;
+  --mv-nav-active-bg: #303134;
+
+  background-color: #202124;
+}
+
+.dark-mode .news-top-stories {
+  color: #8AB4F8;
+}
+
+.dark-mode .news-signin-button {
+  background-color: #8AB4F8;
+  color: #202124;
+}
+
+/* Add explicit mobile class for News tabs */
+
+/* News tabs container helps with visibility control */
+.mv-news-tabs-container {
+  width: 100%;
+}
+
+/* Specific media query for mobile view */
+@media (max-width: 768px) {
+
+  /* Hide primary tabs completely on mobile */
+  .mv-nav-tabs.primary {
+    display: none;
+  }
+
+  /* Adjust tab styling for mobile */
+  .mv-nav-tabs.secondary .mv-nav-tab-item {
+    padding: 0 12px;
+  }
+
+  .mv-nav-tabs.secondary .mv-nav-tab-item.active {
+    background-color: var(--mv-nav-active-bg);
+    border-radius: 24px;
+  }
+
+  .mv-nav-tabs.secondary .mv-nav-tab-item.active::after {
+    display: none;
+  }
+}

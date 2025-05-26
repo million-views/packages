@@ -1,3 +1,2 @@
 @import "tailwindcss";
-
-@import './components/navigator/navigator.css';
+@import "./next.4/navigator.css";

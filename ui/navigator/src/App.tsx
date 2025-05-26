@@ -1,369 +1,322 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Navigator } from "./components/navigator";
-import icons from "./components/icons.jsx";
-import { createIconRenderer } from "./components/navigator/utils.js";
-import { navigationTree } from "./nav.js";
-import logo from "./assets/react.svg";
+import { useState } from "react";
+import * as Examples from "./next.5/examples/all-in-one.js";
+import navigationTrees from "./next.5/examples/nav-trees.js";
 
-/// helpers
-const renderIcon = createIconRenderer(icons);
-// ========================================
-// Mock React Router Functions
-// ========================================
+// Nav Tree Type Buttons Component
+function NavTreeTypeButtons(props) {
+  const types = ["simple", "complex"];
+  return (
+    <>
+      {types.map(function (type) {
+        return (
+          <button
+            key={type}
+            onClick={function () {
+              props.onChange(props.id, type);
+            }}
+            className={`px-3 py-1 text-sm ${
+              props.currentType === type
+                ? "bg-blue-500 text-white"
+                : props.darkMode
+                ? "bg-gray-700"
+                : "bg-gray-100"
+            }`}
+          >
+            {type.charAt(0).toUpperCase() + type.slice(1)}
+          </button>
+        );
+      })}
+    </>
+  );
+}
 
-// SSR-safe mock Link component to simulate React Router's Link
-const Link = ({ to, children, className, ...rest }) => {
-  const handleClick = (e) => {
-    e.preventDefault();
-    // Only update history in the browser
-    if (typeof window !== "undefined") {
-      // Update the URL without page reload
-      window.history.pushState({}, "", to);
-      // Trigger a URL change event
-      window.dispatchEvent(new Event("popstate"));
-    }
-  };
+// Constants
+const EXAMPLES = [
+  {
+    id: "dashboard",
+    title: "Dashboard",
+    description: "Admin dashboard with sidebar navigation",
+    component: Examples.DashboardExample,
+    colorClass: "bg-indigo-500",
+  },
+  {
+    id: "docs",
+    title: "Documentation",
+    description: "Documentation site with nested navigation",
+    component: Examples.DocsExample,
+    colorClass: "bg-blue-500",
+  },
+  {
+    id: "ecommerce",
+    title: "E-commerce",
+    description: "Store with mega menu navigation",
+    component: Examples.EcommerceExample,
+    colorClass: "bg-green-500",
+  },
+  {
+    id: "news",
+    title: "Google News",
+    description: "News site with tabs navigation",
+    component: Examples.NewsExample,
+    colorClass: "bg-red-500",
+  },
+];
+
+// Toggle Switch Component
+function ToggleSwitch({ enabled, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="relative inline-flex items-center h-6 rounded-full w-11 focus:outline-none"
+      aria-label="Toggle Dark Mode"
+    >
+      <span
+        className={`absolute w-full h-full transition-colors rounded-full ${
+          enabled ? "bg-blue-500" : "bg-gray-300"
+        }`}
+      />
+      <span
+        className={`transform transition-transform inline-block w-4 h-4 bg-white rounded-full ${
+          enabled ? "translate-x-5" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+}
+
+// Card Component
+function ExampleCard({ example, darkMode, onSelect }) {
+  return (
+    <div
+      onClick={function () {
+        onSelect(example.id);
+      }}
+      className={`cursor-pointer rounded-lg overflow-hidden shadow-md transform transition hover:scale-105 ${
+        darkMode ? "bg-gray-800" : "bg-white"
+      }`}
+    >
+      <div className={`${example.colorClass} h-2`} />
+      <div className="p-6">
+        <h2 className="text-xl font-bold mb-2">{example.title}</h2>
+        <p
+          className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}
+        >
+          {example.description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Navigation Tree Selector Component
+function NavTreeSelector({ options, settings, updateSetting, darkMode }) {
+  return (
+    <div className="mt-4">
+      <hr className="p-2" />
+
+      <h3 className="text-md font-medium mb-3">Navigation Tree:</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {options.map(function (option) {
+          return (
+            <div key={option.id} className="flex items-center justify-between">
+              <span className="font-medium">{option.title}:</span>
+              <div className="flex border border-gray-300 dark:border-gray-700 rounded-md overflow-hidden">
+                <NavTreeTypeButtons
+                  id={option.id}
+                  currentType={settings[option.id]}
+                  onChange={updateSetting}
+                  darkMode={darkMode}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Settings Panel Component
+function SettingsPanel(
+  { darkMode, setDarkMode, treeSettings, setTreeSettings },
+) {
+  function toggleTree(id, type) {
+    setTreeSettings(function (prev) {
+      return { ...prev, [id]: type };
+    });
+  }
 
   return (
-    <a href={to} className={className} onClick={handleClick} {...rest}>
-      {children}
-    </a>
+    <section
+      className={`rounded-lg p-6 mt-6 ${
+        darkMode ? "bg-gray-800" : "bg-gray-100"
+      }`}
+    >
+      <h2 className="text-lg font-semibold mb-4">Demo Settings</h2>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span>Dark Mode</span>
+          <ToggleSwitch
+            enabled={darkMode}
+            onToggle={() => {
+              setDarkMode((prev) => !prev);
+            }}
+          />
+        </div>
+        <NavTreeSelector
+          options={EXAMPLES}
+          settings={treeSettings}
+          updateSetting={toggleTree}
+          darkMode={darkMode}
+        />
+      </div>
+    </section>
   );
-};
+}
 
-// SSR-safe mock useLocation hook to simulate React Router's useLocation
-const useLocation = () => {
-  // Start with a safe default value for SSR
-  const [pathname, setPathname] = useState("/");
+// Header and Footer
+function Header({ title, subtitle }) {
+  return (
+    <header className="py-8 px-4">
+      <h1 className="text-3xl font-bold mb-2">{title}</h1>
+      {subtitle && <p className="text-lg">{subtitle}</p>}
+    </header>
+  );
+}
 
-  // Update pathname after component mounts in the browser
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setPathname(window.location.pathname);
+function Footer({ darkMode }) {
+  return (
+    <footer
+      className={`py-4 text-center text-sm mt-8 ${
+        darkMode ? "text-gray-400" : "text-gray-600"
+      }`}
+    >
+      Navigator Component Demo
+    </footer>
+  );
+}
 
-      const handleLocationChange = () => {
-        setPathname(window.location.pathname);
-      };
+// Back Button Component
+function BackButton({ onBack }) {
+  return (
+    <button
+      onClick={onBack}
+      className="fixed bottom-4 right-4 flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg"
+    >
+      ← Examples
+    </button>
+  );
+}
 
-      window.addEventListener("popstate", handleLocationChange);
-      return () => window.removeEventListener("popstate", handleLocationChange);
+// Example App View Component
+function ExampleAppView({ appId, treeSettings, darkMode, onBack }) {
+  const active = EXAMPLES.find(function (ex) {
+    return ex.id === appId;
+  });
+  if (active) {
+    const ActiveComponent = active.component;
+    const navTree = navigationTrees[active.id][treeSettings[active.id]];
+    const section = Object.keys(navTree)[0];
+    const secondarySection = Object.keys(navTree)[1];
+    console.log(
+      "setting",
+      treeSettings[active.id],
+      "navTree",
+      navTree,
+      "section",
+      section,
+      "secondarySection",
+      secondarySection,
+    );
+    if (ActiveComponent && navTree) {
+      return (
+        <>
+          <ActiveComponent
+            navTree={navTree}
+            section={section}
+            secondarySection={secondarySection}
+            darkMode={darkMode}
+          />
+          <BackButton onBack={onBack} />
+        </>
+      );
     }
-  }, []);
-
-  return { pathname };
-};
-
-// Mock matchPath function to simulate React Router's matchPath
-const matchPath = (pattern, pathname) => {
-  // Convert string pattern to PathPattern
-  const patternObj = typeof pattern === "string"
-    ? { path: pattern, caseSensitive: false, end: false }
-    : pattern;
-
-  // Simple implementation for demo purposes
-  // Convert route patterns with params like '/user/:id' to regex
-  const regexPattern = patternObj.path
-    .replace(/:[^/]+/g, "[^/]+") // Replace :param with regex for any character except /
-    .replace(/\//g, "\\/"); // Escape forward slashes
-
-  const regex = new RegExp(
-    `^${regexPattern}${patternObj.end ? "$" : "(\\/.*)?$"}`,
-  );
-
-  if (regex.test(pathname)) {
-    // Extract params
-    const params = {};
-
-    // Extract param names from pattern
-    const paramNames = (patternObj.path.match(/:[^/]+/g) || [])
-      .map((param) => param.substring(1));
-
-    // Extract param values from pathname
-    const pathSegments = pathname.split("/").filter(Boolean);
-    const patternSegments = patternObj.path.split("/").filter(Boolean);
-
-    patternSegments.forEach((segment, index) => {
-      if (segment.startsWith(":")) {
-        const paramName = segment.substring(1);
-        params[paramName] = pathSegments[index];
-      }
-    });
-
-    return {
-      params,
-      pathname,
-      pattern: patternObj,
-    };
   }
 
   return null;
-};
+}
 
-const routerAdapter = {
-  Link,
-  useLocation,
-  matchPath,
-};
+// Examples Home Component
+function ExamplesHome(
+  { examples, darkMode, onSelect, treeSettings, setDarkMode, setTreeSettings },
+) {
+  return (
+    <>
+      <Header title="Navigator Demo" subtitle="Choose a pattern" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {examples.map(function (example) {
+          return (
+            <ExampleCard
+              key={example.id}
+              example={example}
+              darkMode={darkMode}
+              onSelect={onSelect}
+            />
+          );
+        })}
+      </div>
+      <SettingsPanel
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+        treeSettings={treeSettings}
+        setTreeSettings={setTreeSettings}
+      />
+    </>
+  );
+}
 
-// ========================================
-// Demo Application
-// ========================================
-
-const NavigatorDemo = () => {
+// Main Demo Component
+export default function NavigatorDemo() {
   const [darkMode, setDarkMode] = useState(false);
-  const [currentSection, setCurrentSection] = useState("main");
-  const [displayMode, setDisplayMode] = useState("adaptive");
-  const [density, setDensity] = useState("default");
+  const [selectedId, setSelectedId] = useState(null);
+  const [treeSettings, setTreeSettings] = useState(
+    Object.fromEntries(EXAMPLES.map(function (item) {
+      return [item.id, "simple"];
+    })),
+  );
 
-  // User actions for the header
-  const userActions = {
-    label: "My Account",
-    iconName: "Users",
-    items: [
-      {
-        id: "signin",
-        label: "Sign in",
-        iconName: "LogIn",
-        onClick: () => alert("Sign in clicked"),
-      },
-      {
-        id: "settings",
-        label: "Settings",
-        iconName: "Settings",
-        onClick: () => alert("Settings clicked"),
-      },
-      {
-        id: "help",
-        label: "Help",
-        iconName: "HelpCircle",
-        onClick: () => alert("Help clicked"),
-      },
-    ],
-  };
+  const baseClasses = `min-h-screen ${
+    darkMode ? "dark bg-gray-900 text-white" : "bg-white text-gray-900"
+  }`;
+  const wrapperClasses = `container mx-auto ${baseClasses}`;
 
-  // Get content based on current path
-  const { pathname } = useLocation();
-  const getContentForPath = (path) => {
-    if (path === "/") {
-      return (
-        <div>
-          <h1 className="text-2xl font-bold mb-4">Welcome to Navigator Demo</h1>
-          <p className="mb-4">
-            This demo showcases our revised Navigation architecture with:
-          </p>
-          <ul className="list-disc pl-5 mb-4">
-            <li>AppHeader with logo, title, search, and user actions</li>
-            <li>
-              NavigationSystem with primary, secondary, tertiary navigation rows
-            </li>
-            <li>Composite Navigator that combines both components</li>
-            <li>Section-based app switching</li>
-            <li>Responsive design with mobile adaptations</li>
-          </ul>
-          <p>
-            Try navigating through the different sections and options to see how
-            the navigation responds.
-          </p>
-        </div>
-      );
-    }
-
-    // Extract the last part of the path for a title
-    const pathSegments = path.split("/").filter(Boolean);
-    const title = pathSegments.length > 0
-      ? pathSegments[pathSegments.length - 1]
-      : "Home";
-
+  if (selectedId) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold mb-4">
-          {title.charAt(0).toUpperCase() + title.slice(1).replace(/-/g, " ")}
-        </h1>
-        <p className="mb-4">
-          Current path:{" "}
-          <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-            {path}
-          </code>
-        </p>
-        <p>
-          This is the content area for this route. In a real application, this
-          would contain the actual page content.
-        </p>
+      <div className={wrapperClasses}>
+        <ExampleAppView
+          appId={selectedId}
+          treeSettings={treeSettings}
+          darkMode={darkMode}
+          onBack={() => setSelectedId(null)}
+        />
+        <Footer darkMode={darkMode} />
       </div>
     );
-  };
+  }
 
   return (
-    <div
-      className={darkMode
-        ? "dark bg-gray-900 text-white min-h-screen"
-        : "bg-white text-gray-900 min-h-screen"}
-    >
-      {/* Main Navigator Component (AppHeader + NavigationSystem) */}
-      <Navigator
-        // NavigationSystem props
-        navigationTree={navigationTree}
-        section={currentSection}
-        onSectionChange={setCurrentSection}
-        router={routerAdapter}
-        renderIcon={renderIcon}
-        // AppHeader props
-        appTitle="Navigator Demo"
-        logo={<img src={logo} alt="Logo" />}
-        search={true}
-        onSearch={() => alert("Yay! Search clicked")}
-        actions={userActions}
-        // Shared props
+    <div className={wrapperClasses}>
+      <ExamplesHome
+        examples={EXAMPLES}
         darkMode={darkMode}
-        theme="corporate"
+        onSelect={(id) => setSelectedId(id)}
+        treeSettings={treeSettings}
+        setDarkMode={setDarkMode}
+        setTreeSettings={setTreeSettings}
       />
-
-      {/* Main Content Area */}
-      <main
-        className={`content-area container mx-auto p-6 ${
-          darkMode ? "text-gray-100" : "text-gray-800"
-        }`}
-      >
-        {getContentForPath(pathname)}
-
-        {/* Demo Controls */}
-        <div
-          className={`mt-8 p-4 rounded-lg ${
-            darkMode ? "bg-gray-800" : "bg-gray-100"
-          }`}
-        >
-          <h2 className="text-lg font-semibold mb-4">Navigation Controls</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Dark Mode Toggle */}
-            <div className="flex items-center justify-between">
-              <span>Dark Mode</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={darkMode}
-                  onChange={() => setDarkMode(!darkMode)}
-                />
-                <span className="toggle-slider"></span>
-              </label>
-            </div>
-
-            {/* Section Selector */}
-            <div className="flex items-center justify-between">
-              <span>Active Section</span>
-              <select
-                value={currentSection}
-                onChange={(e) => setCurrentSection(e.target.value)}
-                className={`rounded px-2 py-1 ${
-                  darkMode ? "bg-gray-700 text-white" : "bg-white text-gray-900"
-                }`}
-              >
-                {Object.keys(navigationTree).map((section) => (
-                  <option key={section} value={section}>
-                    {section.charAt(0).toUpperCase() + section.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Display Mode */}
-            <div className="flex items-center justify-between">
-              <span>Display Mode</span>
-              <select
-                value={displayMode}
-                onChange={(e) => setDisplayMode(e.target.value)}
-                className={`rounded px-2 py-1 ${
-                  darkMode ? "bg-gray-700 text-white" : "bg-white text-gray-900"
-                }`}
-              >
-                <option value="adaptive">Adaptive</option>
-                <option value="tabs">Always Tabs</option>
-                <option value="breadcrumbs">Always Breadcrumbs</option>
-              </select>
-            </div>
-
-            {/* Density */}
-            <div className="flex items-center justify-between">
-              <span>Density</span>
-              <select
-                value={density}
-                onChange={(e) => setDensity(e.target.value)}
-                className={`rounded px-2 py-1 ${
-                  darkMode ? "bg-gray-700 text-white" : "bg-white text-gray-900"
-                }`}
-              >
-                <option value="default">Default</option>
-                <option value="comfortable">Comfortable</option>
-                <option value="compact">Compact</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer
-        className={`py-4 text-center text-sm ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        }`}
-      >
-        Navigator Component Demo - A versatile navigation system for React
-        applications
-      </footer>
-
-      {/* CSS for Toggle Switch */}
-      <style>
-        {`
-        /* Toggle switch */
-        .toggle-switch {
-          position: relative;
-          display: inline-block;
-          width: 48px;
-          height: 24px;
-        }
-        
-        .toggle-switch input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-        
-        .toggle-slider {
-          position: absolute;
-          cursor: pointer;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: #ccc;
-          transition: .4s;
-          border-radius: 24px;
-        }
-        
-        .toggle-slider:before {
-          position: absolute;
-          content: "";
-          height: 16px;
-          width: 16px;
-          left: 4px;
-          bottom: 4px;
-          background-color: white;
-          transition: .4s;
-          border-radius: 50%;
-        }
-        
-        input:checked + .toggle-slider {
-          background-color: #3b82f6;
-        }
-        
-        input:checked + .toggle-slider:before {
-          transform: translateX(24px);
-        }
-      `}
-      </style>
+      <Footer darkMode={darkMode} />
     </div>
   );
-};
-
-export default NavigatorDemo;
+}

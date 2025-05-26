@@ -1,4 +1,5 @@
-// NavigatorSearch.tsx
+// search.tsx
+// NavigatorSearch
 import React from "react";
 import type { SearchProps } from "./types";
 

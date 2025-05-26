@@ -1,10 +1,12 @@
-// ========================================
-// Mock React Router Functions
-// ========================================
 import { useEffect, useState } from "react";
 
+// ===========================================================
+// Mock React Router Functions
+// (MAYBE SSR SAFE, MEANT TO BE USED FOR DEMO/PREVIEW ARTIFACTS)
+// ===========================================================
+
 // SSR-safe mock Link component to simulate React Router's Link
-export const Link = ({ to, children, className, ...rest }) => {
+export function Link({ to, children, className, ...rest }) {
   const handleClick = (e) => {
     e.preventDefault();
     // Only update history in the browser
@@ -21,12 +23,12 @@ export const Link = ({ to, children, className, ...rest }) => {
       {children}
     </a>
   );
-};
+}
 
 // SSR-safe mock useLocation hook to simulate React Router's useLocation
-export const useLocation = () => {
+export function useLocation() {
   // Start with a safe default value for SSR
-  const [pathname, setPathname] = useState("/");
+  const [pathname, setPathname] = useState("/section/us");
 
   // Update pathname after component mounts in the browser
   useEffect(() => {
@@ -42,11 +44,12 @@ export const useLocation = () => {
     }
   }, []);
 
+  console.log({ pathname });
   return { pathname };
-};
+}
 
 // Mock matchPath function to simulate React Router's matchPath
-export const matchPath = (pattern, pathname) => {
+export function matchPath(pattern, pathname) {
   // Convert string pattern to PathPattern
   const patternObj = typeof pattern === "string"
     ? { path: pattern, caseSensitive: false, end: false }
@@ -89,4 +92,4 @@ export const matchPath = (pattern, pathname) => {
   }
 
   return null;
-};
+}

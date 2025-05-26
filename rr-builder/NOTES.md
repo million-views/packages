@@ -9,6 +9,28 @@ and trying to create a `single source of truth` that combines routes with
 navigation information in a centralized location; in v7, that is the `routes.js`
 or `routes.ts` file.
 
+# Why `rr-builder` Still Matters in 2025
+
+React-Router’s **framework mode** is fantastic—but it still treats navigation UI
+as “someone else’s problem”.\
+`rr-builder` exists because:
+
+1. **navdata belongs _with_ routes** – otherwise labels, icons and permissions
+   drift out of sync.
+2. React-Router’s framework mode eats extra props → you lose nav data at
+   runtime.
+3. We want **single-file truth**: routes + labels + icons + perms + externals.
+   PMs can skim `routes.js` and see the site map, designers tweak
+   `order`/`group`, backend devs add ABAC keys;
+4. The hidden `routes.nav` payload lets build tools read nav-specific info
+   without polluting React-Router’s config.
+5. `external()` finally lets us treat off-site links the same way—no rogue
+   arrays, no separate JSON files.
+
+If RR someday lets us emit augmented routes in framework mode, this package can
+fade away. Until then, we need this tiny fluent wrapper + code-gen keeps
+boiler-plate at zero while letting you author navigation declaratively.
+
 ## What is route augmentation?
 
 Websites and webapps have to display menus, navbars and links to allow users to
@@ -18,7 +40,7 @@ users from point A to point B; and these mechanisms at a minimum need only the
 
 Rendering a menu is not the concern of RR; the developer is responsible for
 creating the necessary markup up using `<NavLink>` and `<Link>` typically in a
-`layout` file. A menu any link will need information such as a `label`, `icon`,
+`layout` file. Any menu link will need information such as a `label`, `icon`,
 and a `path` at a minimum.
 
 You can see that that `path` is at the intersection of both concerns. It would
@@ -78,48 +100,50 @@ component.
 But more importantly, this is just part of the puzzle. To be able to build
 `grand-central` style navbars, we still need access to all the navigable routes.
 
-npx rr-check app/routes.js --show-id --show-path ✅ No duplicate route IDs
-found.
+## Enter `rr-builder`
 
-Route Tree: ├── [L] Home (path: /, id: routes/page) ├── [N] Settings (path:
-/settings, id: routes/settings/page) ├── [S] (no label) (path: /, id:
-routes/dashboard/layout) │ ├── [N]↑ Dashboard (path: /dashboard, id:
-routes/dashboard/page) │ ├── [S]↑ Overview|Layout (path: /, id: overview) │ │
-├── [N]↑ Overview (path: /dashboard/overview, id:
-routes/dashboard/overview/summary) │ │ ├── [N]↑ Performance (path:
-/dashboard/overview/performance, id: routes/dashboard/overview/performance) │ │
-└── [N]↑ Metrics (path: /dashboard/overview/metrics, id:
-routes/dashboard/overview/metrics) │ ├── [S]↑ (no label) (path: /, id:
-analytics) │ │ ├── [N]↑ Analytics (path: /dashboard/analytics, id:
-routes/dashboard/analytics/summary) │ │ ├── [N]↑ Traffic (path:
-/dashboard/analytics/traffic, id: routes/dashboard/analytics/traffic) │ │ └──
-[N]↑ Conversion (path: /dashboard/analytics/conversion, id:
-routes/dashboard/analytics/conversion) │ └── [S]↑ (no label) (path: /, id:
-reports) │ ├── [N]↑ Reports (path: /dashboard/reports, id:
-routes/dashboard/reports/summary) │ ├── [N]↑ Monthly (path:
-/dashboard/reports/monthly, id: reports-monthly) │ ├── [N]↑ Quarterly (path:
-/dashboard/reports/quarterly, id: reports-quarterly) │ └── [N]↑ Annual (path:
-/dashboard/reports/annual, id: reports-annual) └── [S] (no label) (path: /, id:
-users) ├── [N]↑ All Users (path: /users, id: users-index) ├── [N]↑ Active Users
-(path: /users/active, id: users-active) ├── [N]↑ Inactive Users (path:
-/users/inactive, id: users-inactive) └── [S]↑ (no label) (path: /, id: roles)
-├── [N]↑ All Roles (path: /users/roles, id: users-roles-index) ├── [N]↑
-Administrators (path: /users/roles/admin, id: users-roles-admin) ├── [N]↑
-Editors (path: /users/roles/editor, id: users-roles-editor) └── [N]↑ Viewers
-(path: /users/roles/viewer, id: users-roles-viewer)
+`@m5nv/rr-builder` is a package that comes with a fluent API to describe your
+routes and augment them with meta information. A codegen tool `rr-check` then
+validates your routes and generates a file that you can import into your
+application and use it for the purpose of rendering navigation and templatising
+layouts. This generated module removes the need for exporting `handle()`
+function and manually duplicate the path information in your code. More
+information can be found in the README.md
 
-/ [Home] ├── settings [Settings] ├── dashboard [Dashboard] │ ├── overview
-[Overview] │ │ ├── performance [Performance] │ │ └── metrics [Metrics] │ ├──
-analytics [Analytics] │ │ ├── traffic [Traffic] │ │ └── conversion [Conversion]
-│ └── reports [Reports] │ ├── monthly [Monthly] │ ├── quarterly [Quarterly] │
-└── annual [Annual] └── users [Users] ├── active [Active Users] ├── inactive
-[Inactive Users] └── roles [All Roles] ├── admin [Administrators] ├── editor
-[Editors] └── viewer [Viewers]
+# FAQ
 
-/ [Home] ├── settings [Settings] ├── dashboard [Dashboard] │ ├── overview
-[Overview] │ │ ├── performance [Performance] │ │ └── metrics [Metrics] │ ├──
-analytics [Analytics] │ │ ├── traffic [Traffic] │ │ └── conversion [Conversion]
-│ └── reports [Reports] │ ├── monthly [Monthly] │ ├── quarterly [Quarterly] │
-└── annual [Annual] └── users [Users] ├── active [Active Users] ├── inactive
-[Inactive Users] └── roles [All Roles] ├── admin [Administrators] ├── editor
-[Editors] └── viewer [Viewers]
+- A · Why not just handle?
+  - RR’s export const handle works, but scattering labels into every component
+    file is brittle. Builders give one glance overview and avoid copy‑pasted
+    paths.
+
+- B · Why build() instead of exporting the array directly?
+  - build() lets us attach the hidden routes.nav payload, inject defaults
+    (order:0, section:"main", …), run compile‑time checks (dup IDs, missing
+    files) before the RR compiler touches the config.
+
+- C · Why code‑gen a .ts instead of JSON?
+  - Tree‑shake‑able, typed, and can embed the helper functions. Lets the
+    consumer avoid parsing / mapping JSON.
+
+- D · Why a section‑anywhere model?
+  - We experimented with “section only at depth 0”; it broke real‑world apps
+    that nest Project -> Support -> Docs. Allowing a section switch at any depth
+    gives freedom while the inheritance rule keeps things predictable.
+
+- E · Duplicate ID policy
+  - The first occurrence wins; subsequent duplicates are dropped from the nav
+    tree (but still logged). This lets teams stitch external resources in
+    multiple places while keeping URLs stable.
+
+- F · External default section removed
+  - Originally external() forced section:"external"; field tests showed most
+    teams wanted externals mixed into their normal menus, so we dropped the
+    implicit default. The builder still marks them with external:true so UI can
+    style them differently.
+
+- G · Type-safety
+  - The fluent API statically restricts illegal combinations. Only route() and
+    layout() accept .children(). layout()'s .nav() does not allow section.
+    prefix() cannot wrap external(). These rules are all enforced in TypeScript,
+    not at runtime.

@@ -1,8 +1,9 @@
-// Navigator.tsx
-import React, { useMemo } from "react";
+// file: main.tsx
+// Updated Navigator component using SSR-safe approach
+import React from "react";
 import { NavigationHeader } from "./header";
 import { NavigationTiers } from "./tiers";
-import { NavigatorContext } from "./context";
+import { NavigatorProvider } from "./context";
 import type { NavigatorProps } from "./types";
 
 // ========================================
@@ -84,40 +85,23 @@ export const Navigator: React.FC<NavigatorProps> = ({
   };
 
   // Get available sections
-  const availableSections = useMemo(() => Object.keys(navigationTree), [
-    navigationTree,
-  ]);
-
-  // Create context value
-  const contextValue = useMemo(
-    () => ({
-      navigationTree,
-      section,
-      availableSections,
-      onSectionChange: handleSectionChange,
-      router,
-      darkMode,
-      displayMode,
-      renderIcon,
-      formatSectionName,
-    }),
-    [
-      navigationTree,
-      section,
-      availableSections,
-      handleSectionChange,
-      router,
-      darkMode,
-      displayMode,
-      renderIcon,
-    ],
-  );
+  const availableSections = Object.keys(navigationTree);
 
   // Get theme class
   const themeClass = theme ? `nav-theme-${theme}` : "";
 
   return (
-    <NavigatorContext.Provider value={contextValue}>
+    <NavigatorProvider
+      navigationTree={navigationTree}
+      section={section}
+      availableSections={availableSections}
+      onSectionChange={handleSectionChange}
+      router={router}
+      darkMode={darkMode}
+      displayMode={displayMode}
+      renderIcon={renderIcon}
+      formatSectionName={formatSectionName}
+    >
       <div className={`nav-container ${darkMode ? "dark" : ""} ${themeClass}`}>
         <NavigationHeader
           logo={logo}
@@ -133,6 +117,6 @@ export const Navigator: React.FC<NavigatorProps> = ({
           navigationLevelDefaults={navigationLevelDefaults}
         />
       </div>
-    </NavigatorContext.Provider>
+    </NavigatorProvider>
   );
 };

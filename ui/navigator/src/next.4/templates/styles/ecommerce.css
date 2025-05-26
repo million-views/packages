@@ -1,0 +1,231 @@
+/* src/navigator/templates/styles/ecommerce.css */
+
+/* E-commerce template styles */
+.mv-ecommerce-container {
+  font-family: var(--mv-nav-font-family);
+  color: var(--mv-nav-text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-ecommerce-layout {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.mv-ecommerce-content {
+  flex: 1;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Store logo */
+.store-logo {
+  font-size: 22px;
+  font-weight: bold;
+  display: flex;
+}
+
+.store-logo-primary {
+  color: #16A34A;
+}
+
+.store-logo-secondary {
+  color: #2563EB;
+}
+
+/* Cart button */
+.store-cart-button {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.store-cart-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #2563EB;
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mega menu trigger */
+.store-nav-categories {
+  background-color: var(--mv-nav-surface-color);
+  border-bottom: 1px solid var(--mv-nav-border-color);
+  height: 48px;
+  display: flex;
+  padding: 0 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.store-mega-menu-trigger {
+  position: relative;
+  padding: 0 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.store-mega-menu-trigger-link {
+  color: var(--mv-nav-text-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.store-mega-menu-trigger:hover .store-mega-menu-trigger-link {
+  color: #16A34A;
+}
+
+.store-category-sale {
+  color: #DC2626;
+  font-weight: 600;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Content styling */
+.store-hero {
+  margin: 24px 0;
+  position: relative;
+  height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  padding: 0 48px;
+}
+
+.store-hero-content {
+  max-width: 500px;
+}
+
+.store-hero-title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.store-hero-text {
+  font-size: 16px;
+  color: var(--mv-nav-muted-color);
+  margin-bottom: 24px;
+}
+
+.store-hero-button {
+  background-color: #16A34A;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.store-section-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 48px 0 24px;
+  text-align: center;
+}
+
+.store-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.store-category-card {
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  height: 200px;
+  background-color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.store-category-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Mega menu customization */
+.store-custom-mega-menu {
+  left: -16px;
+  top: 100%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .store-nav-categories {
+    display: none;
+  }
+
+  .store-hero {
+    height: auto;
+    padding: 32px 24px;
+  }
+
+  .store-category-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Dark mode support */
+.dark-mode .mv-ecommerce-container {
+  --mv-nav-surface-color: #1F2937;
+  --mv-nav-text-color: #F9FAFB;
+  --mv-nav-muted-color: #9CA3AF;
+  --mv-nav-border-color: #374151;
+
+  background-color: #111827;
+}
+
+.dark-mode .store-logo-primary {
+  color: #10B981;
+}
+
+.dark-mode .store-logo-secondary {
+  color: #60A5FA;
+}
+
+.dark-mode .store-hero {
+  background-color: #1F2937;
+}
+
+.dark-mode .store-hero-button {
+  background-color: #10B981;
+}
+
+.dark-mode .store-category-card {
+  background-color: #1F2937;
+  border: 1px solid #374151;
+}

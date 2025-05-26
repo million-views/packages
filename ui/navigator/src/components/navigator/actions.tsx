@@ -1,4 +1,5 @@
-// NavigatorActions.tsx
+// file: actions.tsx
+// NavigatorActions
 import React from "react";
 import type { ActionsProps } from "./types";
 

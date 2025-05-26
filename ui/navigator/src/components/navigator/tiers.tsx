@@ -1,6 +1,8 @@
-// NavigationTiers.tsx
-import React, { useEffect, useMemo, useState } from "react";
+// file: tiers.tsx
+// Updated NavigationTiers with SSR-safe approach
+import React, { useMemo, useState } from "react";
 import { useNavigator } from "./context";
+import { useMediaQuery } from "./media-query";
 import { Choose, Otherwise, When } from "./cwo";
 import type { NavigationLevelDefaults, NavTreeNode } from "./types";
 
@@ -9,7 +11,6 @@ type NavigationLevelType = "primary" | "secondary" | "tertiary";
 interface NavigationTiersProps {
   navigationLevelDefaults?: NavigationLevelDefaults;
   className?: string;
-  onMobileMenuToggle?: (isOpen: boolean) => void;
 }
 
 // Complete Navigation Level Defaults with sensible values
@@ -298,7 +299,7 @@ const MobileNavigationList: React.FC<NavigationListProps> = ({
   );
 };
 
-// Mobile Menu component (formerly MobileNavigation)
+// Mobile Menu component
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
@@ -363,11 +364,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   );
 };
 
-// Main Navigation Tiers Component (formerly NavigationSystem)
+// Main Navigation Tiers Component
 export const NavigationTiers: React.FC<NavigationTiersProps> = ({
   navigationLevelDefaults = {},
   className = "",
-  onMobileMenuToggle,
 }) => {
   const {
     navigationTree,
@@ -375,6 +375,8 @@ export const NavigationTiers: React.FC<NavigationTiersProps> = ({
     router,
     displayMode,
     darkMode,
+    isMobileMenuOpen, // Get from context
+    toggleMobileMenu, // Get from context
   } = useNavigator();
 
   // Get the router hooks
@@ -387,66 +389,22 @@ export const NavigationTiers: React.FC<NavigationTiersProps> = ({
     [navigationLevelDefaults],
   );
 
-  // State for responsive behavior
-  const [isMobile, setIsMobile] = useState(false);
-  const [currentDisplayMode, setCurrentDisplayMode] = useState<
-    "tabs" | "breadcrumbs"
-  >(
-    displayMode === "breadcrumbs" ? "breadcrumbs" : "tabs",
-  );
+  // Use SSR-safe media queries
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  // State for mobile menu
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Derive display mode from props and media queries
+  const currentDisplayMode = useMemo(() => {
+    if (displayMode !== "adaptive") {
+      return displayMode === "breadcrumbs" ? "breadcrumbs" : "tabs";
+    }
+    return isDesktop ? "tabs" : "breadcrumbs";
+  }, [displayMode, isDesktop]);
 
   // User toggleable navigation level visibility
   const [userLevelVisibility, setUserLevelVisibility] = useState({
     tertiary: levelDefaults.tertiary.alwaysShow,
   });
-
-  // Setup responsive detection
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handleResize = () => {
-      const width = window.innerWidth;
-      setIsMobile(width < 768);
-
-      if (displayMode === "adaptive") {
-        setCurrentDisplayMode(width < 1024 ? "breadcrumbs" : "tabs");
-      } else {
-        setCurrentDisplayMode(
-          displayMode === "breadcrumbs" ? "breadcrumbs" : "tabs",
-        );
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [displayMode]);
-
-  // Toggle mobile menu
-  const toggleMobileMenu = () => {
-    const newState = !isMobileMenuOpen;
-    setIsMobileMenuOpen(newState);
-    if (onMobileMenuToggle) {
-      onMobileMenuToggle(newState);
-    }
-  };
-
-  // Expose mobile menu state to parent via callback
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Expose toggleMobileMenu to the window for NavigationHeader to access
-      (window as any).__toggleMobileMenu = toggleMobileMenu;
-    }
-
-    return () => {
-      if (typeof window !== "undefined") {
-        delete (window as any).__toggleMobileMenu;
-      }
-    };
-  }, []);
 
   // Process navigation tree to find active items
   const {
@@ -609,7 +567,7 @@ export const NavigationTiers: React.FC<NavigationTiersProps> = ({
       {/* Mobile Menu */}
       <MobileMenu
         isOpen={isMobileMenuOpen}
-        onClose={() => toggleMobileMenu()}
+        onClose={toggleMobileMenu}
       />
     </div>
   );

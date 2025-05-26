@@ -1,9 +1,11 @@
-// NavigationHeader.tsx
+// file: header.tsx
+// Updated NavigationHeader with SSR-safe approach
 import React from "react";
 import { useNavigator } from "./context";
 import { NavigatorSearch } from "./search";
 import { NavigatorAppSwitcher } from "./switcher";
 import { NavigatorActions } from "./actions";
+import { useMediaQuery } from "./media-query";
 import type { ActionGroup, HeaderProps } from "./types";
 
 export const NavigationHeader: React.FC<HeaderProps> = ({
@@ -23,32 +25,11 @@ export const NavigationHeader: React.FC<HeaderProps> = ({
     onSectionChange,
     renderIcon,
     formatSectionName,
-    router,
+    toggleMobileMenu, // Access from context
   } = useNavigator();
 
-  // Check if using mobile view (will be more sophisticated in real implementation)
-  const [isMobile, setIsMobile] = React.useState(false);
-
-  // Setup responsive detection
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Function to toggle mobile menu
-  const toggleMobileMenu = () => {
-    // Access the toggleMobileMenu function exposed by NavigationTiers
-    if (typeof window !== "undefined" && (window as any).__toggleMobileMenu) {
-      (window as any).__toggleMobileMenu();
-    }
-  };
+  // Use the SSR-safe media query hook
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
   // Render search component based on prop type
   const renderSearch = () => {

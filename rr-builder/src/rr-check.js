@@ -5,14 +5,15 @@
 /// <reference types="./rr-builder" />
 
 /**
- * @typedef {import('./rr-builder').NavTreeNode} NavTreeNode
+ * @typedef {import('./rr-builder').NavStructNode}
  */
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import crypto from "crypto";
-import { pathToFileURL } from "url";
+import { pathToFileURL } from "node:url";
 
-import { flatMap, walk, workflow } from "@m5nv/rr-builder/tree-utils";
+import { walk, workflow } from "@m5nv/rr-builder/tree-utils";
+import { codegen, makeId, NodeNormalize, pruneLayouts } from "./rr-codegen.js";
 
 // state + options
 const state = {
@@ -95,19 +96,6 @@ function parseArgs() {
   return true;
 }
 
-function toPascalCase(str) {
-  if (!str) return "";
-  return str
-    .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : "")) // Remove hyphens/underscores and capitalize next char
-    .replace(/^(.)/, (_, c) => c.toUpperCase()); // Capitalize the first character
-}
-
-function makeId(filepath) {
-  return filepath
-    ?.replace(/^app[\\/]/, "") // drop the leading “app/” or “app\”
-    .replace(/\.[^/.]+$/, ""); // drop the extension
-}
-
 function getMarker(node_id) {
   let mark = " ";
   // Use the node's ID (either from NavTreeNode or ExtendedRouteConfigEntry)
@@ -125,39 +113,6 @@ function getMarker(node_id) {
   }
 
   return mark;
-}
-
-function NodeNormalize(node) {
-  let { handle, path, id, index, file } = node || {};
-  let label = handle?.label;
-  if (!path && index) {
-    // Special case for root path "/"
-    path = "/";
-  } else if (path?.startsWith("/") === false) {
-    path = "/" + path;
-  }
-
-  if (!id) {
-    id = makeId(file);
-  }
-
-  if (!label) {
-    label = id;
-    if (!label) {
-      if (path) {
-        // Derive label from path segment for non-root paths
-        const segments = path.split("/").filter(Boolean);
-        if (segments.length > 0) {
-          const lastSegment = segments[segments.length - 1];
-          label = toPascalCase(lastSegment);
-        } else {
-          label = "(no label)";
-        }
-      }
-    }
-  }
-
-  return { handle, path, id, index, label };
 }
 
 function Node2String(node) {
@@ -193,38 +148,6 @@ function printTree(nodes) {
 
   // return nodes so we can use this function in `pipe`
   return nodes;
-}
-
-// rewrite tree to exclude layout routes and pull up the children
-function pruneLayouts(nodes) {
-  // no path (so not a page) AND not an index route
-  function isLayoutRoute(n) {
-    return n.path === undefined && n.index !== true;
-  }
-
-  function groupUnderIndex(kids) {
-    const idx = kids.findIndex((n) => n.index);
-    if (idx < 0) return kids;
-    const [parent] = kids.splice(idx, 1);
-    parent.children = [...(parent.children || []), ...kids];
-    return [parent];
-  }
-
-  function recurse(list, isRoot) {
-    return flatMap(list, (node) => {
-      if (!isLayoutRoute(node)) {
-        return [{
-          ...node,
-          children: node.children ? recurse(node.children, false) : undefined,
-        }];
-      }
-      const kids = recurse(node.children, false);
-      return isRoot ? kids : groupUnderIndex(kids);
-    });
-  }
-
-  // kickoff
-  return recurse(nodes, true);
 }
 
 function printErrorReport() {
@@ -361,168 +284,7 @@ export function createMetaMap(routes) {
   return meta;
 }
 
-/**
- * Section-anywhere build: splits into multiple section-keyed sub-trees.
- * @return {Record<string, NavTreeNode[]>}
- */
-export function buildNavigationTree(routes) {
-  /** @type {Record<string, NavTreeNode[]>} */
-  const navigationTree = {};
-  const pruned = pruneLayouts(routes);
-  const stack = [];
-
-  function emit(section, node) {
-    if (!navigationTree[section]) navigationTree[section] = [];
-    navigationTree[section].push(node);
-  }
-
-  walk(pruned, (node, depth) => {
-    // 1) figure out which section this node belongs to
-    const parentCtx = depth > 0 ? stack[depth - 1].activeSection : "main";
-    const activeSection = node.handle?.section ?? parentCtx;
-
-    // 2) build our NavTreeNode
-    //    Only add properties that exist and are of interest to the UI component
-    const { handle, id, path } = NodeNormalize(node);
-    const navNode = {
-      id,
-      path,
-      ...(handle?.label && { label: handle.label }),
-      ...(handle?.iconName && { iconName: handle.iconName }),
-      ...(handle?.group && { group: handle.group }),
-      ...(handle?.end && { end: handle.end }),
-    };
-
-    // 3) attach to the right place
-    const isNewSectionRoot = depth === 0 || handle?.section !== undefined;
-    if (isNewSectionRoot) {
-      // root of “main” (depth=0) or root of a deeper section
-      emit(activeSection, navNode);
-    } else {
-      // plain descendant of the same section
-      const dnode = stack[depth - 1];
-      if (dnode.navNode.children) {
-        dnode.navNode.children.push(navNode);
-      } else {
-        dnode.navNode.children = [navNode];
-      }
-      // stack[depth - 1].navNode.children.push(navNode);
-    }
-    // 4) push our own context for any children
-    stack[depth] = { activeSection, navNode };
-  });
-
-  return navigationTree;
-}
-
-function codegenJsContent(header, meta, navi) {
-  const content = `${header}
-// @ts-check
-import { useMatches } from 'react-router';
-/** @typedef {import('@m5nv/rr-builder').NavMeta} NavMeta */
-/** @typedef {import('@m5nv/rr-builder').NavTreeNode} NavTreeNode */
-/** @typedef {import("react-router").UIMatch<unknown, NavMeta|unknown>} UIMatch */
-
-
-/** @type {Map<string, NavMeta>} */
-export const metaMap = new Map([
-${meta}
-]);
-
-/**
- * Processed navigation tree grouped by section.
- * Keys are section names, values are arrays of tree nodes.
- * Any route node without a 'section' prop defaults to the 'main' section.
- * @type {Record<string, NavTreeNode[]>}
- */
-export const navigationTree = ${navi};
-
-/**
- * Hook to hydrate matches with your navigation metadata
- * @returns {Array<UIMatch>}>}
- */
-export function useHydratedMatches() {
-  const matches = useMatches();
-  return matches.map(match => {
-    // If match.handle is already populated (e.g. from module handle exports), keep it
-    if (match.handle) return match;
-    const meta = metaMap.get(match.id);
-    // Return a new object if handle is added to avoid mutating the original match
-    return meta ? { ...match, handle: meta } : match;
-  });
-}
-`;
-  return content;
-}
-
-function codegenTsContent(header, meta, navi) {
-  const content = `${header}
-import { useMatches, type UIMatch } from 'react-router';
-import type { NavMeta, NavTreeNode } from "@m5nv/rr-builder";
-
-export const metaMap = new Map<string, NavMeta>([
-${meta}
-]);
-
-/**
- * Processed navigation tree grouped by section.
- * Keys are section names, values are arrays of tree nodes.
- * Any route node without a 'section' prop defaults to the 'main' section.
- */
-export const navigationTree: Record<string, NavTreeNode[]> = ${navi};
-
-/**
- * Hook to hydrate matches with your navigation metadata
- */
-export function useHydratedMatches(): Array<UIMatch<unknown, NavMeta>> {
-  const matches = useMatches();
-  return matches.map(match => {
-    // If match.handle is already populated (e.g. from module handle exports), keep it
-    if (match.handle) return match as UIMatch<unknown, NavMeta>;
-    const meta = metaMap.get(match.id);
-    // Return a new object if handle is added to avoid mutating the original match
-    return meta ? { ...match, handle: meta } : match as UIMatch<unknown, NavMeta>;
-  });
-}
-`;
-  return content;
-}
-
-function codegen(routes) {
-  if (!state.out) {
-    return;
-  }
-
-  const metaMap = createMetaMap(routes);
-  const navTree = buildNavigationTree(routes);
-  const header = `
-// ⚠ AUTO-GENERATED — ${new Date().toISOString()} — do not edit by hand!
-// Consult @m5nv/rr-builder docs to keep this file in sync with your routes. 
-`;
-  const meta = [...metaMap.entries()].map(
-    ([id, m]) => `  [${JSON.stringify(id)}, ${JSON.stringify(m)}],`,
-  ).join("\n");
-  const navi = JSON.stringify(navTree, null, 2);
-  const ext = path.extname(state.out).toLocaleLowerCase();
-
-  let code = undefined;
-  if (ext === ".ts") {
-    code = codegenTsContent(header, meta, navi);
-  } else {
-    code = codegenJsContent(header, meta, navi);
-  }
-
-  try {
-    // 4. Write the code to the output file
-    fs.writeFileSync(state.out, code, "utf8");
-    console.log(`✏️  Generated navigation module: ${state.out}`);
-  } catch (error) {
-    console.error("Error during code generation:", error.message);
-    // Don't exit here, allow watch mode to continue if possible
-  }
-}
-
-async function processRoutes(routes) {
+async function processRoutes(routes, extras) {
   // reset run state
   state.hasErrors = false;
   state.irrecoverableError = false;
@@ -530,6 +292,22 @@ async function processRoutes(routes) {
   state.missingFiles = null;
   state.missingFileIds = null;
   state.multiIdxs = null;
+
+  // re-anchor externals back to their place in the route tree
+  const byId = new Map();
+  walk(routes, (n) => byId.set(n.id, n));
+
+  for (const ext of extras.navOnly ?? []) {
+    const parent = ext._anchor ? byId.get(ext._anchor) : null;
+    if (parent) {
+      (parent.children ??= []).push(ext);
+    } else {
+      routes.push(ext);
+    }
+    // ← cleanup to keep the `navigation` free of private fields
+    delete ext._anchor;
+  }
+
   checkForErrors(routes);
   if (state.hasErrors) {
     printErrorReport();
@@ -543,7 +321,9 @@ async function processRoutes(routes) {
   }
 
   if (!state.hasErrors || state.forcegen) {
-    codegen(routes);
+    if (state.out) {
+      codegen(state.out, routes, extras);
+    }
   }
 
   if (state.show.route || state.irrecoverableError) {
@@ -556,26 +336,29 @@ async function processRoutes(routes) {
 }
 
 // build a loader that remembers its own lastHash
+// patched to pull `routes.nav` out of `build()` output.
 function createLoader(filePath) {
   let lastHash = "";
   return async function loadRoutes() {
     const url = pathToFileURL(filePath).href + `?t=${Date.now()}`;
-    let arr = [], error = false;
+    let arr = [],
+      extras = {},
+      error = false;
     try {
       const m = await import(url);
       if (Array.isArray(m.default)) arr = m.default;
+      if (arr && typeof arr.nav === "object") extras = arr.nav;
     } catch (e) {
-      console.error(
-        `❌  ${e.message}`,
-      );
+      console.error(`❌  ${e.message}`);
       error = true;
     }
-    const hash = crypto.createHash("sha256")
-      .update(JSON.stringify(arr))
+    const hash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify({ arr, extras }))
       .digest("hex");
     const changed = hash !== lastHash;
     lastHash = hash;
-    return { routes: arr, changed, error };
+    return { routes: arr, extras, changed, error };
   };
 }
 
@@ -609,11 +392,11 @@ Examples:
   const load = createLoader(state.routesFilePath);
 
   const run = async (watching = false) => {
-    const { routes, changed, error } = await load();
+    const { routes, extras, changed, error } = await load();
     if (error) process.exit(1);
     if (routes.length === 0 || (watching && !changed)) return;
     if (watching) console.log("🔄  Change detected, regenerating…");
-    await processRoutes(routes);
+    await processRoutes(routes, extras);
   };
 
   // run once first
