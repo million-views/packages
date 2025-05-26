@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/rr-builder)
 
+## v2.0.1 - 25MAY2025
+
+- Doc fix
+
 ## v2.0.0 - 25MAY2025
 
 ### **Major enhancements and breaking changes**

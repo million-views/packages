@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/rr-builder",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Fluent API for seamless route & navigation authoring experience in React Router v7 framework mode",
   "type": "module",
   "main": "src/rr-builder.js",

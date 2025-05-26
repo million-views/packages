@@ -185,6 +185,34 @@ npx rr-check <routes-file> [--print:<flags>] [--out <file>] [--watch]
 | `--print:<flags>` | Comma-list: route-tree, nav-tree, include-id, include-path |
 | `--watch`         | Watch for file changes and regenerate automatically        |
 
+The generated module exports:
+
+```ts
+// Wire up RR
+export function registerRouter(adapter: RouterAdapter): void;
+
+// Data model and utility functions
+export interface NavigationApi {
+  /** list of section names present in the `forest of trees` */
+  sections(): string[];
+
+  /* pure selectors – NO runtime context */
+  routes(section?: string): NavTreeNode[];
+  routesByTags(section: string, tags: string[]): NavTreeNode[];
+  routesByGroup(section: string, group: string): NavTreeNode[];
+
+  /* convenience hook that hydrates results returned by adapter.useMatches */
+  useHydratedMatches: <T = unknown>() => Array<{ handle: NavMeta }>;
+
+  /* static extras */
+  globalActions: GlobalActionSpec[];
+  badgeTargets: string[];
+
+  /* router adapter injected at factory time */
+  router: RouterAdapter;
+}
+```
+
 ### Typescript support
 
 You can run the codegen/CLI tool with Deno for `.ts` route files:
@@ -218,10 +246,11 @@ npx rr-check routes.ts --print:nav-tree,include-id
 ### Register the Router Adapter
 
 ```tsx
-import nav from "./navigation.generated";
 import { Link, matchPath, useLocation, useMatches } from "react-router-dom";
+import nav, { registerRouter } from "@/navigation.generated";
 
-nav.registerRouter({ Link, useLocation, useMatches, matchPath });
+/// one-time registration
+registerRouter({ Link, useLocation, useMatches, matchPath });
 ```
 
 ### Rendering navigation/menus
