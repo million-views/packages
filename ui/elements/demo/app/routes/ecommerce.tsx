@@ -6,28 +6,40 @@ import {
   Card,
   Drawer,
   List,
-  MegaDropdown,
+  Navigation,
   SearchBox,
   Select,
 } from "@m5nv/ui-elements";
 import type {
   Action,
   BreadcrumbItem,
-  MenuGroup,
+  MegaDropdownItem,
   MenuItem,
+  NavigationItemProps,
   SelectOption,
 } from "@m5nv/ui-elements";
+
+// Product interface for better type safety
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+}
 
 export default function Ecommerce() {
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("popular");
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [cartItems, setCartItems] = useState<
+    (Product & { quantity: number })[]
+  >([]);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { id: "home", label: "Home", href: "/" },
     { id: "shop", label: "Shop" },
-    { id: "category", label: "Electronics" },
   ];
 
   const categoryOptions: SelectOption[] = [
@@ -52,122 +64,318 @@ export default function Ecommerce() {
     { id: "account", label: "Account", icon: "👤" },
   ];
 
+  // Navigation dropdown data (unchanged for functionality)
+  const electronicsDropdown = {
+    groups: [
+      {
+        id: "computers",
+        title: "Computers & Tablets",
+        items: [
+          {
+            id: "laptops",
+            label: "Laptops",
+            icon: "💻",
+            description: "Gaming, business, and ultrabooks",
+          },
+          {
+            id: "desktops",
+            label: "Desktop Computers",
+            icon: "🖥️",
+            description: "All-in-one and tower PCs",
+          },
+          {
+            id: "tablets",
+            label: "Tablets",
+            icon: "📱",
+            description: "iPad, Android, and Windows tablets",
+          },
+          {
+            id: "accessories",
+            label: "Computer Accessories",
+            icon: "⌨️",
+            description: "Keyboards, mice, and more",
+          },
+        ],
+      },
+      {
+        id: "mobile",
+        title: "Mobile & Audio",
+        items: [
+          {
+            id: "smartphones",
+            label: "Smartphones",
+            icon: "📱",
+            description: "Latest iPhone and Android devices",
+          },
+          {
+            id: "headphones",
+            label: "Headphones",
+            icon: "🎧",
+            description: "Wireless, noise-canceling, and more",
+          },
+          {
+            id: "speakers",
+            label: "Speakers",
+            icon: "🔊",
+            description: "Bluetooth and smart speakers",
+          },
+          {
+            id: "smartwatches",
+            label: "Smart Watches",
+            icon: "⌚",
+            description: "Fitness tracking and connectivity",
+          },
+        ],
+      },
+      {
+        id: "gaming",
+        title: "Gaming",
+        items: [
+          {
+            id: "consoles",
+            label: "Gaming Consoles",
+            icon: "🎮",
+            description: "PlayStation, Xbox, Nintendo Switch",
+          },
+          {
+            id: "pc-gaming",
+            label: "PC Gaming",
+            icon: "🖥️",
+            description: "Graphics cards, gaming PCs",
+          },
+          {
+            id: "gaming-accessories",
+            label: "Gaming Accessories",
+            icon: "🕹️",
+            description: "Controllers, headsets, keyboards",
+          },
+        ],
+      },
+    ],
+    featuredItems: [
+      { id: "iphone", label: "iPhone 15 Pro", icon: "📱" },
+      { id: "macbook", label: "MacBook Air M3", icon: "💻" },
+      { id: "airpods", label: "AirPods Pro", icon: "🎧" },
+      { id: "ps5", label: "PlayStation 5", icon: "🎮" },
+    ],
+  };
+
+  const clothingDropdown = {
+    groups: [
+      {
+        id: "mens",
+        title: "Men's Fashion",
+        items: [
+          {
+            id: "shirts",
+            label: "Shirts & T-Shirts",
+            icon: "👔",
+            description: "Casual and formal wear",
+          },
+          {
+            id: "pants",
+            label: "Pants & Jeans",
+            icon: "👖",
+            description: "Denim, chinos, and dress pants",
+          },
+          {
+            id: "outerwear",
+            label: "Jackets & Coats",
+            icon: "🧥",
+            description: "Winter coats and light jackets",
+          },
+          {
+            id: "shoes",
+            label: "Men's Shoes",
+            icon: "👞",
+            description: "Sneakers, boots, and dress shoes",
+          },
+        ],
+      },
+      {
+        id: "womens",
+        title: "Women's Fashion",
+        items: [
+          {
+            id: "dresses",
+            label: "Dresses",
+            icon: "👗",
+            description: "Casual, formal, and party dresses",
+          },
+          {
+            id: "tops",
+            label: "Tops & Blouses",
+            icon: "👚",
+            description: "T-shirts, blouses, and sweaters",
+          },
+          {
+            id: "bottoms",
+            label: "Pants & Skirts",
+            icon: "👖",
+            description: "Jeans, leggings, and skirts",
+          },
+          {
+            id: "womens-shoes",
+            label: "Women's Shoes",
+            icon: "👠",
+            description: "Heels, flats, and sneakers",
+          },
+        ],
+      },
+      {
+        id: "accessories",
+        title: "Accessories",
+        items: [
+          {
+            id: "bags",
+            label: "Bags & Purses",
+            icon: "👜",
+            description: "Handbags, backpacks, and wallets",
+          },
+          {
+            id: "jewelry",
+            label: "Jewelry",
+            icon: "💍",
+            description: "Rings, necklaces, and earrings",
+          },
+          {
+            id: "watches",
+            label: "Watches",
+            icon: "⌚",
+            description: "Fashion and luxury timepieces",
+          },
+          {
+            id: "sunglasses",
+            label: "Sunglasses",
+            icon: "🕶️",
+            description: "Designer and sport sunglasses",
+          },
+        ],
+      },
+    ],
+    featuredItems: [
+      { id: "summer-dress", label: "Summer Collection", icon: "👗" },
+      { id: "designer-bag", label: "Designer Bags", icon: "👜" },
+      { id: "premium-shoes", label: "Premium Footwear", icon: "👠" },
+    ],
+  };
+
+  const navigationItems: NavigationItemProps[] = [
+    {
+      label: "Electronics",
+      icon: "⚡",
+      dropdown: electronicsDropdown,
+    },
+    {
+      label: "Clothing",
+      icon: "👕",
+      dropdown: clothingDropdown,
+    },
+    {
+      label: "Home & Garden",
+      icon: "🏠",
+      href: "/category/home-garden",
+    },
+    {
+      label: "Sports",
+      icon: "🏃",
+      href: "/category/sports",
+    },
+    {
+      label: "Books",
+      icon: "📚",
+      href: "/category/books",
+    },
+  ];
+
   // Sample product data
-  const products: MenuItem[] = [
+  const products: Product[] = [
     {
       id: "1",
-      label: "Wireless Headphones",
+      name: "Wireless Headphones",
       description: "Premium noise-canceling headphones with 30-hour battery",
-      icon: "🎧",
-      badge: 299,
-      group: "electronics",
+      price: 299,
+      image: "🎧",
+      category: "electronics",
     },
     {
       id: "2",
-      label: "Smart Watch",
+      name: "Smart Watch",
       description: "Fitness tracking with heart rate monitor and GPS",
-      icon: "⌚",
-      badge: 199,
-      group: "electronics",
+      price: 199,
+      image: "⌚",
+      category: "electronics",
     },
     {
       id: "3",
-      label: "Cotton T-Shirt",
+      name: "Cotton T-Shirt",
       description: "100% organic cotton, available in multiple colors",
-      icon: "👕",
-      badge: 29,
-      group: "clothing",
+      price: 29,
+      image: "👕",
+      category: "clothing",
     },
     {
       id: "4",
-      label: "JavaScript Guide",
+      name: "JavaScript Guide",
       description: "Complete guide to modern JavaScript development",
-      icon: "📚",
-      badge: 45,
-      group: "books",
+      price: 45,
+      image: "📚",
+      category: "books",
     },
     {
       id: "5",
-      label: "Plant Pot Set",
+      name: "Plant Pot Set",
       description: "Ceramic pots perfect for indoor plants",
-      icon: "🪴",
-      badge: 89,
-      group: "home",
+      price: 89,
+      image: "🪴",
+      category: "home",
     },
     {
       id: "6",
-      label: "Mechanical Keyboard",
+      name: "Mechanical Keyboard",
       description: "Cherry MX switches with RGB backlighting",
-      icon: "⌨️",
-      badge: 159,
-      group: "electronics",
-    },
-    {
-      id: "7",
-      label: "Denim Jacket",
-      description: "Classic fit denim jacket, stone washed",
-      icon: "🧥",
-      badge: 79,
-      group: "clothing",
-    },
-    {
-      id: "8",
-      label: "Recipe Book",
-      description: "100 healthy recipes for busy professionals",
-      icon: "🍳",
-      badge: 32,
-      group: "books",
+      price: 159,
+      image: "⌨️",
+      category: "electronics",
     },
   ];
 
-  // MegaDropdown categories
-  const categoryGroups: MenuGroup[] = [
-    {
-      id: "electronics",
-      title: "Electronics",
-      items: [
-        { id: "phones", label: "Smartphones", icon: "📱", featured: true },
-        { id: "laptops", label: "Laptops", icon: "💻", featured: true },
-        { id: "headphones", label: "Headphones", icon: "🎧" },
-        { id: "watches", label: "Smart Watches", icon: "⌚" },
-        { id: "cameras", label: "Cameras", icon: "📷" },
-      ],
-    },
-    {
-      id: "clothing",
-      title: "Clothing",
-      items: [
-        { id: "mens", label: "Men's Fashion", icon: "👔", featured: true },
-        { id: "womens", label: "Women's Fashion", icon: "👗", featured: true },
-        { id: "shoes", label: "Shoes", icon: "👟" },
-        { id: "accessories", label: "Accessories", icon: "👜" },
-      ],
-    },
-    {
-      id: "home",
-      title: "Home & Garden",
-      items: [
-        { id: "furniture", label: "Furniture", icon: "🪑" },
-        { id: "decor", label: "Home Decor", icon: "🖼️" },
-        { id: "kitchen", label: "Kitchen", icon: "🍳", featured: true },
-        { id: "garden", label: "Garden", icon: "🌱" },
-      ],
-    },
-  ];
+  const filteredProducts = selectedCategory === "all"
+    ? products
+    : products.filter((product) => product.category === selectedCategory);
 
-  const filteredProducts = products.filter((product) =>
-    selectedCategory === "all" || product.group === selectedCategory
-  );
+  // Convert cart items to MenuItem format for semantic List component
+  const cartMenuItems: MenuItem[] = cartItems.map((item, index) => ({
+    id: `cart-${item.id}-${index}`,
+    label: item.name,
+    icon: item.image,
+    description: `$${item.price} • Qty: ${item.quantity}`,
+  }));
 
-  const handleAddToCart = (product: MenuItem) => {
-    setCartItems(
-      (prev) => [...prev, { ...product, quantity: 1, total: product.badge }],
-    );
-    setCartOpen(true);
+  const handleNavItemClick = (item: MegaDropdownItem) => {
+    console.log("Navigation item clicked:", item);
+
+    // Update category based on clicked item
+    if (
+      item.id.includes("electronics") ||
+      ["laptops", "smartphones", "headphones", "consoles"].includes(item.id)
+    ) {
+      setSelectedCategory("electronics");
+    } else if (
+      item.id.includes("clothing") ||
+      ["shirts", "dresses", "bags", "shoes", "womens-shoes"].includes(item.id)
+    ) {
+      setSelectedCategory("clothing");
+    } else if (item.id.includes("home") || item.id === "home-garden") {
+      setSelectedCategory("home");
+    } else if (item.id.includes("books")) {
+      setSelectedCategory("books");
+    }
   };
 
-  const handleRemoveFromCart = (productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId));
+  const handleAddToCart = (product: Product) => {
+    setCartItems((prev) => [...prev, { ...product, quantity: 1 }]);
+    setCartOpen(true);
   };
 
   const handleActionClick = (action: Action) => {
@@ -176,285 +384,138 @@ export default function Ecommerce() {
     }
   };
 
-  const handleCategorySelect = (item: MenuItem) => {
-    setSelectedCategory(item.group || "all");
+  const handleCartItemClick = (item: MenuItem) => {
+    console.log("Cart item clicked:", item.label);
+    // Could handle item editing, removal, etc.
   };
 
-  const handleSearch = (query: string) => {
-    console.log("Search products:", query);
-  };
-
-  const cartTotal = cartItems.reduce((sum, item) => sum + item.total, 0);
+  const cartTotal = cartItems.reduce((sum, item) => sum + item.price, 0);
 
   return (
-    <div style={{ padding: "var(--mv-space-xl)" }}>
-      <Breadcrumbs items={breadcrumbs} />
-
-      {/* Header Section */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          margin: "var(--mv-space-lg) 0",
+    <div className="ecommerce-container">
+      {/* Main Navigation with MegaDropdown */}
+      <Navigation
+        brand={{
+          label: "ShopDemo",
+          icon: "🛍️",
+          href: "/",
         }}
-      >
-        <h1 style={{ margin: 0 }}>Shop</h1>
-        <ActionBar
-          actions={shopActions}
-          onActionClick={handleActionClick}
-          variant="compact"
-        />
-      </div>
-
-      {/* Search and Categories */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "300px 1fr",
-          gap: "var(--mv-space-xl)",
-          marginBottom: "var(--mv-space-xl)",
-        }}
-      >
-        <Card variant="outlined" padding="lg">
-          <h3 style={{ margin: "0 0 var(--mv-space-lg) 0" }}>
-            Browse Categories
-          </h3>
-          <MegaDropdown
-            groups={categoryGroups}
-            columns={1}
-            showFeatured={true}
-            onItemClick={handleCategorySelect}
+        items={navigationItems.map((item) => ({
+          ...item,
+          onItemClick: handleNavItemClick,
+        }))}
+        actions={
+          <ActionBar
+            actions={shopActions}
+            onActionClick={handleActionClick}
+            variant="compact"
           />
-        </Card>
+        }
+      />
 
-        <Card variant="outlined" padding="lg">
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--mv-space-md)",
-              marginBottom: "var(--mv-space-lg)",
-            }}
-          >
-            <SearchBox
-              placeholder="Search products..."
-              variant="outlined"
-              onSearch={handleSearch}
-              clearable
-            />
-            <Select
-              options={categoryOptions}
-              value={selectedCategory}
-              onSelect={(value) => setSelectedCategory(value)}
-              placeholder="Category"
-            />
-            <Select
-              options={sortOptions}
-              value={sortBy}
-              onSelect={(value) => setSortBy(value)}
-              placeholder="Sort by"
-            />
-          </div>
+      <div className="ecommerce-content">
+        <Breadcrumbs items={breadcrumbs} />
 
-          <p
-            style={{
-              color: "var(--mv-color-text-secondary)",
-              margin: "0 0 var(--mv-space-lg) 0",
-            }}
-          >
-            Showing {filteredProducts.length} products
-          </p>
+        <div className="ecommerce-header">
+          <h1 className="ecommerce-title">Shop</h1>
+        </div>
 
-          {/* Product List */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "var(--mv-space-lg)",
-            }}
-          >
-            {filteredProducts.map((product) => (
-              <Card key={product.id} variant="elevated" padding="lg">
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "var(--mv-space-md)",
-                    marginBottom: "var(--mv-space-md)",
-                  }}
+        {/* Search and Filters - Improved Layout */}
+        <div className="ecommerce-filters">
+          <SearchBox
+            placeholder="Search products..."
+            variant="outlined"
+            className="ecommerce-search"
+          />
+          <Select
+            options={categoryOptions}
+            value={selectedCategory}
+            onSelect={setSelectedCategory}
+            placeholder="Category"
+          />
+          <Select
+            options={sortOptions}
+            value={sortBy}
+            onSelect={setSortBy}
+            placeholder="Sort by"
+          />
+        </div>
+
+        <p className="ecommerce-results">
+          Showing {filteredProducts.length} products
+          {selectedCategory !== "all" && ` in ${selectedCategory}`}
+        </p>
+
+        {/* Product Grid - Improved with semantic CSS */}
+        <div className="ecommerce-product-grid">
+          {filteredProducts.map((product) => (
+            <Card key={product.id} variant="elevated" padding="lg">
+              <div className="product-image">
+                {product.image}
+              </div>
+
+              <h3 className="product-title">
+                {product.name}
+              </h3>
+
+              <p className="product-description">
+                {product.description}
+              </p>
+
+              <div className="product-footer">
+                <span className="product-price">
+                  ${product.price}
+                </span>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() =>
+                    handleAddToCart(product)}
                 >
-                  <span style={{ fontSize: "2rem" }}>{product.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: "0 0 var(--mv-space-xs) 0" }}>
-                      {product.label}
-                    </h4>
-                    <p
-                      style={{
-                        margin: 0,
-                        color: "var(--mv-color-text-secondary)",
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      {product.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "1.25rem",
-                      fontWeight: "bold",
-                      color: "var(--mv-color-primary)",
-                    }}
-                  >
-                    ${product.badge}
-                  </span>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() =>
-                      handleAddToCart(product)}
-                  >
-                    Add to Cart
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </Card>
+                  Add to Cart
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
 
-      {/* Shopping Cart Drawer */}
+      {/* Shopping Cart Drawer - Improved with List component */}
       <Drawer
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         position="right"
         mode="temporary"
       >
-        <div style={{ padding: "var(--mv-space-lg)" }}>
-          <h3 style={{ margin: "0 0 var(--mv-space-lg) 0" }}>
+        <div className="cart-content">
+          <h3 className="cart-title">
             Shopping Cart ({cartItems.length})
           </h3>
 
           {cartItems.length === 0
             ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "var(--mv-space-2xl)",
-                  color: "var(--mv-color-text-secondary)",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "3rem",
-                    marginBottom: "var(--mv-space-md)",
-                  }}
-                >
-                  🛒
-                </div>
+              <div className="cart-empty">
+                <div className="cart-empty-icon">🛒</div>
                 <p>Your cart is empty</p>
               </div>
             )
             : (
               <>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "var(--mv-space-md)",
-                    marginBottom: "var(--mv-space-xl)",
-                  }}
-                >
-                  {cartItems.map((item) => (
-                    <Card key={item.id} variant="outlined" padding="md">
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "var(--mv-space-sm)",
-                          }}
-                        >
-                          <span>{item.icon}</span>
-                          <div>
-                            <div style={{ fontWeight: "500" }}>
-                              {item.label}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: "0.875rem",
-                                color: "var(--mv-color-text-secondary)",
-                              }}
-                            >
-                              ${item.badge} × {item.quantity}
-                            </div>
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "var(--mv-space-sm)",
-                          }}
-                        >
-                          <strong>${item.total}</strong>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleRemoveFromCart(item.id)}
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                <div className="cart-items">
+                  <List
+                    items={cartMenuItems}
+                    variant="compact"
+                    onItemClick={handleCartItemClick}
+                  />
                 </div>
 
-                <div
-                  style={{
-                    borderTop: "1px solid var(--mv-color-border)",
-                    paddingTop: "var(--mv-space-lg)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "var(--mv-space-lg)",
-                    }}
-                  >
-                    <span style={{ fontSize: "1.125rem", fontWeight: "500" }}>
-                      Total:
-                    </span>
-                    <span style={{ fontSize: "1.25rem", fontWeight: "bold" }}>
-                      ${cartTotal}
-                    </span>
+                <div className="cart-footer">
+                  <div className="cart-total">
+                    <span className="cart-total-label">Total:</span>
+                    <span className="cart-total-amount">${cartTotal}</span>
                   </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "var(--mv-space-sm)",
-                    }}
-                  >
+                  <div className="cart-actions">
                     <Button variant="primary" size="lg">
                       Checkout
                     </Button>

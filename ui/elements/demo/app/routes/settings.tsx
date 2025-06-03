@@ -5,12 +5,14 @@ import {
   Button,
   Card,
   CollapsibleSection,
+  List,
   Select,
   TabGroup,
 } from "@m5nv/ui-elements";
 import type {
   Action,
   BreadcrumbItem,
+  MenuItem,
   SelectOption,
   Tab,
 } from "@m5nv/ui-elements";
@@ -111,6 +113,61 @@ export default function Settings() {
     },
   ];
 
+  // Convert privacy and advanced options to MenuItem format for better semantics
+  const privacyItems: MenuItem[] = [
+    {
+      id: "data-collection",
+      label: "Data Collection",
+      icon: "📊",
+      description: "Control what data is collected and stored",
+    },
+    {
+      id: "cookies",
+      label: "Cookie Preferences",
+      icon: "🍪",
+      description: "Manage cookie settings and tracking",
+    },
+    {
+      id: "sharing",
+      label: "Data Sharing",
+      icon: "🤝",
+      description: "Control how your data is shared with third parties",
+    },
+    {
+      id: "deletion",
+      label: "Data Deletion",
+      icon: "🗑️",
+      description: "Request deletion of your personal data",
+    },
+  ];
+
+  const advancedItems: MenuItem[] = [
+    {
+      id: "developer-mode",
+      label: "Developer Mode",
+      icon: "👨‍💻",
+      description: "Enable advanced developer features",
+    },
+    {
+      id: "api-access",
+      label: "API Access",
+      icon: "🔌",
+      description: "Manage API keys and access tokens",
+    },
+    {
+      id: "debugging",
+      label: "Debug Mode",
+      icon: "🐛",
+      description: "Enable detailed logging and debugging",
+    },
+    {
+      id: "experimental",
+      label: "Experimental Features",
+      icon: "🧪",
+      description: "Try out beta features and experiments",
+    },
+  ];
+
   const handleActionClick = (action: Action) => {
     console.log("Settings action:", action.id);
     if (action.id === "save") {
@@ -127,69 +184,38 @@ export default function Settings() {
     setTheme(newTheme as Theme);
   };
 
+  const handleItemClick = (item: MenuItem) => {
+    console.log("Settings item clicked:", item.label);
+    // Handle specific settings actions
+  };
+
   const renderGeneralSettings = () => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--mv-space-xl)",
-      }}
-    >
+    <div className="settings-section">
       <CollapsibleSection
         title="Basic Information"
         icon="👤"
         expanded
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "var(--mv-space-lg)",
-          }}
-        >
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "var(--mv-space-sm)",
-                fontWeight: "500",
-              }}
-            >
+        <div className="form-grid">
+          <div className="form-field">
+            <label className="form-label">
               Display Name
             </label>
             <input
               type="text"
               defaultValue="John Doe"
-              style={{
-                width: "100%",
-                padding: "var(--mv-space-md)",
-                border: "1px solid var(--mv-color-border)",
-                borderRadius: "var(--mv-radius-md)",
-                fontSize: "1rem",
-              }}
+              className="form-input"
             />
           </div>
 
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "var(--mv-space-sm)",
-                fontWeight: "500",
-              }}
-            >
+          <div className="form-field">
+            <label className="form-label">
               Email Address
             </label>
             <input
               type="email"
               defaultValue="john.doe@example.com"
-              style={{
-                width: "100%",
-                padding: "var(--mv-space-md)",
-                border: "1px solid var(--mv-color-border)",
-                borderRadius: "var(--mv-radius-md)",
-                fontSize: "1rem",
-              }}
+              className="form-input"
             />
           </div>
         </div>
@@ -200,21 +226,9 @@ export default function Settings() {
         icon="🌍"
         expanded
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: "var(--mv-space-lg)",
-          }}
-        >
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "var(--mv-space-sm)",
-                fontWeight: "500",
-              }}
-            >
+        <div className="form-grid">
+          <div className="form-field">
+            <label className="form-label">
               Language
             </label>
             <Select
@@ -224,14 +238,8 @@ export default function Settings() {
             />
           </div>
 
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "var(--mv-space-sm)",
-                fontWeight: "500",
-              }}
-            >
+          <div className="form-field">
+            <label className="form-label">
               Timezone
             </label>
             <Select
@@ -247,140 +255,68 @@ export default function Settings() {
   );
 
   const renderAppearanceSettings = () => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--mv-space-xl)",
-      }}
-    >
+    <div className="settings-section">
       <CollapsibleSection
         title="Theme Settings"
         icon="🎨"
         expanded
       >
-        <div style={{ marginBottom: "var(--mv-space-xl)" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "var(--mv-space-sm)",
-              fontWeight: "500",
-            }}
-          >
-            Light / Dark Mode
-          </label>
-          <Select
-            options={themeOptions}
-            value={theme}
-            onSelect={handleThemeChange}
-          />
-          <p
-            style={{
-              fontSize: "var(--mv-font-size-sm)",
-              color: "var(--mv-color-text-secondary)",
-              margin: "var(--mv-space-sm) 0 0 0",
-            }}
-          >
-            Choose between light and dark variants for your selected color
-            palette
-          </p>
-        </div>
+        <div className="theme-controls">
+          <div className="form-field">
+            <label className="form-label">
+              Light / Dark Mode
+            </label>
+            <Select
+              options={themeOptions}
+              value={theme}
+              onSelect={handleThemeChange}
+            />
+            <p className="form-help">
+              Choose between light and dark variants for your selected color
+              palette
+            </p>
+          </div>
 
-        <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "var(--mv-space-md)",
-              fontWeight: "500",
-            }}
-          >
-            Color Palette
-          </label>
-          <p
-            style={{
-              fontSize: "var(--mv-font-size-sm)",
-              color: "var(--mv-color-text-secondary)",
-              margin: "0 0 var(--mv-space-lg) 0",
-            }}
-          >
-            Each palette includes both light and dark variants. Changes are
-            applied instantly.
-          </p>
+          <div className="form-field">
+            <label className="form-label">
+              Color Palette
+            </label>
+            <p className="form-help">
+              Each palette includes both light and dark variants. Changes are
+              applied instantly.
+            </p>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-              gap: "var(--mv-space-lg)",
-            }}
-          >
-            {paletteOptions.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handlePaletteChange(option.id as Palette)}
-                style={{
-                  padding: "var(--mv-space-lg)",
-                  borderRadius: "var(--mv-radius-lg)",
-                  border: palette === option.id
-                    ? "3px solid var(--mv-color-primary)"
-                    : "2px solid var(--mv-color-border)",
-                  background: palette === option.id
-                    ? "var(--mv-color-surface-elevated)"
-                    : "var(--mv-color-surface)",
-                  cursor: "pointer",
-                  transition: "var(--mv-transition-fast)",
-                  textAlign: "left",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "var(--mv-space-md)",
-                    marginBottom: "var(--mv-space-sm)",
-                  }}
+            <div className="palette-grid">
+              {paletteOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => handlePaletteChange(option.id as Palette)}
+                  className={`palette-card ${
+                    palette === option.id ? "palette-card--selected" : ""
+                  }`}
                 >
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "var(--mv-radius-md)",
-                      background: option.color,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div>
+                  <div className="palette-header">
                     <div
-                      style={{
-                        fontWeight: "var(--mv-font-weight-semibold)",
-                        color: "var(--mv-color-text-primary)",
-                      }}
-                    >
-                      {option.label}
-                    </div>
-                    {palette === option.id && (
-                      <div
-                        style={{
-                          fontSize: "var(--mv-font-size-xs)",
-                          color: "var(--mv-color-primary)",
-                          fontWeight: "var(--mv-font-weight-medium)",
-                        }}
-                      >
-                        Currently Active ({theme} mode)
+                      className="palette-swatch"
+                      style={{ background: option.color }}
+                    />
+                    <div>
+                      <div className="palette-name">
+                        {option.label}
                       </div>
-                    )}
+                      {palette === option.id && (
+                        <div className="palette-status">
+                          Currently Active ({theme} mode)
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div
-                  style={{
-                    fontSize: "var(--mv-font-size-sm)",
-                    color: "var(--mv-color-text-secondary)",
-                  }}
-                >
-                  {option.description}
-                </div>
-              </button>
-            ))}
+                  <div className="palette-description">
+                    {option.description}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </CollapsibleSection>
@@ -390,40 +326,16 @@ export default function Settings() {
         icon="📱"
         expanded
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--mv-space-md)",
-          }}
-        >
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--mv-space-sm)",
-            }}
-          >
+        <div className="checkbox-group">
+          <label className="checkbox-item">
             <input type="checkbox" defaultChecked />
             <span>Use compact layout</span>
           </label>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--mv-space-sm)",
-            }}
-          >
+          <label className="checkbox-item">
             <input type="checkbox" />
             <span>Show animations</span>
           </label>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--mv-space-sm)",
-            }}
-          >
+          <label className="checkbox-item">
             <input type="checkbox" defaultChecked />
             <span>High contrast mode</span>
           </label>
@@ -433,33 +345,15 @@ export default function Settings() {
   );
 
   const renderNotificationSettings = () => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--mv-space-xl)",
-      }}
-    >
+    <div className="settings-section">
       <CollapsibleSection
         title="Email Notifications"
         icon="📧"
         badge={emailNotifications ? 1 : 0}
         expanded
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--mv-space-md)",
-          }}
-        >
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--mv-space-sm)",
-            }}
-          >
+        <div className="checkbox-group">
+          <label className="checkbox-item">
             <input
               type="checkbox"
               checked={emailNotifications}
@@ -468,41 +362,16 @@ export default function Settings() {
             <span>Enable email notifications</span>
           </label>
           {emailNotifications && (
-            <div
-              style={{
-                marginLeft: "var(--mv-space-lg)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--mv-space-sm)",
-              }}
-            >
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--mv-space-sm)",
-                }}
-              >
+            <div className="checkbox-subgroup">
+              <label className="checkbox-item">
                 <input type="checkbox" defaultChecked />
                 <span>Weekly digest</span>
               </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--mv-space-sm)",
-                }}
-              >
+              <label className="checkbox-item">
                 <input type="checkbox" />
                 <span>Marketing updates</span>
               </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--mv-space-sm)",
-                }}
-              >
+              <label className="checkbox-item">
                 <input type="checkbox" defaultChecked />
                 <span>Security alerts</span>
               </label>
@@ -517,20 +386,8 @@ export default function Settings() {
         badge={pushNotifications ? 2 : 0}
         expanded
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--mv-space-md)",
-          }}
-        >
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--mv-space-sm)",
-            }}
-          >
+        <div className="checkbox-group">
+          <label className="checkbox-item">
             <input
               type="checkbox"
               checked={pushNotifications}
@@ -539,31 +396,12 @@ export default function Settings() {
             <span>Enable push notifications</span>
           </label>
           {pushNotifications && (
-            <div
-              style={{
-                marginLeft: "var(--mv-space-lg)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--mv-space-sm)",
-              }}
-            >
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--mv-space-sm)",
-                }}
-              >
+            <div className="checkbox-subgroup">
+              <label className="checkbox-item">
                 <input type="checkbox" defaultChecked />
                 <span>New messages</span>
               </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--mv-space-sm)",
-                }}
-              >
+              <label className="checkbox-item">
                 <input type="checkbox" />
                 <span>System updates</span>
               </label>
@@ -575,18 +413,11 @@ export default function Settings() {
   );
 
   return (
-    <div style={{ padding: "var(--mv-space-xl)" }}>
+    <div className="settings-container">
       <Breadcrumbs items={breadcrumbs} />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          margin: "var(--mv-space-lg) 0",
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Settings</h1>
+      <div className="settings-header">
+        <h1 className="settings-title">Settings</h1>
         <ActionBar
           actions={settingsActions}
           onActionClick={handleActionClick}
@@ -595,7 +426,7 @@ export default function Settings() {
       </div>
 
       <Card variant="outlined" padding="none">
-        <div style={{ padding: "var(--mv-space-lg) var(--mv-space-lg) 0" }}>
+        <div className="settings-tabs">
           <TabGroup
             tabs={settingsTabs}
             activeTab={activeTab}
@@ -604,74 +435,59 @@ export default function Settings() {
           />
         </div>
 
-        <div style={{ padding: "var(--mv-space-xl)" }}>
+        <div className="settings-content">
           {activeTab === "general" && renderGeneralSettings()}
           {activeTab === "appearance" && renderAppearanceSettings()}
           {activeTab === "notifications" && renderNotificationSettings()}
 
           {activeTab === "privacy" && (
-            <div
-              style={{ textAlign: "center", padding: "var(--mv-space-2xl)" }}
-            >
-              <div
-                style={{ fontSize: "4rem", marginBottom: "var(--mv-space-lg)" }}
-              >
-                🔒
+            <div>
+              <div className="tab-placeholder">
+                <div className="tab-placeholder-icon">🔒</div>
+                <h3>Privacy Settings</h3>
+                <p>Manage your data protection and privacy preferences:</p>
               </div>
-              <h3>Privacy Settings</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                Data protection and privacy configuration options. This
-                demonstrates how CollapsibleSection can organize complex
-                settings.
-              </p>
+
+              <List
+                items={privacyItems}
+                variant="detailed"
+                onItemClick={handleItemClick}
+              />
             </div>
           )}
 
           {activeTab === "advanced" && (
-            <div
-              style={{ textAlign: "center", padding: "var(--mv-space-2xl)" }}
-            >
-              <div
-                style={{ fontSize: "4rem", marginBottom: "var(--mv-space-lg)" }}
-              >
-                🔧
+            <div>
+              <div className="tab-placeholder">
+                <div className="tab-placeholder-icon">🔧</div>
+                <h3>Advanced Settings</h3>
+                <p>Developer options and advanced configuration:</p>
               </div>
-              <h3>Advanced Settings</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                Developer options and advanced configuration. Shows how tabs can
-                organize different complexity levels.
-              </p>
+
+              <List
+                items={advancedItems}
+                variant="detailed"
+                onItemClick={handleItemClick}
+              />
             </div>
           )}
         </div>
       </Card>
 
-      {/* Save Changes Footer */}
+      {/* Live Preview Footer */}
       <Card variant="elevated" padding="lg">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <div className="preview-footer">
           <div>
-            <h4 style={{ margin: "0 0 var(--mv-space-xs) 0" }}>
+            <h4 className="preview-title">
               Live Theme Preview
             </h4>
-            <p
-              style={{
-                margin: 0,
-                color: "var(--mv-color-text-secondary)",
-                fontSize: "0.875rem",
-              }}
-            >
+            <p className="preview-description">
               Currently using <strong>{palette}</strong> palette in{" "}
               <strong>{theme}</strong>{" "}
               mode. Changes are applied instantly across the entire interface.
             </p>
           </div>
-          <div style={{ display: "flex", gap: "var(--mv-space-sm)" }}>
+          <div className="preview-actions">
             <Button variant="ghost">
               Reset to Default
             </Button>

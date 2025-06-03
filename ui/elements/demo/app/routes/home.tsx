@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { ActionBar, Button, Card } from "@m5nv/ui-elements";
+import { ActionBar, Button, Card, List } from "@m5nv/ui-elements";
 import { useNavigate } from "react-router";
-import type { Action } from "@m5nv/ui-elements";
+import type { Action, MenuItem } from "@m5nv/ui-elements";
 
 type Palette = "ghibli" | "blue" | "purple" | "green" | "orange";
 type Theme = "light" | "dark";
@@ -46,39 +46,25 @@ export default function Home() {
     },
   ];
 
-  const features = [
+  // Convert features to MenuItem format for better semantic markup
+  const featureItems: MenuItem[] = [
     {
-      title: "Layout Elements",
-      description: "Header, Brand, Card, and Drawer components for structure",
+      id: "layout",
+      label: "Layout Elements",
       icon: "🏗️",
-      examples: [
-        "Header with variants",
-        "Responsive brand display",
-        "Flexible card containers",
-        "Slide-out drawers",
-      ],
+      description: "Header, Brand, Card, and Drawer components for structure",
     },
     {
-      title: "Interactive Elements",
-      description: "Button and SearchBox components for user interaction",
+      id: "interactive",
+      label: "Interactive Elements",
       icon: "🎯",
-      examples: [
-        "Multi-variant buttons",
-        "Loading states",
-        "Expandable search",
-        "Clear functionality",
-      ],
+      description: "Button and SearchBox components for user interaction",
     },
     {
-      title: "Data-Driven Components",
-      description: "Complex components that handle data structures efficiently",
+      id: "data-driven",
+      label: "Data-Driven Components",
       icon: "📋",
-      examples: [
-        "Sortable tables",
-        "Dropdown selects",
-        "Tab navigation",
-        "Action toolbars",
-      ],
+      description: "Complex components that handle data structures efficiently",
     },
   ];
 
@@ -102,48 +88,28 @@ export default function Home() {
     setPalette(newPalette);
   };
 
+  const handleFeatureClick = (item: MenuItem) => {
+    console.log("Feature clicked:", item.label);
+    // Could navigate to specific demo sections
+  };
+
   return (
-    <div style={{ padding: "var(--mv-space-2xl)" }}>
+    <div className="home-container">
       {/* Theme Showcase Section */}
-      <Card variant="elevated" padding="lg">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "var(--mv-space-lg)",
-          }}
-        >
+      <Card variant="elevated" padding="lg" className="theme-showcase">
+        <div className="showcase-header">
           <div>
-            <h3 style={{ margin: "0 0 var(--mv-space-sm) 0" }}>
+            <h3 className="showcase-title">
               🎨 Live Multi-Palette Demo
             </h3>
-            <p
-              style={{
-                margin: 0,
-                color: "var(--mv-color-text-secondary)",
-                fontSize: "var(--mv-font-size-sm)",
-              }}
-            >
+            <p className="showcase-subtitle">
               Experience our complete theming system: 5 color palettes × 2
               themes = 10 unique looks!
             </p>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--mv-space-md)",
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "var(--mv-font-size-sm)",
-                color: "var(--mv-color-text-secondary)",
-                fontWeight: "var(--mv-font-weight-medium)",
-              }}
-            >
+          <div className="theme-controls">
+            <span className="current-theme">
               Current: {paletteOptions.find((p) => p.id === palette)?.emoji}
               {" "}
               {palette} ({theme === "light" ? "🌅" : "🌙"})
@@ -163,33 +129,14 @@ export default function Home() {
           <h4 style={{ margin: "0 0 var(--mv-space-md) 0" }}>
             Choose Your Palette:
           </h4>
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--mv-space-md)",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="palette-grid">
             {paletteOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={() => handlePaletteChange(option.id as Palette)}
-                style={{
-                  padding: "var(--mv-space-md) var(--mv-space-lg)",
-                  borderRadius: "var(--mv-radius-md)",
-                  border: palette === option.id
-                    ? "3px solid var(--mv-color-primary)"
-                    : "2px solid var(--mv-color-border)",
-                  background: palette === option.id
-                    ? "var(--mv-color-primary)"
-                    : "var(--mv-color-surface)",
-                  color: palette === option.id
-                    ? "var(--mv-color-text-inverse)"
-                    : "var(--mv-color-text-primary)",
-                  cursor: "pointer",
-                  transition: "var(--mv-transition-fast)",
-                  fontWeight: "var(--mv-font-weight-medium)",
-                }}
+                className={`palette-option ${
+                  palette === option.id ? "palette-option--selected" : ""
+                }`}
               >
                 {option.emoji} {option.label}
               </button>
@@ -198,154 +145,41 @@ export default function Home() {
         </div>
 
         {/* Theme Preview Cards */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "var(--mv-space-md)",
-          }}
-        >
-          <div
-            style={{
-              padding: "var(--mv-space-lg)",
-              borderRadius: "var(--mv-radius-md)",
-              background: "var(--mv-color-primary)",
-              color: "var(--mv-color-text-inverse)",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{ fontSize: "2rem", marginBottom: "var(--mv-space-sm)" }}
-            >
-              🎨
-            </div>
-            <div
-              style={{
-                fontSize: "var(--mv-font-size-sm)",
-                fontWeight: "var(--mv-font-weight-semibold)",
-              }}
-            >
-              Primary Color
-            </div>
+        <div className="theme-preview-grid">
+          <div className="preview-card preview-card--primary">
+            <div className="preview-icon">🎨</div>
+            <div className="preview-label">Primary Color</div>
           </div>
 
-          <div
-            style={{
-              padding: "var(--mv-space-lg)",
-              borderRadius: "var(--mv-radius-md)",
-              background: "var(--mv-color-success)",
-              color: "var(--mv-color-text-inverse)",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{ fontSize: "2rem", marginBottom: "var(--mv-space-sm)" }}
-            >
-              🌱
-            </div>
-            <div
-              style={{
-                fontSize: "var(--mv-font-size-sm)",
-                fontWeight: "var(--mv-font-weight-semibold)",
-              }}
-            >
-              Success Color
-            </div>
+          <div className="preview-card preview-card--success">
+            <div className="preview-icon">🌱</div>
+            <div className="preview-label">Success Color</div>
           </div>
 
-          <div
-            style={{
-              padding: "var(--mv-space-lg)",
-              borderRadius: "var(--mv-radius-md)",
-              background: "var(--mv-color-warning)",
-              color: "var(--mv-color-text-inverse)",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{ fontSize: "2rem", marginBottom: "var(--mv-space-sm)" }}
-            >
-              ☀️
-            </div>
-            <div
-              style={{
-                fontSize: "var(--mv-font-size-sm)",
-                fontWeight: "var(--mv-font-weight-semibold)",
-              }}
-            >
-              Warning Color
-            </div>
+          <div className="preview-card preview-card--warning">
+            <div className="preview-icon">☀️</div>
+            <div className="preview-label">Warning Color</div>
           </div>
 
-          <div
-            style={{
-              padding: "var(--mv-space-lg)",
-              borderRadius: "var(--mv-radius-md)",
-              background: "var(--mv-color-danger)",
-              color: "var(--mv-color-text-inverse)",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{ fontSize: "2rem", marginBottom: "var(--mv-space-sm)" }}
-            >
-              🌸
-            </div>
-            <div
-              style={{
-                fontSize: "var(--mv-font-size-sm)",
-                fontWeight: "var(--mv-font-weight-semibold)",
-              }}
-            >
-              Danger Color
-            </div>
+          <div className="preview-card preview-card--danger">
+            <div className="preview-icon">🌸</div>
+            <div className="preview-label">Danger Color</div>
           </div>
         </div>
       </Card>
 
       {/* Hero Section */}
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "var(--mv-space-2xl)",
-          maxWidth: "800px",
-          margin: "var(--mv-space-2xl) auto var(--mv-space-2xl) auto",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "3rem",
-            margin: "0 0 var(--mv-space-lg) 0",
-            background:
-              "linear-gradient(135deg, var(--mv-color-primary), var(--mv-color-success))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
+      <div className="hero-section">
+        <h1 className="hero-title">
           @m5nv/ui-elements
         </h1>
-        <p
-          style={{
-            fontSize: "1.25rem",
-            color: "var(--mv-color-text-secondary)",
-            margin: "0 0 var(--mv-space-xl) 0",
-            lineHeight: "1.6",
-          }}
-        >
+        <p className="hero-description">
           Multi-palette, data-driven, themeable UI component library built with
           modern CSS. Unlike headless libraries, Elements delivers complete
           styled components with comprehensive theming.
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--mv-space-md)",
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="hero-actions">
           <Button
             variant="primary"
             size="lg"
@@ -373,119 +207,49 @@ export default function Home() {
         />
       </Card>
 
-      {/* Feature Showcase */}
-      <div
-        style={{
-          marginTop: "var(--mv-space-2xl)",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "var(--mv-space-xl)",
-        }}
-      >
-        {features.map((feature, index) => (
-          <Card key={index} variant="outlined" padding="lg">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--mv-space-md)",
-                marginBottom: "var(--mv-space-md)",
-              }}
-            >
-              <span style={{ fontSize: "2rem" }}>{feature.icon}</span>
-              <h3 style={{ margin: 0 }}>{feature.title}</h3>
-            </div>
-
-            <p
-              style={{
-                color: "var(--mv-color-text-secondary)",
-                marginBottom: "var(--mv-space-lg)",
-              }}
-            >
-              {feature.description}
-            </p>
-
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--mv-space-sm)",
-              }}
-            >
-              {feature.examples.map((example, i) => (
-                <li
-                  key={i}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "var(--mv-space-sm)",
-                  }}
-                >
-                  <span style={{ color: "var(--mv-color-success)" }}>✓</span>
-                  <span style={{ fontSize: "0.875rem" }}>{example}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ))}
-      </div>
+      {/* Feature Showcase - Using List component for semantic markup */}
+      <Card variant="outlined" padding="lg" className="features-showcase">
+        <h2 style={{ margin: "0 0 var(--mv-space-lg) 0", textAlign: "center" }}>
+          Component Categories
+        </h2>
+        <List
+          items={featureItems}
+          variant="detailed"
+          onItemClick={handleFeatureClick}
+        />
+      </Card>
 
       {/* Benefits Section */}
       <Card variant="glass" padding="lg" className="benefits-card">
-        <div style={{ marginTop: "var(--mv-space-2xl)" }}>
-          <h2
-            style={{ textAlign: "center", marginBottom: "var(--mv-space-xl)" }}
-          >
-            Why Choose Elements?
-          </h2>
+        <h2 className="benefits-title">
+          Why Choose Elements?
+        </h2>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "var(--mv-space-lg)",
-            }}
-          >
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{ fontSize: "3rem", marginBottom: "var(--mv-space-md)" }}
-              >
-                🎨
-              </div>
-              <h3>Multi-Palette System</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                5 beautiful color palettes, each with light and dark variants
-                for 10 total themes
-              </p>
-            </div>
+        <div className="benefits-grid">
+          <div className="benefit-item">
+            <div className="benefit-icon">🎨</div>
+            <h3>Multi-Palette System</h3>
+            <p>
+              5 beautiful color palettes, each with light and dark variants for
+              10 total themes
+            </p>
+          </div>
 
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{ fontSize: "3rem", marginBottom: "var(--mv-space-md)" }}
-              >
-                📊
-              </div>
-              <h3>Data-Driven</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                Pass data arrays instead of writing complex markup structures
-              </p>
-            </div>
+          <div className="benefit-item">
+            <div className="benefit-icon">📊</div>
+            <h3>Data-Driven</h3>
+            <p>
+              Pass data arrays instead of writing complex markup structures
+            </p>
+          </div>
 
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{ fontSize: "3rem", marginBottom: "var(--mv-space-md)" }}
-              >
-                ⚡
-              </div>
-              <h3>Instant Theme Switching</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                CSS custom properties enable instant theme changes across your
-                entire application
-              </p>
-            </div>
+          <div className="benefit-item">
+            <div className="benefit-icon">⚡</div>
+            <h3>Instant Theme Switching</h3>
+            <p>
+              CSS custom properties enable instant theme changes across your
+              entire application
+            </p>
           </div>
         </div>
       </Card>

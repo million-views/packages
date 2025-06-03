@@ -987,6 +987,10 @@ export function Breadcrumbs({
   );
 }
 
+// ===========================================
+// MEGA DROPDOWN & NAVIGATION COMPONENTS
+// ===========================================
+
 // Types
 export interface MegaDropdownItem {
   id: string;
@@ -1140,7 +1144,9 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setIsOpen(true);
+    if (dropdown) {
+      setIsOpen(true);
+    }
   };
 
   const handleMouseLeave = () => {
@@ -1149,9 +1155,12 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     }, 150); // Small delay to prevent flickering
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
     if (href && !dropdown) {
       window.location.href = href;
+    } else if (dropdown) {
+      e.preventDefault();
+      setIsOpen(!isOpen);
     }
   };
 
@@ -1254,15 +1263,6 @@ export const MegaDropdown: React.FC<MegaDropdownProps> = (props) => {
     </div>
   );
 };
-
-// // Export types
-// export type {
-//   MegaDropdownItem,
-//   MegaDropdownGroup,
-//   MegaDropdownProps,
-//   NavigationItemProps,
-//   NavigationProps,
-// };
 
 // Default export
 export default MegaDropdown;

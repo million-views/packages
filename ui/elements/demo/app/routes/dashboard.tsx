@@ -3,6 +3,7 @@ import {
   ActionBar,
   Breadcrumbs,
   Card,
+  List,
   Pagination,
   Select,
   TabGroup,
@@ -11,6 +12,7 @@ import {
 import type {
   Action,
   BreadcrumbItem,
+  MenuItem,
   SelectOption,
   Tab,
   TableColumn,
@@ -46,6 +48,70 @@ export default function Dashboard() {
     { value: "30d", label: "Last 30 days" },
     { value: "90d", label: "Last 3 months" },
     { value: "1y", label: "Last year" },
+  ];
+
+  // Convert placeholder content to MenuItem format for better semantics
+  const analyticsItems: MenuItem[] = [
+    {
+      id: "user-analytics",
+      label: "User Analytics",
+      icon: "👥",
+      description: "User behavior and engagement metrics",
+    },
+    {
+      id: "conversion-funnel",
+      label: "Conversion Funnel",
+      icon: "📊",
+      description: "Track user journey and conversion points",
+    },
+    {
+      id: "performance-metrics",
+      label: "Performance Metrics",
+      icon: "⚡",
+      description: "Site speed and performance analytics",
+    },
+  ];
+
+  const reportsItems: MenuItem[] = [
+    {
+      id: "monthly-report",
+      label: "Monthly Report",
+      icon: "📅",
+      description: "Comprehensive monthly business summary",
+    },
+    {
+      id: "quarterly-review",
+      label: "Quarterly Review",
+      icon: "📈",
+      description: "Quarterly performance analysis",
+    },
+    {
+      id: "custom-reports",
+      label: "Custom Reports",
+      icon: "🔧",
+      description: "Build and customize your own reports",
+    },
+  ];
+
+  const settingsItems: MenuItem[] = [
+    {
+      id: "dashboard-config",
+      label: "Dashboard Configuration",
+      icon: "⚙️",
+      description: "Customize dashboard layout and widgets",
+    },
+    {
+      id: "data-sources",
+      label: "Data Sources",
+      icon: "🔌",
+      description: "Manage connected data sources",
+    },
+    {
+      id: "alerts",
+      label: "Alerts & Notifications",
+      icon: "🔔",
+      description: "Configure automated alerts",
+    },
   ];
 
   // Sample data for tables
@@ -147,26 +213,18 @@ export default function Dashboard() {
     setActiveTab(tabId);
   };
 
+  const handleItemClick = (item: MenuItem) => {
+    console.log("Item clicked:", item.label);
+    // Handle navigation or actions for each item
+  };
+
   return (
-    <div style={{ padding: "var(--mv-space-xl)" }}>
+    <div className="dashboard-container">
       <Breadcrumbs items={breadcrumbs} />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          margin: "var(--mv-space-lg) 0",
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Dashboard</h1>
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--mv-space-md)",
-            alignItems: "center",
-          }}
-        >
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">Dashboard</h1>
+        <div className="dashboard-controls">
           <Select
             options={periodOptions}
             value={selectedPeriod}
@@ -182,52 +240,21 @@ export default function Dashboard() {
       </div>
 
       {/* Metrics Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "var(--mv-space-lg)",
-          marginBottom: "var(--mv-space-xl)",
-        }}
-      >
+      <div className="metrics-grid">
         {metrics.map((metric, index) => (
           <Card key={index} variant="elevated" padding="lg">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "start",
-              }}
-            >
+            <div className="metric-content">
               <div>
-                <h3
-                  style={{
-                    margin: "0 0 var(--mv-space-sm) 0",
-                    fontSize: "0.875rem",
-                    color: "var(--mv-color-text-secondary)",
-                    fontWeight: "500",
-                  }}
-                >
+                <h3 className="metric-title">
                   {metric.title}
                 </h3>
-                <div
-                  style={{ fontSize: "2rem", fontWeight: "bold", margin: "0" }}
-                >
+                <div className="metric-value">
                   {metric.value}
                 </div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--mv-space-xs)",
-                  color: metric.trend === "up"
-                    ? "var(--mv-color-success)"
-                    : "var(--mv-color-danger)",
-                }}
-              >
+              <div className={`metric-change metric-change--${metric.trend}`}>
                 <span>{metric.trend === "up" ? "↗" : "↘"}</span>
-                <span style={{ fontSize: "0.875rem", fontWeight: "500" }}>
+                <span className="metric-change-value">
                   {metric.change}
                 </span>
               </div>
@@ -238,7 +265,7 @@ export default function Dashboard() {
 
       {/* Main Dashboard Content */}
       <Card variant="outlined" padding="none">
-        <div style={{ padding: "var(--mv-space-lg) var(--mv-space-lg) 0" }}>
+        <div className="dashboard-tabs">
           <TabGroup
             tabs={tabs}
             activeTab={activeTab}
@@ -247,24 +274,12 @@ export default function Dashboard() {
           />
         </div>
 
-        <div style={{ padding: "var(--mv-space-lg)" }}>
+        <div className="dashboard-content">
           {activeTab === "overview" && (
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "var(--mv-space-lg)",
-                }}
-              >
-                <h3 style={{ margin: 0 }}>Recent Activity</h3>
-                <span
-                  style={{
-                    color: "var(--mv-color-text-secondary)",
-                    fontSize: "0.875rem",
-                  }}
-                >
+              <div className="overview-header">
+                <h3>Recent Activity</h3>
+                <span className="overview-count">
                   Showing {paginatedData.length} of {tableData.length} entries
                 </span>
               </div>
@@ -294,53 +309,50 @@ export default function Dashboard() {
           )}
 
           {activeTab === "analytics" && (
-            <div
-              style={{ textAlign: "center", padding: "var(--mv-space-2xl)" }}
-            >
-              <div
-                style={{ fontSize: "4rem", marginBottom: "var(--mv-space-lg)" }}
-              >
-                📈
+            <div>
+              <div className="tab-placeholder">
+                <div className="tab-placeholder-icon">📈</div>
+                <h3>Analytics Dashboard</h3>
+                <p>Available analytics tools and insights:</p>
               </div>
-              <h3>Analytics Dashboard</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                Advanced analytics charts and insights would be displayed here.
-                This demonstrates tab navigation and content switching.
-              </p>
+
+              <List
+                items={analyticsItems}
+                variant="detailed"
+                onItemClick={handleItemClick}
+              />
             </div>
           )}
 
           {activeTab === "reports" && (
-            <div
-              style={{ textAlign: "center", padding: "var(--mv-space-2xl)" }}
-            >
-              <div
-                style={{ fontSize: "4rem", marginBottom: "var(--mv-space-lg)" }}
-              >
-                📋
+            <div>
+              <div className="tab-placeholder">
+                <div className="tab-placeholder-icon">📋</div>
+                <h3>Reports</h3>
+                <p>Generate and manage your business reports:</p>
               </div>
-              <h3>Reports</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                Generated reports and document management interface. Shows how
-                tabs can organize different functional areas.
-              </p>
+
+              <List
+                items={reportsItems}
+                variant="detailed"
+                onItemClick={handleItemClick}
+              />
             </div>
           )}
 
           {activeTab === "settings" && (
-            <div
-              style={{ textAlign: "center", padding: "var(--mv-space-2xl)" }}
-            >
-              <div
-                style={{ fontSize: "4rem", marginBottom: "var(--mv-space-lg)" }}
-              >
-                ⚙️
+            <div>
+              <div className="tab-placeholder">
+                <div className="tab-placeholder-icon">⚙️</div>
+                <h3>Dashboard Settings</h3>
+                <p>Configure your dashboard preferences:</p>
               </div>
-              <h3>Dashboard Settings</h3>
-              <p style={{ color: "var(--mv-color-text-secondary)" }}>
-                Configuration options for dashboard customization. Demonstrates
-                contextual settings within tab navigation.
-              </p>
+
+              <List
+                items={settingsItems}
+                variant="detailed"
+                onItemClick={handleItemClick}
+              />
             </div>
           )}
         </div>

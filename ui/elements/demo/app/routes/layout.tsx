@@ -1,5 +1,12 @@
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { ActionBar, Brand, Drawer, Header, SearchBox } from "@m5nv/ui-elements";
+import {
+  ActionBar,
+  Brand,
+  Drawer,
+  Header,
+  List,
+  SearchBox,
+} from "@m5nv/ui-elements";
 import { useState } from "react";
 import type { Action, MenuItem } from "@m5nv/ui-elements";
 
@@ -63,13 +70,26 @@ export default function Layout() {
   const handleActionClick = (action: Action) => {
     if (action.id === "menu") {
       setDrawerOpen(!drawerOpen);
+    } else if (action.id === "notifications") {
+      console.log("Show notifications");
+    } else if (action.id === "profile") {
+      console.log("Show profile menu");
     }
-    // Handle other actions...
   };
 
   const handleSearch = (query: string) => {
     console.log("Search:", query);
     // Implement search functionality
+  };
+
+  // Get selected navigation items based on current route
+  const getCurrentSelectedItems = () => {
+    const currentPath = location.pathname;
+    if (currentPath === "/") return ["home"];
+    const pathSegment = currentPath.slice(1); // Remove leading slash
+    return navigationItems.some((item) => item.id === pathSegment)
+      ? [pathSegment]
+      : [];
   };
 
   return (
@@ -86,6 +106,7 @@ export default function Layout() {
           variant="filled"
           onSearch={handleSearch}
           clearable
+          className="layout-search"
         />
 
         <ActionBar
@@ -102,58 +123,29 @@ export default function Layout() {
         mode="temporary"
       >
         <div style={{ padding: "var(--mv-space-lg)" }}>
-          <h3 style={{ margin: "0 0 var(--mv-space-lg) 0" }}>Navigation</h3>
-          <div
+          <h3
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--mv-space-sm)",
+              margin: "0 0 var(--mv-space-lg) 0",
+              color: "var(--mv-color-text-primary)",
+              fontSize: "var(--mv-font-size-lg)",
+              fontWeight: "var(--mv-font-weight-semibold)",
             }}
           >
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavigation(item)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--mv-space-sm)",
-                  padding: "var(--mv-space-md)",
-                  border: "none",
-                  background:
-                    location.pathname ===
-                        (item.id === "home" ? "/" : `/${item.id}`)
-                      ? "var(--mv-color-primary)"
-                      : "transparent",
-                  color:
-                    location.pathname ===
-                        (item.id === "home" ? "/" : `/${item.id}`)
-                      ? "white"
-                      : "var(--mv-color-text-primary)",
-                  borderRadius: "var(--mv-radius-md)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
-              >
-                <span>{item.icon}</span>
-                <div>
-                  <div style={{ fontWeight: "500" }}>{item.label}</div>
-                  <div style={{ fontSize: "0.875rem", opacity: 0.7 }}>
-                    {item.description}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+            Navigation
+          </h3>
+
+          {/* Use List component instead of custom buttons - much cleaner! */}
+          <List
+            items={navigationItems}
+            variant="detailed"
+            selectable={true}
+            selectedItems={getCurrentSelectedItems()}
+            onItemClick={handleNavigation}
+          />
         </div>
       </Drawer>
 
-      <main
-        style={{
-          minHeight: "calc(100vh - 64px)",
-          background: "var(--mv-color-background)",
-        }}
-      >
+      <main className="layout-main">
         <Outlet />
       </main>
     </div>
