@@ -2370,26 +2370,6 @@ body {
    =========================================== */
 
 @media (max-width: 768px) {
-  .mv-megadropdown {
-    width: 95vw;
-    max-width: 95vw;
-    left: 2.5vw;
-    transform: none;
-  }
-
-  .mv-megadropdown--open {
-    transform: translateY(0);
-  }
-
-  .mv-megadropdown__content {
-    padding: var(--mv-space-lg);
-  }
-
-  .mv-megadropdown__groups {
-    grid-template-columns: 1fr;
-    gap: var(--mv-space-xl);
-  }
-
   .mv-table {
     font-size: var(--mv-font-size-sm);
   }
