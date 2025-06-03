@@ -1,0 +1,197 @@
+/* Import @m5nv/ui-elements styles */
+@import "@m5nv/ui-elements/styles.css";
+
+/* Global Reset and Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--mv-font-family);
+  background: var(--mv-color-background);
+  color: var(--mv-color-text-primary);
+  line-height: 1.5;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* App Layout */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Typography Improvements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--mv-color-text-primary);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+p {
+  color: var(--mv-color-text-secondary);
+  line-height: 1.6;
+}
+
+/* Form Elements */
+input,
+textarea,
+select {
+  font-family: inherit;
+  transition: var(--mv-transition-fast);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--mv-color-primary);
+  outline-offset: 2px;
+}
+
+/* Link Styling */
+a {
+  color: var(--mv-color-primary);
+  text-decoration: none;
+  transition: var(--mv-transition-fast);
+}
+
+a:hover {
+  color: var(--mv-color-primary-dark, var(--mv-color-primary));
+  text-decoration: underline;
+}
+
+/* Custom utility classes for the demo */
+.demo-metric {
+  display: flex;
+  align-items: center;
+  gap: var(--mv-space-sm);
+  padding: var(--mv-space-md);
+  border-radius: var(--mv-radius-md);
+  background: var(--mv-color-surface);
+  border: 1px solid var(--mv-color-border);
+}
+
+.demo-status-badge {
+  padding: var(--mv-space-xs) var(--mv-space-sm);
+  border-radius: var(--mv-radius-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+}
+
+.demo-status-active {
+  background: var(--mv-color-success);
+}
+
+.demo-status-pending {
+  background: var(--mv-color-warning);
+}
+
+.demo-status-inactive {
+  background: var(--mv-color-danger);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-layout main {
+    padding: var(--mv-space-lg);
+  }
+
+  .demo-responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Animation Enhancements */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.demo-animate-in {
+  animation: slideIn var(--mv-transition-normal) ease-out;
+}
+
+/* Loading States */
+.demo-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Error States */
+.demo-error {
+  border-color: var(--mv-color-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Success States */
+.demo-success {
+  border-color: var(--mv-color-success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Dark mode adjustments (when implemented) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mv-color-background: #0f172a;
+    --mv-color-surface: #1e293b;
+    --mv-color-text-primary: #f8fafc;
+    --mv-color-text-secondary: #cbd5e1;
+    --mv-color-border: #334155;
+  }
+}
+
+/* Print styles */
+@media print {
+
+  .mv-drawer,
+  .mv-drawer__backdrop,
+  .mv-actionbar,
+  .mv-button {
+    display: none !important;
+  }
+}
+
+/* Focus management for accessibility */
+.mv-focus-visible {
+  outline: 2px solid var(--mv-color-primary);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--mv-color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mv-color-border);
+  border-radius: var(--mv-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mv-color-text-secondary);
+}

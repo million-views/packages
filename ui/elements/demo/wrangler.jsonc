@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ui-elements-demo",
+  "compatibility_date": "2025-04-04",
+  "main": "./workers/app.ts",
+  "vars": {
+    "VALUE_FROM_CLOUDFLARE": "Hello from Cloudflare"
+  },
+  /**
+	 * Note: Use secrets to store sensitive data.
+   * DO NOT STORE SECRETS IN `vars`
+	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 */
+  "observability": {
+    "enabled": true
+  }
+}

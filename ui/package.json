@@ -1,0 +1,24 @@
+{
+  "name": "@m5nv/ui-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "elements",
+    "elements/demo"
+  ],
+  "engines": {
+    "node": ">=23.10.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:demo": "npm run dev:demo --workspaces",
+    "build": "npm run build --workspaces",
+    "build:demo": "npm run build:demo --workspaces",
+    "deploy": "npm run deploy --workspaces"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "typescript": "^5.8.3"
+  }
+}
