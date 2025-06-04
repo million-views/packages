@@ -373,7 +373,12 @@ export default function Ecommerce() {
       <Breadcrumbs items={breadcrumbs} responsive={true} />
 
       <header className="page-header">
-        <h1 className="page-title">Shop</h1>
+        <div>
+          <h1 className="page-title">Shop</h1>
+          <p className="page-description">
+            Discover amazing products with intelligent container-aware layouts
+          </p>
+        </div>
         <Button
           variant="ghost"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -452,7 +457,7 @@ export default function Ecommerce() {
                     {product.description}
                   </p>
 
-                  <div className="grid grid--two-col section-spacing">
+                  <div className="preview-footer">
                     <span className="text-primary font-weight-bold">
                       ${product.price}
                     </span>
@@ -460,7 +465,6 @@ export default function Ecommerce() {
                       variant="primary"
                       size="sm"
                       onClick={() => handleAddToCart(product)}
-                      responsive={true}
                     >
                       Add to Cart
                     </Button>
@@ -491,7 +495,6 @@ export default function Ecommerce() {
                 <Button
                   variant="primary"
                   onClick={() => setCartOpen(false)}
-                  responsive={true}
                 >
                   Continue Shopping
                 </Button>
@@ -508,7 +511,7 @@ export default function Ecommerce() {
               />
 
               <Card variant="elevated" padding="lg" responsive={true}>
-                <div className="grid grid--two-col">
+                <div className="preview-footer">
                   <span>Total:</span>
                   <span className="text-primary font-weight-bold">
                     ${cartTotal}
@@ -516,13 +519,12 @@ export default function Ecommerce() {
                 </div>
 
                 <div className="section-spacing">
-                  <Button variant="primary" size="lg" responsive={true}>
+                  <Button variant="primary" size="lg">
                     Checkout
                   </Button>
                   <Button
                     variant="ghost"
                     onClick={() => setCartOpen(false)}
-                    responsive={true}
                   >
                     Continue Shopping
                   </Button>

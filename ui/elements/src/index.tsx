@@ -810,8 +810,9 @@ export interface ActionBarProps extends BaseProps {
   position?: "left" | "center" | "right";
   onActionClick?: (action: Action) => void;
 }
+
 /**
- * ActionBar - Data-driven toolbar with container-aware responsive behavior
+ * FIXED: ActionBar - Data-driven toolbar with proper container-aware responsive behavior
  */
 export function ActionBar({
   actions,
@@ -831,10 +832,9 @@ export function ActionBar({
     onActionClick?.(action);
   }, [onActionClick]);
 
-  // FIXED: Container class goes on wrapper, not ActionBar itself
-  const containerClass = responsive ? "mv-actionbar-container" : "";
-  const wrapperClassName = containerClass
-    ? `${containerClass} ${className}`
+  // FIXED: Container wrapper approach - provide meaningful width context for container queries
+  const wrapperClassName = responsive
+    ? `mv-actionbar-container ${className}`
     : className;
 
   return (
@@ -1143,10 +1143,11 @@ function useOverflowDetection(
     const dropdownHalfWidth = dropdownRect.width / 2;
 
     // Check for left overflow
-    const leftOverflow = triggerCenterX - dropdownHalfWidth < 0;
+    const leftOverflow = triggerCenterX - dropdownHalfWidth < 16; // 16px margin
 
     // Check for right overflow
-    const rightOverflow = triggerCenterX + dropdownHalfWidth > viewport.width;
+    const rightOverflow =
+      triggerCenterX + dropdownHalfWidth > viewport.width - 16;
 
     // Determine best position
     if (leftOverflow && !rightOverflow) {
@@ -1212,17 +1213,8 @@ export const MegaDropdownContent: React.FC<MegaDropdownProps> = ({
       data-debug={debug}
       data-width={debug ? Math.round(width) : undefined}
     >
-      {/* Main Groups Grid - Container queries handle the responsive columns */}
-      <div
-        className="mv-megadropdown__groups"
-        style={!responsive
-          ? {
-            gridTemplateColumns: `repeat(${
-              Math.min(columns, groups.length)
-            }, 1fr)`,
-          }
-          : {}}
-      >
+      {/* Main Groups Grid */}
+      <div className="mv-megadropdown__groups">
         {groups.map((group) => (
           <div key={group.id} className="mv-megadropdown__column">
             <h3 className="mv-megadropdown__group-title">{group.title}</h3>
@@ -1263,7 +1255,7 @@ export const MegaDropdownContent: React.FC<MegaDropdownProps> = ({
         ))}
       </div>
 
-      {/* Featured Section */}
+      {/* Featured Section - FIXED: Always render if items exist */}
       {showFeatured && featuredItems.length > 0 && (
         <div className="mv-megadropdown__featured">
           <h3 className="mv-megadropdown__featured-title">Featured</h3>
@@ -1310,7 +1302,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Enhanced overflow detection
+  // FIXED: Enhanced overflow detection
   const position = useOverflowDetection(triggerRef, dropdownRef, isOpen);
 
   const handleMouseEnter = () => {

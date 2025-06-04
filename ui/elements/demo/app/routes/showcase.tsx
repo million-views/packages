@@ -310,16 +310,14 @@ export default function ContainerQueryShowcase() {
           space. Hover over "Products" or "Solutions" to see the mega dropdown
           in action.
         </p>
-        <div className="section-spacing">
-          <Navigation
-            brand={{ label: "Container Demo", icon: "🚀" }}
-            items={navigationItems.map((item) => ({
-              ...item,
-              onItemClick: handleNavItemClick,
-            }))}
-            responsive={true}
-          />
-        </div>
+        <Navigation
+          brand={{ label: "Container Demo", icon: "🚀" }}
+          items={navigationItems.map((item) => ({
+            ...item,
+            onItemClick: handleNavItemClick,
+          }))}
+          responsive={true}
+        />
       </Card>
 
       {/* Table Component Test */}
@@ -330,29 +328,27 @@ export default function ContainerQueryShowcase() {
           card shows "Label: Value" format instead of table columns. Resize the
           window to see it adapt.
         </p>
-        <div className="section-spacing">
-          <Table
-            columns={tableColumns}
-            data={paginatedData}
-            sortable={true}
-            selectable={true}
-            responsive={true}
-          />
+        <Table
+          columns={tableColumns}
+          data={paginatedData}
+          sortable={true}
+          selectable={true}
+          responsive={true}
+        />
 
-          <Pagination
-            totalItems={sampleData.length}
-            itemsPerPage={itemsPerPage}
-            currentPage={currentPage}
-            showPageInfo={true}
-            showPageSizeSelector={true}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setItemsPerPage}
-            responsive={true}
-          />
-        </div>
+        <Pagination
+          totalItems={sampleData.length}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          showPageInfo={true}
+          showPageSizeSelector={true}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setItemsPerPage}
+          responsive={true}
+        />
       </Card>
 
-      {/* ActionBar Tests - FIXED Container Demos */}
+      {/* ActionBar Tests - Container Demos */}
       <Card variant="outlined" padding="lg" responsive={true}>
         <h3>ActionBar Container Query Demonstration</h3>
         <p className="text-secondary section-spacing">
@@ -447,19 +443,15 @@ export default function ContainerQueryShowcase() {
           Tabs adapt their size and hide icons/external indicators on narrow
           containers. They also handle overflow with horizontal scrolling.
         </p>
-        <div className="section-spacing">
-          <TabGroup
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            responsive={true}
-          />
-          <div className="section-spacing">
-            <p>
-              Active tab content: <strong>{activeTab}</strong>
-            </p>
-          </div>
-        </div>
+        <TabGroup
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          responsive={true}
+        />
+        <p className="section-spacing">
+          Active tab content: <strong>{activeTab}</strong>
+        </p>
       </Card>
 
       {/* Collapsible Section Test */}
@@ -469,22 +461,20 @@ export default function ContainerQueryShowcase() {
           The toggle functionality works properly and adapts spacing based on
           container width. Click to expand/collapse.
         </p>
-        <div className="section-spacing">
-          <CollapsibleSection
-            title="Expandable Content Section"
-            icon="📁"
-            badge={3}
-            expanded={expandedSection}
-            onToggle={setExpandedSection}
-            responsive={true}
-          >
-            <p className="text-secondary">
-              This content can be toggled! The triangle icon properly rotates
-              and the section expands/collapses as expected. Container queries
-              also adapt the padding and layout based on available space.
-            </p>
-          </CollapsibleSection>
-        </div>
+        <CollapsibleSection
+          title="Expandable Content Section"
+          icon="📁"
+          badge={3}
+          expanded={expandedSection}
+          onToggle={setExpandedSection}
+          responsive={true}
+        >
+          <p className="text-secondary">
+            This content can be toggled! The triangle icon properly rotates and
+            the section expands/collapses as expected. Container queries also
+            adapt the padding and layout based on available space.
+          </p>
+        </CollapsibleSection>
       </Card>
 
       {/* Live Container Query Demonstration */}
@@ -503,11 +493,9 @@ export default function ContainerQueryShowcase() {
               onActionClick={handleActionClick}
               responsive={true}
             />
-            <div className="section-spacing">
-              <small className="text-muted">
-                → Shows full labels and icons
-              </small>
-            </div>
+            <p className="text-muted section-spacing">
+              → Shows full labels and icons
+            </p>
           </div>
 
           <div className="demo-container demo-container--narrow">
@@ -517,11 +505,9 @@ export default function ContainerQueryShowcase() {
               onActionClick={handleActionClick}
               responsive={true}
             />
-            <div className="section-spacing">
-              <small className="text-muted">
-                → Hides labels, shows only icons
-              </small>
-            </div>
+            <p className="text-muted section-spacing">
+              → Hides labels, shows only icons
+            </p>
           </div>
         </div>
 
@@ -547,7 +533,6 @@ export default function ContainerQueryShowcase() {
           minimal navigation.
         </p>
 
-        {/* Wide Container */}
         <div className="section-spacing">
           <h4>Wide Container (600px+)</h4>
           <div className="demo-container demo-container--wide">
@@ -564,7 +549,6 @@ export default function ContainerQueryShowcase() {
           </div>
         </div>
 
-        {/* Medium Container */}
         <div className="section-spacing">
           <h4>Medium Container (450px)</h4>
           <div className="demo-container demo-container--medium">
@@ -581,7 +565,6 @@ export default function ContainerQueryShowcase() {
           </div>
         </div>
 
-        {/* Narrow Container */}
         <div className="section-spacing">
           <h4>Narrow Container (350px)</h4>
           <div className="demo-container demo-container--narrow">

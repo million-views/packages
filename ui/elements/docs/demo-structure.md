@@ -189,3 +189,4 @@ With that said, here are various issues I found:
   - Fix the burger menu to be like in the screenshot
   - Fix the MegaDrowndown menu to have proper backgrounds for light/dark mode
     and for all palettes
+  - Fix the cards to have proper layout (use grid?) to keep the buttons aligned
