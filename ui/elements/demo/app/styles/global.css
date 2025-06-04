@@ -700,6 +700,252 @@ body {
 }
 
 /* ===========================================
+   ECOMMERCE LAYOUT FIXES - ALL THREE ISSUES
+   =========================================== */
+
+/* FIX 1: PRODUCT GRID LAYOUT - SMOOTH SIDEBAR TRANSITIONS */
+
+/* Main product layout container */
+.ecommerce-layout {
+  display: grid;
+  gap: var(--mv-space-xl);
+  transition: grid-template-columns var(--mv-transition-normal);
+  align-items: start;
+}
+
+/* When sidebar is closed - single column for products */
+.ecommerce-layout--no-sidebar {
+  grid-template-columns: 1fr;
+}
+
+/* When sidebar is open - two columns with proper ratio */
+.ecommerce-layout--with-sidebar {
+  grid-template-columns: 300px 1fr;
+}
+
+@media (max-width: 768px) {
+  .ecommerce-layout--with-sidebar {
+    grid-template-columns: 1fr;
+    gap: var(--mv-space-lg);
+  }
+
+  .ecommerce-sidebar {
+    order: 2;
+    /* Move sidebar below products on mobile */
+  }
+
+  .ecommerce-products {
+    order: 1;
+  }
+}
+
+/* FIX 2: PRODUCT CARDS - PERFECT BUTTON ALIGNMENT */
+
+/* Product grid with consistent card heights */
+.products-grid {
+  display: grid;
+  gap: var(--mv-space-xl);
+  /* Auto-fit with minimum card width */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.products-grid--three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.products-grid--list {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+@media (max-width: 768px) {
+  .products-grid--three-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+
+  .products-grid,
+  .products-grid--three-col,
+  .products-grid--list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* CRITICAL: Product card with perfect button alignment */
+.product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* Fill grid cell completely */
+  background: var(--mv-color-surface);
+  border: 1px solid var(--mv-color-border-light);
+  border-radius: var(--mv-radius-lg);
+  padding: var(--mv-space-xl);
+  transition: var(--mv-transition-fast);
+  overflow: hidden;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mv-shadow-lg);
+  border-color: var(--mv-color-border);
+}
+
+/* Product card content sections */
+.product-card__image {
+  text-align: center;
+  font-size: 4rem;
+  padding: var(--mv-space-xl) var(--mv-space-lg);
+  margin-bottom: var(--mv-space-lg);
+}
+
+.product-card__content {
+  flex: 1;
+  /* Take up available space */
+  display: flex;
+  flex-direction: column;
+  gap: var(--mv-space-md);
+}
+
+.product-card__title {
+  font-size: var(--mv-font-size-lg);
+  font-weight: var(--mv-font-weight-semibold);
+  color: var(--mv-color-text-primary);
+  margin: 0;
+  line-height: var(--mv-line-height-tight);
+}
+
+.product-card__description {
+  color: var(--mv-color-text-secondary);
+  line-height: var(--mv-line-height-relaxed);
+  margin: 0;
+  flex: 1;
+  /* Push footer to bottom */
+}
+
+/* CRITICAL: Footer that aligns all buttons */
+.product-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--mv-space-md);
+  margin-top: auto;
+  /* Push to bottom */
+  padding-top: var(--mv-space-lg);
+  border-top: 1px solid var(--mv-color-border-light);
+}
+
+.product-card__price {
+  font-size: var(--mv-font-size-xl);
+  font-weight: var(--mv-font-weight-bold);
+  color: var(--mv-color-primary);
+  margin: 0;
+}
+
+.product-card__button {
+  flex-shrink: 0;
+  /* Prevent button from shrinking */
+}
+
+/* FIX 3: SELECT DROPDOWN - NO MORE CLIPPING */
+
+/* Enhanced select container to prevent clipping */
+.mv-select {
+  position: relative;
+  display: inline-block;
+  min-width: 200px;
+  /* CRITICAL: Ensure dropdown can escape container bounds */
+  z-index: var(--mv-z-dropdown);
+}
+
+/* Dropdown positioning fix */
+.mv-select__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: calc(var(--mv-z-dropdown) + 10);
+  /* Higher than parent */
+  margin-top: var(--mv-space-sm);
+  background: var(--mv-color-surface);
+  border: 2px solid var(--mv-color-border);
+  border-radius: var(--mv-radius-lg);
+  box-shadow: var(--mv-shadow-xl);
+  max-height: 300px;
+  overflow: hidden;
+
+  /* CRITICAL: Escape any parent overflow constraints */
+  transform: translateZ(0);
+  /* Create new stacking context */
+}
+
+/* Ensure dropdown appears above everything */
+.mv-select--open {
+  z-index: calc(var(--mv-z-dropdown) + 5);
+}
+
+.mv-select--open .mv-select__dropdown {
+  /* Force dropdown to appear above clipping containers */
+  position: fixed;
+  z-index: var(--mv-z-popover);
+}
+
+/* Enhanced search and filters container */
+.search-filters-container {
+  /* CRITICAL: Allow dropdowns to escape */
+  overflow: visible !important;
+  z-index: 1;
+  position: relative;
+}
+
+.search-filters-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--mv-space-lg);
+  align-items: start;
+  /* Prevent stretching */
+  /* CRITICAL: Each grid cell allows overflow */
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .search-filters-grid {
+    grid-template-columns: 1fr;
+    gap: var(--mv-space-md);
+  }
+}
+
+/* Specific e-commerce page header fixes */
+.ecommerce-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--mv-space-lg);
+  margin-bottom: var(--mv-space-xl);
+  /* Allow dropdowns in buttons to escape */
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+/* Product count and status text */
+.products-status {
+  color: var(--mv-color-text-secondary);
+  font-size: var(--mv-font-size-md);
+  margin-bottom: var(--mv-space-lg);
+}
+
+/* Category and sort controls */
+.product-controls {
+  /* Ensure dropdown menus can escape */
+  position: relative;
+  z-index: var(--mv-z-dropdown);
+  overflow: visible;
+}
+
+/* ===========================================
    PRINT STYLES
    =========================================== */
 

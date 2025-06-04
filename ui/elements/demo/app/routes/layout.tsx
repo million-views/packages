@@ -128,12 +128,14 @@ export default function Layout() {
           responsive={true}
         />
 
-        <ActionBar
-          actions={headerActions}
-          onActionClick={handleActionClick}
-          position="right"
-          responsive={true}
-        />
+        <div className="header-actions">
+          <ActionBar
+            actions={headerActions}
+            onActionClick={handleActionClick}
+            position="right"
+            responsive={true}
+          />
+        </div>
       </Header>
 
       <Drawer

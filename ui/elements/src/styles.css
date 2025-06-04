@@ -449,10 +449,15 @@ body {
   border-bottom: none;
 }
 
+/* ===========================================
+   FIXED HEADER LAYOUT FOR PROPER ACTIONBAR ALIGNMENT
+   =========================================== */
+
 .mv-header__inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "brand search actions";
   align-items: center;
-  justify-content: space-between;
   max-width: 1400px;
   margin: 0 auto;
   padding: var(--mv-space-lg) var(--mv-space-xl);
@@ -460,17 +465,63 @@ body {
   min-height: 4rem;
 }
 
+/* Brand area */
+.mv-brand {
+  grid-area: brand;
+  justify-self: start;
+}
+
+/* Search area */
+.layout-search {
+  grid-area: search;
+  justify-self: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+/* Actions area - this fixes the ActionBar alignment */
+.header-actions {
+  grid-area: actions;
+  justify-self: end;
+  /* CRITICAL: Provide width context for ActionBar container queries */
+  min-width: 200px;
+}
+
+/* Ensure ActionBar container works in header context */
+.header-actions .mv-actionbar-container {
+  /* ActionBar should take available width in actions area */
+  width: 100%;
+}
+
 @container header (max-width: 768px) {
   .mv-header__inner {
-    flex-wrap: wrap;
-    padding: var(--mv-space-md) var(--mv-space-lg);
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "brand actions"
+      "search search";
     gap: var(--mv-space-lg);
+    padding: var(--mv-space-md) var(--mv-space-lg);
   }
 
   .layout-search {
-    order: 3;
-    flex-basis: 100%;
     max-width: none;
+    min-width: 200px;
+  }
+
+  /* Provide smaller width context on mobile */
+  .header-actions {
+    min-width: 150px;
+  }
+}
+
+@container header (max-width: 480px) {
+  .mv-header__inner {
+    grid-template-columns: 1fr auto;
+    gap: var(--mv-space-md);
+  }
+
+  .header-actions {
+    min-width: 120px;
   }
 }
 
@@ -652,24 +703,6 @@ body {
 /* ===========================================
    LIST COMPONENT - ENHANCED FOR DRAWER NAVIGATION
    =========================================== */
-
-/* FIXED: Ensure descriptions always show in detailed variant unless container is very narrow */
-@container list (min-width: 300px) {
-  .mv-list--detailed .mv-list__item-description {
-    display: block !important;
-  }
-}
-
-/* Only hide descriptions when container is extremely narrow */
-@container list (max-width: 280px) {
-  .mv-list__item-description {
-    display: none;
-  }
-
-  .mv-list__item-icon {
-    display: none;
-  }
-}
 
 /* Enhanced list styling for navigation drawer */
 .mv-drawer .mv-list__item {
@@ -1281,26 +1314,6 @@ body {
   opacity: 0.7;
 }
 
-@container tabs (max-width: 480px) {
-  .mv-tabs__item {
-    padding: var(--mv-space-sm) var(--mv-space-md);
-  }
-
-  .mv-tabs__label {
-    font-size: var(--mv-font-size-sm);
-  }
-}
-
-@container tabs (max-width: 320px) {
-  .mv-tabs__icon {
-    display: none;
-  }
-
-  .mv-tabs__external {
-    display: none;
-  }
-}
-
 .mv-tabs--pills .mv-tabs__container {
   border-bottom: none;
   gap: var(--mv-space-sm);
@@ -1437,36 +1450,6 @@ body {
 .mv-list__item-external {
   font-size: var(--mv-font-size-sm);
   opacity: 0.7;
-}
-
-@container list (max-width: 480px) {
-  .mv-list__item {
-    padding: var(--mv-space-md);
-  }
-
-  .mv-list__item-content {
-    gap: var(--mv-space-md);
-  }
-
-  .mv-list__item-description {
-    display: none;
-  }
-}
-
-@container list (max-width: 320px) {
-  .mv-list__item-icon {
-    display: none;
-  }
-
-  .mv-list__item-external {
-    display: none;
-  }
-
-  .mv-list__item-meta {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--mv-space-xs);
-  }
 }
 
 .mv-list--compact .mv-list__item {
@@ -1671,19 +1654,34 @@ body {
 }
 
 /* ===========================================
-   FIXED ACTION BAR COMPONENT - PROPER CONTAINER SIZING
+   FIXED ACTION BAR COMPONENT - PROPER CONTAINER QUERIES
    =========================================== */
 
-/* FIXED: Container query wrapper - takes available width for meaningful responsive behavior */
+/* FIXED: Container query wrapper that provides proper width context */
 .mv-actionbar-container {
-  /* CRITICAL FIX: Use display: block and width: 100% to give container query meaningful context */
-  display: block;
-  width: 100%;
+  /* CRITICAL: Use display: flex to participate in parent layouts while providing container context */
+  display: flex;
   container-type: inline-size;
   container-name: actionbar;
+  /* Ensure minimum width for meaningful container queries */
+  min-width: 0;
+  flex: 1;
 }
 
-/* ActionBar content - flexbox layout */
+/* Position variants for the container */
+.mv-actionbar-container--left {
+  justify-content: flex-start;
+}
+
+.mv-actionbar-container--center {
+  justify-content: center;
+}
+
+.mv-actionbar-container--right {
+  justify-content: flex-end;
+}
+
+/* ActionBar content - now properly contained */
 .mv-actionbar {
   display: inline-flex;
   align-items: center;
@@ -1692,15 +1690,23 @@ body {
   background: var(--mv-color-surface-elevated);
   border-radius: var(--mv-radius-lg);
   box-sizing: border-box;
-  /* FIXED: Remove container-type from here - only the wrapper should have it */
+  /* Allow shrinking when container is narrow */
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+/* Non-responsive ActionBar (when responsive=false) */
+.mv-actionbar--left {
+  justify-self: flex-start;
 }
 
 .mv-actionbar--center {
-  justify-content: center;
+  justify-self: center;
+  margin: 0 auto;
 }
 
 .mv-actionbar--right {
-  justify-content: flex-end;
+  justify-self: flex-end;
   margin-left: auto;
 }
 
@@ -1722,6 +1728,9 @@ body {
   position: relative;
   min-height: 2.5rem;
   white-space: nowrap;
+  /* FIXED: Ensure buttons can shrink */
+  min-width: 2.5rem;
+  flex-shrink: 0;
 }
 
 .mv-actionbar__action:hover:not(:disabled) {
@@ -1746,6 +1755,9 @@ body {
 .mv-actionbar__label {
   font-size: var(--mv-font-size-sm);
   display: inline-block;
+  /* FIXED: Allow labels to be hidden gracefully */
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .mv-actionbar__badge {
@@ -1764,42 +1776,6 @@ body {
   font-weight: var(--mv-font-weight-bold);
   border-radius: var(--mv-radius-full);
   border: 2px solid var(--mv-color-surface-elevated);
-}
-
-/* FIXED: Proper responsive container queries based on meaningful container width */
-@container actionbar (max-width: 600px) {
-  .mv-actionbar {
-    /* Stay horizontal but reduce spacing */
-    gap: var(--mv-space-xs);
-  }
-
-  .mv-actionbar__action {
-    padding: var(--mv-space-sm) var(--mv-space-md);
-  }
-}
-
-@container actionbar (max-width: 450px) {
-  .mv-actionbar__label {
-    display: none !important;
-  }
-
-  .mv-actionbar__action {
-    padding: var(--mv-space-sm);
-    min-height: 2rem;
-    min-width: 2rem;
-  }
-}
-
-@container actionbar (max-width: 300px) {
-  .mv-actionbar__action {
-    padding: var(--mv-space-xs);
-    min-height: 1.75rem;
-    min-width: 1.75rem;
-  }
-
-  .mv-actionbar__icon {
-    font-size: var(--mv-font-size-md);
-  }
 }
 
 /* FIXED: Compact variant */
@@ -2007,7 +1983,7 @@ body {
 }
 
 /* ===========================================
-   AMAZON-LEVEL INTELLIGENT ADAPTATION
+   COLUMNS BASED ON AVAILABLE WIDTH
    =========================================== */
 
 /* LEVEL 1: Desktop Powerhouse (1000px+) - Better than Amazon */
@@ -2331,15 +2307,16 @@ body {
 }
 
 /* ===========================================
-   TABLE COMPONENT WITH FIXED CONTAINER QUERIES
+   PROFESSIONAL TABLE BASE STYLES
    =========================================== */
 
 .mv-table {
   width: 100%;
   overflow: hidden;
   border-radius: var(--mv-radius-lg);
-  border: 2px solid var(--mv-color-border);
+  border: 2px solid var(--mv-color-border-light);
   background: var(--mv-color-surface);
+  box-shadow: var(--mv-shadow-sm);
 }
 
 .mv-table__table {
@@ -2347,12 +2324,14 @@ body {
   border-collapse: collapse;
 }
 
+/* FIXED: Professional header styling */
 .mv-table__header {
   background: var(--mv-color-surface-elevated);
+  border-bottom: 2px solid var(--mv-color-border);
 }
 
 .mv-table__header-row {
-  border-bottom: 2px solid var(--mv-color-border);
+  border-bottom: none;
 }
 
 .mv-table__header-cell {
@@ -2363,6 +2342,12 @@ body {
   text-align: left;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background: var(--mv-color-surface-elevated);
+  border-bottom: 2px solid var(--mv-color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  line-height: var(--mv-line-height-tight);
 }
 
 .mv-table__header-cell--sortable {
@@ -2387,6 +2372,7 @@ body {
 .mv-table__header-cell--select {
   width: 60px;
   padding: var(--mv-space-lg);
+  text-align: center;
 }
 
 .mv-table__header-content {
@@ -2402,31 +2388,45 @@ body {
 .mv-table__sort-indicator {
   color: var(--mv-color-primary);
   font-size: var(--mv-font-size-md);
+  margin-left: var(--mv-space-xs);
+  font-weight: var(--mv-font-weight-bold);
 }
 
+/* FIXED: Professional row styling */
 .mv-table__row {
-  border-bottom: 1px solid var(--mv-color-border);
+  border-bottom: 1px solid var(--mv-color-border-light);
   transition: var(--mv-transition-fast);
+  background: var(--mv-color-surface);
 }
 
 .mv-table__row:hover {
   background: var(--mv-color-surface-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--mv-shadow-sm);
+}
+
+.mv-table__row:last-child {
+  border-bottom: none;
 }
 
 .mv-table__row--selected {
-  background: rgba(124, 152, 133, 0.1);
-  border-color: var(--mv-color-primary);
+  background: rgba(124, 152, 133, 0.08);
+  border-left: 3px solid var(--mv-color-primary);
+  box-shadow: inset 0 0 0 1px rgba(124, 152, 133, 0.2);
 }
 
 .mv-table__row--clickable {
   cursor: pointer;
 }
 
+/* FIXED: Professional cell styling */
 .mv-table__cell {
   padding: var(--mv-space-lg) var(--mv-space-xl);
   font-size: var(--mv-font-size-md);
   color: var(--mv-color-text-primary);
   vertical-align: middle;
+  line-height: var(--mv-line-height-normal);
+  border-bottom: none;
 }
 
 .mv-table__cell--center {
@@ -2435,100 +2435,43 @@ body {
 
 .mv-table__cell--right {
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .mv-table__cell--select {
   width: 60px;
   padding: var(--mv-space-lg);
+  text-align: center;
 }
 
+/* FIXED: Professional checkbox styling */
 .mv-table__checkbox {
   width: 1.25rem;
   height: 1.25rem;
   cursor: pointer;
   accent-color: var(--mv-color-primary);
+  border-radius: var(--mv-radius-sm);
 }
 
+/* FIXED: Professional empty state */
 .mv-table__empty {
   padding: var(--mv-space-4xl);
   text-align: center;
   color: var(--mv-color-text-muted);
   background: var(--mv-color-surface);
+  border-top: 1px solid var(--mv-color-border-light);
+}
+
+.mv-table__empty h3 {
+  margin: 0 0 var(--mv-space-md) 0;
+  color: var(--mv-color-text-primary);
   font-size: var(--mv-font-size-lg);
 }
 
-@container table (max-width: 768px) {
-
-  .mv-table__header-cell,
-  .mv-table__cell {
-    padding: var(--mv-space-md) var(--mv-space-lg);
-    font-size: var(--mv-font-size-sm);
-  }
-}
-
-@container table (max-width: 600px) {
-
-  .mv-table__header-cell:nth-child(n+5),
-  .mv-table__cell:nth-child(n+5) {
-    display: none;
-  }
-}
-
-@container table (max-width: 450px) {
-
-  .mv-table__header-cell:nth-child(n+4),
-  .mv-table__cell:nth-child(n+4) {
-    display: none;
-  }
-}
-
-/* FIXED: Working card layout with proper data-label support */
-@container table (max-width: 400px) {
-  .mv-table__table {
-    display: block;
-  }
-
-  .mv-table__header {
-    display: none;
-  }
-
-  .mv-table__row {
-    display: block;
-    border: 1px solid var(--mv-color-border);
-    border-radius: var(--mv-radius-md);
-    margin-bottom: var(--mv-space-md);
-    padding: var(--mv-space-md);
-    background: var(--mv-color-surface);
-    position: relative;
-  }
-
-  .mv-table__cell {
-    display: block;
-    border: none;
-    padding: var(--mv-space-xs) 0;
-    text-align: left !important;
-    font-size: var(--mv-font-size-sm);
-  }
-
-  .mv-table__cell:not(.mv-table__cell--select)::before {
-    content: attr(data-label) ": ";
-    font-weight: var(--mv-font-weight-semibold);
-    color: var(--mv-color-text-secondary);
-    display: inline-block;
-    min-width: 80px;
-  }
-
-  .mv-table__cell--select {
-    position: absolute;
-    top: var(--mv-space-sm);
-    right: var(--mv-space-sm);
-    width: auto;
-    padding: 0;
-  }
-
-  .mv-table__cell--select::before {
-    display: none;
-  }
+.mv-table__empty p {
+  margin: 0;
+  font-size: var(--mv-font-size-md);
+  color: var(--mv-color-text-secondary);
 }
 
 /* ===========================================
@@ -2651,11 +2594,298 @@ body {
   box-shadow: 0 0 0 3px rgba(124, 152, 133, 0.15);
 }
 
-@container pagination (max-width: 600px) {
+/* ===========================================
+   STANDARDIZED CONTAINER QUERY BREAKPOINTS
+   =========================================== */
+
+/* 
+🎯 CONSISTENT BREAKPOINT SYSTEM:
+- xs: 320px and below  - Ultra-compact (phones in portrait)
+- sm: 480px and below  - Small (phones in landscape) 
+- md: 640px and below  - Medium (small tablets)
+- lg: 768px and below  - Large (tablets)
+- xl: 1024px and above - Extra large (desktop)
+*/
+
+/* ===========================================
+   STANDARDIZED ACTIONBAR BREAKPOINTS
+   =========================================== */
+
+@container actionbar (max-width: 480px) {
+  .mv-actionbar {
+    gap: var(--mv-space-xs);
+    padding: var(--mv-space-xs);
+  }
+
+  .mv-actionbar__action {
+    padding: var(--mv-space-sm) var(--mv-space-md);
+    gap: var(--mv-space-xs);
+  }
+}
+
+@container actionbar (max-width: 320px) {
+  .mv-actionbar__label {
+    display: none !important;
+  }
+
+  .mv-actionbar__action {
+    padding: var(--mv-space-sm);
+    min-height: 2rem;
+    min-width: 2rem;
+    gap: 0;
+  }
+
+  .mv-actionbar__icon {
+    font-size: var(--mv-font-size-md);
+  }
+}
+
+/* ===========================================
+   STANDARDIZED LIST BREAKPOINTS
+   =========================================== */
+
+@container list (max-width: 480px) {
+  .mv-list__item {
+    padding: var(--mv-space-md);
+  }
+
+  .mv-list__item-content {
+    gap: var(--mv-space-md);
+  }
+
+  /* Hide descriptions on small containers */
+  .mv-list__item-description {
+    display: none;
+  }
+}
+
+@container list (max-width: 320px) {
+  .mv-list__item-icon {
+    display: none;
+  }
+
+  .mv-list__item-external {
+    display: none;
+  }
+
+  .mv-list__item-meta {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--mv-space-xs);
+  }
+}
+
+/* ===========================================
+   STANDARDIZED TABLE BREAKPOINTS
+   =========================================== */
+/* ===========================================
+   FIXED TABLE BREAKPOINTS - SWITCH TO CARDS EARLIER
+   =========================================== */
+
+/* Hide less important columns on medium screens */
+@container table (max-width: 768px) {
+
+  .mv-table__header-cell,
+  .mv-table__cell {
+    padding: var(--mv-space-md) var(--mv-space-lg);
+    font-size: var(--mv-font-size-sm);
+  }
+}
+
+/* Hide more columns on smaller screens */
+@container table (max-width: 640px) {
+
+  .mv-table__header-cell:nth-child(n+6),
+  .mv-table__cell:nth-child(n+6) {
+    display: none;
+  }
+}
+
+/* Hide even more columns */
+@container table (max-width: 520px) {
+
+  .mv-table__header-cell:nth-child(n+5),
+  .mv-table__cell:nth-child(n+5) {
+    display: none;
+  }
+}
+
+/* FIXED: Switch to card layout at a reasonable width */
+@container table (max-width: 480px) {
+  .mv-table__table {
+    display: block;
+  }
+
+  .mv-table__header {
+    display: none;
+  }
+
+  .mv-table__body {
+    display: block;
+    gap: var(--mv-space-md);
+  }
+
+  .mv-table__row {
+    display: block;
+    /* Proper card styling */
+    background: var(--mv-color-surface);
+    border: 1px solid var(--mv-color-border);
+    border-radius: var(--mv-radius-lg);
+    padding: var(--mv-space-lg);
+    margin-bottom: var(--mv-space-md);
+    box-shadow: var(--mv-shadow-sm);
+    position: relative;
+    transition: var(--mv-transition-fast);
+  }
+
+  .mv-table__row:hover {
+    box-shadow: var(--mv-shadow-md);
+    border-color: var(--mv-color-border-dark);
+    transform: translateY(-1px);
+  }
+
+  .mv-table__row--selected {
+    background: rgba(124, 152, 133, 0.05);
+    border-color: var(--mv-color-primary);
+    box-shadow: 0 0 0 1px var(--mv-color-primary);
+  }
+
+  .mv-table__cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: none;
+    padding: var(--mv-space-sm) 0;
+    text-align: left !important;
+    font-size: var(--mv-font-size-sm);
+    border-bottom: 1px solid var(--mv-color-border-light);
+  }
+
+  .mv-table__cell:last-child {
+    border-bottom: none;
+  }
+
+  /* Proper label styling */
+  .mv-table__cell:not(.mv-table__cell--select)::before {
+    content: attr(data-label);
+    font-weight: var(--mv-font-weight-semibold);
+    color: var(--mv-color-text-secondary);
+    font-size: var(--mv-font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    min-width: 100px;
+    margin-right: var(--mv-space-md);
+    flex-shrink: 0;
+  }
+
+  /* Cell content styling */
+  .mv-table__cell-content {
+    flex: 1;
+    text-align: right;
+    font-weight: var(--mv-font-weight-medium);
+    color: var(--mv-color-text-primary);
+  }
+
+  /* Status badges in cards */
+  .mv-table__cell .status-badge {
+    margin-left: auto;
+  }
+
+  /* Select checkbox positioning */
+  .mv-table__cell--select {
+    position: absolute;
+    top: var(--mv-space-md);
+    right: var(--mv-space-md);
+    width: auto;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .mv-table__cell--select::before {
+    display: none;
+  }
+
+  .mv-table__cell--select .mv-table__checkbox {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  /* Card header with primary info */
+  .mv-table__cell[data-label="Name"],
+  .mv-table__cell[data-label="ID"] {
+    font-size: var(--mv-font-size-md);
+    font-weight: var(--mv-font-weight-semibold);
+    color: var(--mv-color-primary);
+    border-bottom: 2px solid var(--mv-color-border);
+    padding-bottom: var(--mv-space-md);
+    margin-bottom: var(--mv-space-sm);
+  }
+
+  .mv-table__cell[data-label="Name"]::before,
+  .mv-table__cell[data-label="ID"]::before {
+    color: var(--mv-color-text-primary);
+    font-size: var(--mv-font-size-sm);
+  }
+}
+
+/* Ultra-compact card layout for very small screens */
+@container table (max-width: 320px) {
+  .mv-table__row {
+    padding: var(--mv-space-md);
+  }
+
+  .mv-table__cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--mv-space-xs);
+    padding: var(--mv-space-xs) 0;
+  }
+
+  .mv-table__cell::before {
+    min-width: auto;
+    margin-right: 0;
+  }
+
+  .mv-table__cell-content {
+    text-align: left;
+  }
+}
+
+/* ===========================================
+   STANDARDIZED TABS BREAKPOINTS
+   =========================================== */
+
+@container tabs (max-width: 480px) {
+  .mv-tabs__item {
+    padding: var(--mv-space-sm) var(--mv-space-md);
+  }
+
+  .mv-tabs__label {
+    font-size: var(--mv-font-size-sm);
+  }
+}
+
+@container tabs (max-width: 320px) {
+  .mv-tabs__icon {
+    display: none;
+  }
+
+  .mv-tabs__external {
+    display: none;
+  }
+}
+
+/* ===========================================
+   STANDARDIZED PAGINATION BREAKPOINTS
+   =========================================== */
+
+@container pagination (max-width: 640px) {
   .mv-pagination__container {
     flex-direction: column;
     gap: var(--mv-space-md);
     align-items: center;
+    justify-content: center;
+    place-content: center;
   }
 
   .mv-pagination__info {
@@ -2667,7 +2897,14 @@ body {
   }
 }
 
-@container pagination (max-width: 450px) {
+@container pagination (max-width: 480px) {
+
+  /* FIXED: Center the controls properly */
+  .mv-pagination__container {
+    justify-content: center;
+    /* Center the entire pagination container */
+  }
+
   .mv-pagination__info {
     display: none;
   }
@@ -2677,7 +2914,15 @@ body {
   }
 }
 
-@container pagination (max-width: 400px) {
+/* FIXED: Keep pagination horizontal, just show essential controls */
+@container pagination (max-width: 320px) {
+
+  /* FIXED: Center the controls properly */
+  .mv-pagination__container {
+    justify-content: center;
+    /* Center the entire pagination container */
+  }
+
   .mv-pagination__button--page:not(.mv-pagination__button--active) {
     display: none;
   }
@@ -2686,25 +2931,136 @@ body {
     display: none;
   }
 
+  /* FIXED: Keep horizontal layout but add page indicator above */
   .mv-pagination__controls {
-    gap: var(--mv-space-sm);
+    flex-direction: row;
+    /* Keep horizontal! */
+    gap: var(--mv-space-md);
+    justify-content: center;
     position: relative;
-  }
-}
-
-@container pagination (max-width: 350px) {
-  .mv-pagination__controls {
-    flex-direction: column;
-    gap: var(--mv-space-sm);
   }
 
   .mv-pagination__controls::before {
     content: "Page " var(--mv-current-page, "1") " of " var(--mv-total-pages, "1");
-    font-size: var(--mv-font-size-sm);
+    position: absolute;
+    top: -2rem;
+    /* Position above the controls */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--mv-font-size-xs);
     color: var(--mv-color-text-secondary);
-    order: -1;
+    white-space: nowrap;
+  }
+
+  /* Ensure there's space for the indicator */
+  .mv-pagination__container {
+    padding-top: var(--mv-space-xl);
   }
 }
+
+/* ===========================================
+   STANDARDIZED MEGADROPDOWN BREAKPOINTS
+   =========================================== */
+
+/* Desktop powerhouse */
+@container megadropdown (min-width: 1024px) {
+  .mv-megadropdown__groups {
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--mv-space-4xl);
+  }
+}
+
+/* Standard desktop */
+@container megadropdown (max-width: 1023px) {
+  .mv-megadropdown__groups {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--mv-space-3xl);
+  }
+}
+
+/* Compact desktop */
+@container megadropdown (max-width: 768px) {
+  .mv-megadropdown__groups {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--mv-space-2xl);
+  }
+}
+
+/* Tablet mode */
+@container megadropdown (max-width: 640px) {
+  .mv-megadropdown__groups {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--mv-space-xl);
+  }
+
+  .mv-megadropdown__content {
+    padding: var(--mv-space-xl);
+  }
+}
+
+/* Mobile mode */
+@container megadropdown (max-width: 480px) {
+  .mv-megadropdown__groups {
+    grid-template-columns: 1fr;
+    gap: var(--mv-space-lg);
+  }
+
+  .mv-megadropdown__item-description {
+    display: none;
+  }
+}
+
+/* Ultra-mobile */
+@container megadropdown (max-width: 320px) {
+  .mv-megadropdown {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    transform: none;
+  }
+
+  .mv-megadropdown__item-icon {
+    display: none;
+  }
+
+  .mv-megadropdown__featured {
+    display: none;
+  }
+}
+
+/* ===========================================
+   BREAKPOINT CONSISTENCY DOCUMENTATION
+   =========================================== */
+
+/*
+🎯 STANDARDIZED BREAKPOINTS FOR ALL COMPONENTS:
+
+Ultra-Compact (≤320px):
+- Hide: descriptions, icons, badges, external indicators
+- Show: essential labels and primary actions only
+- Layout: minimal, compact spacing
+
+Small (≤480px):
+- Hide: descriptions, less important elements
+- Show: icons, labels, essential features
+- Layout: reduced spacing, simplified
+
+Medium (≤640px):
+- Hide: auxiliary columns, secondary info
+- Show: core content with icons
+- Layout: moderate compression
+
+Large (≤768px):
+- Hide: some columns, optional features
+- Show: most content with smaller fonts
+- Layout: slight compression
+
+Extra Large (>768px):
+- Show: full feature set
+- Layout: optimal spacing and sizing
+
+This ensures consistent behavior across ALL components! 🚀
+*/
 
 /* ===========================================
    CONTAINER QUERY UTILITY CLASSES

@@ -372,7 +372,8 @@ export default function Ecommerce() {
 
       <Breadcrumbs items={breadcrumbs} responsive={true} />
 
-      <header className="page-header">
+      {/* FIXED: Header with proper overflow handling */}
+      <header className="ecommerce-header">
         <div>
           <h1 className="page-title">Shop</h1>
           <p className="page-description">
@@ -387,95 +388,107 @@ export default function Ecommerce() {
         </Button>
       </header>
 
-      {/* Search and Filter Controls */}
+      {/* FIXED: Search and Filter Controls - No more clipping */}
       <Card variant="elevated" padding="md" responsive={true}>
-        <div className="grid grid--auto-fit">
-          <SearchBox
-            placeholder="Search products..."
-            variant="outlined"
-            responsive={true}
-          />
-          <Select
-            options={categoryOptions}
-            value={selectedCategory}
-            onSelect={setSelectedCategory}
-            placeholder="Category"
-            responsive={true}
-          />
-          <Select
-            options={sortOptions}
-            value={sortBy}
-            onSelect={setSortBy}
-            placeholder="Sort by"
-            responsive={true}
-          />
+        <div className="search-filters-container">
+          <div className="search-filters-grid">
+            <SearchBox
+              placeholder="Search products..."
+              variant="outlined"
+              responsive={true}
+            />
+            <Select
+              options={categoryOptions}
+              value={selectedCategory}
+              onSelect={setSelectedCategory}
+              placeholder="Category"
+              responsive={true}
+            />
+            <Select
+              options={sortOptions}
+              value={sortBy}
+              onSelect={setSortBy}
+              placeholder="Sort by"
+              responsive={true}
+            />
+          </div>
         </div>
       </Card>
 
-      <div className="grid grid--two-col">
+      {/* FIXED: Main layout with smooth sidebar transitions */}
+      <div
+        className={`ecommerce-layout ${
+          sidebarOpen
+            ? "ecommerce-layout--with-sidebar"
+            : "ecommerce-layout--no-sidebar"
+        }`}
+      >
         {/* Filter Sidebar */}
         {sidebarOpen && (
-          <Card variant="outlined" padding="lg" responsive={true}>
-            <h3>Filters</h3>
-            <List
-              items={filterItems}
-              variant="detailed"
-              onItemClick={handleFilterClick}
-              responsive={true}
-            />
-          </Card>
+          <div className="ecommerce-sidebar">
+            <Card variant="outlined" padding="lg" responsive={true}>
+              <h3>Filters</h3>
+              <List
+                items={filterItems}
+                variant="detailed"
+                onItemClick={handleFilterClick}
+                responsive={true}
+              />
+            </Card>
+          </div>
         )}
 
-        {/* Main Product Area */}
-        <div>
-          <p className="page-description">
+        {/* FIXED: Main Product Area with perfect button alignment */}
+        <div className="ecommerce-products">
+          <p className="products-status">
             Showing {filteredProducts.length} products
             {selectedCategory !== "all" && ` in ${selectedCategory}`}
           </p>
 
-          {/* Product Grid */}
+          {/* FIXED: Product Grid with aligned buttons */}
           <div
-            className={`grid ${
-              viewMode === "list" ? "grid--auto-fit" : "grid--three-col"
+            className={`products-grid ${
+              viewMode === "list"
+                ? "products-grid--list"
+                : "products-grid--three-col"
             }`}
           >
             {filteredProducts.map((product) => (
-              <Card
-                key={product.id}
-                variant="elevated"
-                padding="lg"
-                responsive={true}
-              >
-                <div className="text-center">
-                  <div className="font-size-4xl padding-xl">
-                    {product.image}
-                  </div>
+              <div key={product.id} className="product-card">
+                <div className="product-card__image">
+                  {product.image}
+                </div>
 
-                  <h3>{product.name}</h3>
+                <div className="product-card__content">
+                  <h3 className="product-card__title">
+                    {product.name}
+                  </h3>
 
-                  <p className="text-muted">
+                  <p className="product-card__description">
                     {product.description}
                   </p>
-
-                  <div className="preview-footer">
-                    <span className="text-primary font-weight-bold">
-                      ${product.price}
-                    </span>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      Add to Cart
-                    </Button>
-                  </div>
                 </div>
-              </Card>
+
+                {/* CRITICAL: Footer that aligns all buttons */}
+                <div className="product-card__footer">
+                  <span className="product-card__price">
+                    ${product.price}
+                  </span>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="product-card__button"
+                    onClick={() =>
+                      handleAddToCart(product)}
+                  >
+                    Add to Cart
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </div>
-
       {/* Shopping Cart Drawer */}
       <Drawer
         isOpen={cartOpen}

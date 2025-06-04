@@ -832,15 +832,43 @@ export function ActionBar({
     onActionClick?.(action);
   }, [onActionClick]);
 
-  // FIXED: Container wrapper approach - provide meaningful width context for container queries
-  const wrapperClassName = responsive
-    ? `mv-actionbar-container ${className}`
-    : className;
-
-  return (
-    <div className={wrapperClassName}>
+  // FIXED: Proper container structure for container queries
+  if (!responsive) {
+    // Non-responsive version - simple flex container
+    return (
       <div
-        className={`mv-actionbar mv-actionbar--${variant} mv-actionbar--${position}`}
+        className={`mv-actionbar mv-actionbar--${variant} mv-actionbar--${position} ${className}`}
+      >
+        {actions.map((action) => (
+          <button
+            key={action.id}
+            className={`mv-actionbar__action ${
+              action.disabled ? "mv-actionbar__action--disabled" : ""
+            }`}
+            onClick={() => handleActionClick(action)}
+            disabled={action.disabled}
+            aria-label={action.label}
+          >
+            {action.icon && (
+              <span className="mv-actionbar__icon">{action.icon}</span>
+            )}
+            <span className="mv-actionbar__label">{action.label}</span>
+            {action.badge && action.badge > 0 && (
+              <span className="mv-actionbar__badge">{action.badge}</span>
+            )}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // FIXED: Responsive version with proper container query structure
+  return (
+    <div
+      className={`mv-actionbar-container mv-actionbar-container--${position} ${className}`}
+    >
+      <div
+        className={`mv-actionbar mv-actionbar--${variant}`}
       >
         {actions.map((action) => (
           <button
@@ -1462,7 +1490,7 @@ export interface TableProps extends BaseProps {
 
 /**
  * FIXED: Table - Comprehensive data table with container-aware responsive behavior
- * Automatically switches to card layout on narrow containers with proper data-label attributes
+ * Now with properly styled card layout for narrow containers
  */
 export function Table({
   columns,
@@ -1597,9 +1625,12 @@ export function Table({
                   }`}
                   data-label={column.label} // CRITICAL: For mobile card layout
                 >
-                  {column.render
-                    ? column.render(row[column.key], row)
-                    : row[column.key]}
+                  {/* FIXED: Wrap content for proper card styling */}
+                  <span className="mv-table__cell-content">
+                    {column.render
+                      ? column.render(row[column.key], row)
+                      : row[column.key]}
+                  </span>
                 </td>
               ))}
             </tr>
@@ -1608,7 +1639,15 @@ export function Table({
       </table>
       {data.length === 0 && (
         <div className="mv-table__empty">
-          <p>No data available</p>
+          <div style={{ fontSize: "3rem", marginBottom: "var(--mv-space-lg)" }}>
+            📋
+          </div>
+          <h3 style={{ margin: "0 0 var(--mv-space-md) 0" }}>
+            No Data Available
+          </h3>
+          <p style={{ margin: 0, color: "var(--mv-color-text-secondary)" }}>
+            There are no items to display in this table.
+          </p>
         </div>
       )}
     </div>
