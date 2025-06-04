@@ -21,6 +21,10 @@ export default [
         path: "settings",
         file: "routes/settings.tsx",
       },
+      {
+        path: "showcase",
+        file: "routes/showcase.tsx",
+      }
     ],
   },
 ] satisfies RouteConfig;

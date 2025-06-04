@@ -13,13 +13,11 @@ import {
 import type {
   Action,
   BreadcrumbItem,
-  MegaDropdownItem,
   MenuItem,
   NavigationItemProps,
   SelectOption,
 } from "@m5nv/ui-elements";
 
-// Product interface for better type safety
 interface Product {
   id: string;
   name: string;
@@ -36,6 +34,8 @@ export default function Ecommerce() {
   const [cartItems, setCartItems] = useState<
     (Product & { quantity: number })[]
   >([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const breadcrumbs: BreadcrumbItem[] = [
     { id: "home", label: "Home", href: "/" },
@@ -59,12 +59,17 @@ export default function Ecommerce() {
   ];
 
   const shopActions: Action[] = [
+    {
+      id: "view",
+      label: viewMode === "grid" ? "List View" : "Grid View",
+      icon: viewMode === "grid" ? "☰" : "⊞",
+    },
+    { id: "filters", label: "Filters", icon: "🔍" },
     { id: "wishlist", label: "Wishlist", icon: "❤️", badge: 5 },
     { id: "cart", label: "Cart", icon: "🛒", badge: cartItems.length },
     { id: "account", label: "Account", icon: "👤" },
   ];
 
-  // Navigation dropdown data (unchanged for functionality)
   const electronicsDropdown = {
     groups: [
       {
@@ -81,19 +86,13 @@ export default function Ecommerce() {
             id: "desktops",
             label: "Desktop Computers",
             icon: "🖥️",
-            description: "All-in-one and tower PCs",
+            description: "Powerful workstations and gaming rigs",
           },
           {
             id: "tablets",
             label: "Tablets",
             icon: "📱",
             description: "iPad, Android, and Windows tablets",
-          },
-          {
-            id: "accessories",
-            label: "Computer Accessories",
-            icon: "⌨️",
-            description: "Keyboards, mice, and more",
           },
         ],
       },
@@ -111,7 +110,7 @@ export default function Ecommerce() {
             id: "headphones",
             label: "Headphones",
             icon: "🎧",
-            description: "Wireless, noise-canceling, and more",
+            description: "Wireless and noise-canceling",
           },
           {
             id: "speakers",
@@ -119,45 +118,15 @@ export default function Ecommerce() {
             icon: "🔊",
             description: "Bluetooth and smart speakers",
           },
-          {
-            id: "smartwatches",
-            label: "Smart Watches",
-            icon: "⌚",
-            description: "Fitness tracking and connectivity",
-          },
-        ],
-      },
-      {
-        id: "gaming",
-        title: "Gaming",
-        items: [
-          {
-            id: "consoles",
-            label: "Gaming Consoles",
-            icon: "🎮",
-            description: "PlayStation, Xbox, Nintendo Switch",
-          },
-          {
-            id: "pc-gaming",
-            label: "PC Gaming",
-            icon: "🖥️",
-            description: "Graphics cards, gaming PCs",
-          },
-          {
-            id: "gaming-accessories",
-            label: "Gaming Accessories",
-            icon: "🕹️",
-            description: "Controllers, headsets, keyboards",
-          },
         ],
       },
     ],
     featuredItems: [
       { id: "iphone", label: "iPhone 15 Pro", icon: "📱" },
-      { id: "macbook", label: "MacBook Air M3", icon: "💻" },
+      { id: "macbook", label: "MacBook Pro M3", icon: "💻" },
       { id: "airpods", label: "AirPods Pro", icon: "🎧" },
-      { id: "ps5", label: "PlayStation 5", icon: "🎮" },
     ],
+    responsive: true,
   };
 
   const clothingDropdown = {
@@ -184,12 +153,6 @@ export default function Ecommerce() {
             icon: "🧥",
             description: "Winter coats and light jackets",
           },
-          {
-            id: "shoes",
-            label: "Men's Shoes",
-            icon: "👞",
-            description: "Sneakers, boots, and dress shoes",
-          },
         ],
       },
       {
@@ -214,42 +177,6 @@ export default function Ecommerce() {
             icon: "👖",
             description: "Jeans, leggings, and skirts",
           },
-          {
-            id: "womens-shoes",
-            label: "Women's Shoes",
-            icon: "👠",
-            description: "Heels, flats, and sneakers",
-          },
-        ],
-      },
-      {
-        id: "accessories",
-        title: "Accessories",
-        items: [
-          {
-            id: "bags",
-            label: "Bags & Purses",
-            icon: "👜",
-            description: "Handbags, backpacks, and wallets",
-          },
-          {
-            id: "jewelry",
-            label: "Jewelry",
-            icon: "💍",
-            description: "Rings, necklaces, and earrings",
-          },
-          {
-            id: "watches",
-            label: "Watches",
-            icon: "⌚",
-            description: "Fashion and luxury timepieces",
-          },
-          {
-            id: "sunglasses",
-            label: "Sunglasses",
-            icon: "🕶️",
-            description: "Designer and sport sunglasses",
-          },
         ],
       },
     ],
@@ -258,6 +185,7 @@ export default function Ecommerce() {
       { id: "designer-bag", label: "Designer Bags", icon: "👜" },
       { id: "premium-shoes", label: "Premium Footwear", icon: "👠" },
     ],
+    responsive: true,
   };
 
   const navigationItems: NavigationItemProps[] = [
@@ -277,63 +205,61 @@ export default function Ecommerce() {
       href: "/category/home-garden",
     },
     {
-      label: "Sports",
-      icon: "🏃",
-      href: "/category/sports",
-    },
-    {
       label: "Books",
       icon: "📚",
       href: "/category/books",
     },
   ];
 
-  // Sample product data
   const products: Product[] = [
     {
       id: "1",
-      name: "Wireless Headphones",
-      description: "Premium noise-canceling headphones with 30-hour battery",
+      name: "Premium Wireless Headphones",
+      description:
+        "Professional-grade noise-canceling headphones with 30-hour battery life",
       price: 299,
       image: "🎧",
       category: "electronics",
     },
     {
       id: "2",
-      name: "Smart Watch",
-      description: "Fitness tracking with heart rate monitor and GPS",
+      name: "Smart Fitness Watch",
+      description: "Advanced fitness tracking with heart rate monitor and GPS",
       price: 199,
       image: "⌚",
       category: "electronics",
     },
     {
       id: "3",
-      name: "Cotton T-Shirt",
-      description: "100% organic cotton, available in multiple colors",
+      name: "Organic Cotton T-Shirt",
+      description: "Sustainably sourced 100% organic cotton tee in 12 colors",
       price: 29,
       image: "👕",
       category: "clothing",
     },
     {
       id: "4",
-      name: "JavaScript Guide",
-      description: "Complete guide to modern JavaScript development",
+      name: "Complete JavaScript Guide",
+      description:
+        "Comprehensive guide to modern JavaScript development and best practices",
       price: 45,
       image: "📚",
       category: "books",
     },
     {
       id: "5",
-      name: "Plant Pot Set",
-      description: "Ceramic pots perfect for indoor plants",
+      name: "Ceramic Plant Pot Set",
+      description:
+        "Handcrafted ceramic pots with drainage system and matching saucers",
       price: 89,
       image: "🪴",
       category: "home",
     },
     {
       id: "6",
-      name: "Mechanical Keyboard",
-      description: "Cherry MX switches with RGB backlighting",
+      name: "Mechanical Gaming Keyboard",
+      description:
+        "Professional gaming keyboard with RGB backlighting and programmable macros",
       price: 159,
       image: "⌨️",
       category: "electronics",
@@ -344,7 +270,33 @@ export default function Ecommerce() {
     ? products
     : products.filter((product) => product.category === selectedCategory);
 
-  // Convert cart items to MenuItem format for semantic List component
+  const filterItems: MenuItem[] = [
+    {
+      id: "price-range",
+      label: "Price Range",
+      icon: "💰",
+      description: "Filter by price range",
+    },
+    {
+      id: "brand",
+      label: "Brand",
+      icon: "🏷️",
+      description: "Select preferred brands",
+    },
+    {
+      id: "rating",
+      label: "Customer Rating",
+      icon: "⭐",
+      description: "4+ stars and above",
+    },
+    {
+      id: "availability",
+      label: "Availability",
+      icon: "📦",
+      description: "In stock items only",
+    },
+  ];
+
   const cartMenuItems: MenuItem[] = cartItems.map((item, index) => ({
     id: `cart-${item.id}-${index}`,
     label: item.name,
@@ -352,21 +304,17 @@ export default function Ecommerce() {
     description: `$${item.price} • Qty: ${item.quantity}`,
   }));
 
-  const handleNavItemClick = (item: MegaDropdownItem) => {
+  const handleNavItemClick = (item: any) => {
     console.log("Navigation item clicked:", item);
 
-    // Update category based on clicked item
     if (
       item.id.includes("electronics") ||
-      ["laptops", "smartphones", "headphones", "consoles"].includes(item.id)
+      ["laptops", "smartphones", "headphones"].includes(item.id)
     ) {
       setSelectedCategory("electronics");
-    } else if (
-      item.id.includes("clothing") ||
-      ["shirts", "dresses", "bags", "shoes", "womens-shoes"].includes(item.id)
-    ) {
+    } else if (item.id.includes("clothing")) {
       setSelectedCategory("clothing");
-    } else if (item.id.includes("home") || item.id === "home-garden") {
+    } else if (item.id.includes("home")) {
       setSelectedCategory("home");
     } else if (item.id.includes("books")) {
       setSelectedCategory("books");
@@ -381,22 +329,29 @@ export default function Ecommerce() {
   const handleActionClick = (action: Action) => {
     if (action.id === "cart") {
       setCartOpen(true);
+    } else if (action.id === "filters") {
+      setSidebarOpen(!sidebarOpen);
+    } else if (action.id === "view") {
+      setViewMode(viewMode === "grid" ? "list" : "grid");
     }
   };
 
   const handleCartItemClick = (item: MenuItem) => {
     console.log("Cart item clicked:", item.label);
-    // Could handle item editing, removal, etc.
+  };
+
+  const handleFilterClick = (item: MenuItem) => {
+    console.log("Filter clicked:", item.label);
   };
 
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price, 0);
 
   return (
-    <div className="ecommerce-container">
-      {/* Main Navigation with MegaDropdown */}
+    <div className="page-container">
+      {/* Navigation with MegaDropdown */}
       <Navigation
         brand={{
-          label: "ShopDemo",
+          label: "ShopDemo Pro",
           icon: "🛍️",
           href: "/",
         }}
@@ -409,124 +364,172 @@ export default function Ecommerce() {
             actions={shopActions}
             onActionClick={handleActionClick}
             variant="compact"
+            responsive={true}
           />
         }
+        responsive={true}
       />
 
-      <div className="ecommerce-content">
-        <Breadcrumbs items={breadcrumbs} />
+      <Breadcrumbs items={breadcrumbs} responsive={true} />
 
-        <div className="ecommerce-header">
-          <h1 className="ecommerce-title">Shop</h1>
-        </div>
+      <header className="page-header">
+        <h1 className="page-title">Shop</h1>
+        <Button
+          variant="ghost"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          {sidebarOpen ? "Hide Filters" : "Show Filters"}
+        </Button>
+      </header>
 
-        {/* Search and Filters - Improved Layout */}
-        <div className="ecommerce-filters">
+      {/* Search and Filter Controls */}
+      <Card variant="elevated" padding="md" responsive={true}>
+        <div className="grid grid--auto-fit">
           <SearchBox
             placeholder="Search products..."
             variant="outlined"
-            className="ecommerce-search"
+            responsive={true}
           />
           <Select
             options={categoryOptions}
             value={selectedCategory}
             onSelect={setSelectedCategory}
             placeholder="Category"
+            responsive={true}
           />
           <Select
             options={sortOptions}
             value={sortBy}
             onSelect={setSortBy}
             placeholder="Sort by"
+            responsive={true}
           />
         </div>
+      </Card>
 
-        <p className="ecommerce-results">
-          Showing {filteredProducts.length} products
-          {selectedCategory !== "all" && ` in ${selectedCategory}`}
-        </p>
+      <div className="grid grid--two-col">
+        {/* Filter Sidebar */}
+        {sidebarOpen && (
+          <Card variant="outlined" padding="lg" responsive={true}>
+            <h3>Filters</h3>
+            <List
+              items={filterItems}
+              variant="detailed"
+              onItemClick={handleFilterClick}
+              responsive={true}
+            />
+          </Card>
+        )}
 
-        {/* Product Grid - Improved with semantic CSS */}
-        <div className="ecommerce-product-grid">
-          {filteredProducts.map((product) => (
-            <Card key={product.id} variant="elevated" padding="lg">
-              <div className="product-image">
-                {product.image}
-              </div>
+        {/* Main Product Area */}
+        <div>
+          <p className="page-description">
+            Showing {filteredProducts.length} products
+            {selectedCategory !== "all" && ` in ${selectedCategory}`}
+          </p>
 
-              <h3 className="product-title">
-                {product.name}
-              </h3>
+          {/* Product Grid */}
+          <div
+            className={`grid ${
+              viewMode === "list" ? "grid--auto-fit" : "grid--three-col"
+            }`}
+          >
+            {filteredProducts.map((product) => (
+              <Card
+                key={product.id}
+                variant="elevated"
+                padding="lg"
+                responsive={true}
+              >
+                <div className="text-center">
+                  <div className="font-size-4xl padding-xl">
+                    {product.image}
+                  </div>
 
-              <p className="product-description">
-                {product.description}
-              </p>
+                  <h3>{product.name}</h3>
 
-              <div className="product-footer">
-                <span className="product-price">
-                  ${product.price}
-                </span>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() =>
-                    handleAddToCart(product)}
-                >
-                  Add to Cart
-                </Button>
-              </div>
-            </Card>
-          ))}
+                  <p className="text-muted">
+                    {product.description}
+                  </p>
+
+                  <div className="grid grid--two-col section-spacing">
+                    <span className="text-primary font-weight-bold">
+                      ${product.price}
+                    </span>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleAddToCart(product)}
+                      responsive={true}
+                    >
+                      Add to Cart
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Shopping Cart Drawer - Improved with List component */}
+      {/* Shopping Cart Drawer */}
       <Drawer
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         position="right"
         mode="temporary"
+        responsive={true}
       >
-        <div className="cart-content">
-          <h3 className="cart-title">
-            Shopping Cart ({cartItems.length})
-          </h3>
+        <h3>Shopping Cart ({cartItems.length})</h3>
 
-          {cartItems.length === 0
-            ? (
-              <div className="cart-empty">
-                <div className="cart-empty-icon">🛒</div>
+        {cartItems.length === 0
+          ? (
+            <Card variant="elevated" padding="lg" responsive={true}>
+              <div className="text-center">
+                <div className="font-size-4xl">🛒</div>
                 <p>Your cart is empty</p>
+                <Button
+                  variant="primary"
+                  onClick={() => setCartOpen(false)}
+                  responsive={true}
+                >
+                  Continue Shopping
+                </Button>
               </div>
-            )
-            : (
-              <>
-                <div className="cart-items">
-                  <List
-                    items={cartMenuItems}
-                    variant="compact"
-                    onItemClick={handleCartItemClick}
-                  />
+            </Card>
+          )
+          : (
+            <>
+              <List
+                items={cartMenuItems}
+                variant="compact"
+                onItemClick={handleCartItemClick}
+                responsive={true}
+              />
+
+              <Card variant="elevated" padding="lg" responsive={true}>
+                <div className="grid grid--two-col">
+                  <span>Total:</span>
+                  <span className="text-primary font-weight-bold">
+                    ${cartTotal}
+                  </span>
                 </div>
 
-                <div className="cart-footer">
-                  <div className="cart-total">
-                    <span className="cart-total-label">Total:</span>
-                    <span className="cart-total-amount">${cartTotal}</span>
-                  </div>
-
-                  <div className="cart-actions">
-                    <Button variant="primary" size="lg">
-                      Checkout
-                    </Button>
-                    <Button variant="ghost" onClick={() => setCartOpen(false)}>
-                      Continue Shopping
-                    </Button>
-                  </div>
+                <div className="section-spacing">
+                  <Button variant="primary" size="lg" responsive={true}>
+                    Checkout
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setCartOpen(false)}
+                    responsive={true}
+                  >
+                    Continue Shopping
+                  </Button>
                 </div>
-              </>
-            )}
-        </div>
+              </Card>
+            </>
+          )}
       </Drawer>
     </div>
   );

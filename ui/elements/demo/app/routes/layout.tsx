@@ -2,6 +2,8 @@ import { Outlet, useLocation, useNavigate } from "react-router";
 import {
   ActionBar,
   Brand,
+  Button,
+  Card,
   Drawer,
   Header,
   List,
@@ -15,30 +17,37 @@ export default function Layout() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // FIXED: Proper navigation items with icon, label, and description
   const navigationItems: MenuItem[] = [
     {
       id: "home",
       label: "Home",
       icon: "🏠",
-      description: "Welcome & overview",
+      description: "Welcome page and theme showcase",
+    },
+    {
+      id: "showcase",
+      label: "Container Queries",
+      icon: "🚀",
+      description: "Revolutionary responsive design demo",
     },
     {
       id: "dashboard",
       label: "Dashboard",
       icon: "📊",
-      description: "Business analytics",
+      description: "Business analytics with smart containers",
     },
     {
       id: "ecommerce",
       label: "E-commerce",
       icon: "🛍️",
-      description: "Product catalog",
+      description: "Product catalog with responsive layout",
     },
     {
       id: "settings",
       label: "Settings",
       icon: "⚙️",
-      description: "App configuration",
+      description: "App configuration and theming",
     },
   ];
 
@@ -53,6 +62,11 @@ export default function Layout() {
       label: "Notifications",
       icon: "🔔",
       badge: 3,
+    },
+    {
+      id: "showcase",
+      label: "Container Queries",
+      icon: "🚀",
     },
     {
       id: "profile",
@@ -70,6 +84,8 @@ export default function Layout() {
   const handleActionClick = (action: Action) => {
     if (action.id === "menu") {
       setDrawerOpen(!drawerOpen);
+    } else if (action.id === "showcase") {
+      navigate("/showcase");
     } else if (action.id === "notifications") {
       console.log("Show notifications");
     } else if (action.id === "profile") {
@@ -94,11 +110,13 @@ export default function Layout() {
 
   return (
     <div className="app-layout">
-      <Header variant="elevated">
+      <Header variant="elevated" responsive={true}>
         <Brand
-          title="UI Elements Demo"
-          subtitle="Showcase App"
+          title="UI Elements"
+          subtitle="Container Query Demo"
           logo="🚀"
+          responsive={true}
+          href="/"
         />
 
         <SearchBox
@@ -107,12 +125,14 @@ export default function Layout() {
           onSearch={handleSearch}
           clearable
           className="layout-search"
+          responsive={true}
         />
 
         <ActionBar
           actions={headerActions}
           onActionClick={handleActionClick}
           position="right"
+          responsive={true}
         />
       </Header>
 
@@ -121,28 +141,66 @@ export default function Layout() {
         onClose={() => setDrawerOpen(false)}
         position="left"
         mode="temporary"
+        responsive={true}
       >
-        <div style={{ padding: "var(--mv-space-lg)" }}>
-          <h3
-            style={{
-              margin: "0 0 var(--mv-space-lg) 0",
-              color: "var(--mv-color-text-primary)",
-              fontSize: "var(--mv-font-size-lg)",
-              fontWeight: "var(--mv-font-weight-semibold)",
-            }}
-          >
-            Navigation
-          </h3>
+        <h3>🧭 Navigation</h3>
 
-          {/* Use List component instead of custom buttons - much cleaner! */}
-          <List
-            items={navigationItems}
-            variant="detailed"
-            selectable={true}
-            selectedItems={getCurrentSelectedItems()}
-            onItemClick={handleNavigation}
-          />
-        </div>
+        {/* FIXED: Use detailed variant to show descriptions */}
+        <List
+          items={navigationItems}
+          variant="detailed"
+          selectable={true}
+          selectedItems={getCurrentSelectedItems()}
+          onItemClick={handleNavigation}
+          responsive={true}
+        />
+
+        {/* Quick Theme Switcher in Drawer */}
+        <Card variant="elevated" padding="md" responsive={true}>
+          <h4>🎨 Quick Theme Switch</h4>
+          <div className="grid grid--auto-fit">
+            {[
+              { id: "ghibli", emoji: "🌿", name: "Ghibli" },
+              { id: "blue", emoji: "💙", name: "Blue" },
+              { id: "purple", emoji: "💜", name: "Purple" },
+              { id: "green", emoji: "💚", name: "Green" },
+              { id: "orange", emoji: "🧡", name: "Orange" },
+            ].map((palette) => (
+              <Button
+                key={palette.id}
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  document.documentElement.setAttribute(
+                    "data-palette",
+                    palette.id,
+                  );
+                  localStorage.setItem("ui-elements-palette", palette.id);
+                }}
+                responsive={true}
+              >
+                {palette.emoji}
+              </Button>
+            ))}
+          </div>
+          <div className="section-spacing">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const currentTheme = document.documentElement.getAttribute(
+                  "data-theme",
+                );
+                const newTheme = currentTheme === "light" ? "dark" : "light";
+                document.documentElement.setAttribute("data-theme", newTheme);
+                localStorage.setItem("ui-elements-theme", newTheme);
+              }}
+              responsive={true}
+            >
+              🌓 Toggle Light/Dark
+            </Button>
+          </div>
+        </Card>
       </Drawer>
 
       <main className="layout-main">
