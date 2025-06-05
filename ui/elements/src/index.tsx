@@ -1,8 +1,8 @@
 /**
- * @m5nv/ui-elements - FIXED Version
+ * @m5nv/ui-elements - CLEAN VERSION
  *
- * Opinionated, data-driven, themeable UI component library built with modern CSS.
- * Now featuring WORKING comprehensive container query support for truly responsive components.
+ * Opinionated, data-driven, themeable UI component library with standardized container queries.
+ * Now featuring CLEAN dedicated container patterns for truly responsive components.
  *
  * USP: Unlike headless UI libraries that provide behavior without styling,
  * Elements provides complete styled components with comprehensive theming via CSS
@@ -27,6 +27,11 @@ import "./styles.css";
 export type BaseSize = "sm" | "md" | "lg";
 
 /**
+ * Orientation/Direction for layout components
+ */
+export type Orientation = "horizontal" | "vertical";
+
+/**
  * Base props extended by all components
  */
 export interface BaseProps {
@@ -36,6 +41,17 @@ export interface BaseProps {
    * When true, components adapt based on their container width
    */
   responsive?: boolean;
+}
+
+/**
+ * Base props for components that support orientation
+ */
+export interface OrientableProps extends BaseProps {
+  /**
+   * Layout orientation (default: "horizontal")
+   * Controls whether content flows horizontally or vertically
+   */
+  orientation?: Orientation;
 }
 
 /**
@@ -138,13 +154,11 @@ export function Header({
   className = "",
   children,
 }: HeaderProps) {
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--header"
-    : "";
-
   return (
     <header
-      className={`mv-header mv-header--${variant} ${containerClass} ${className}`}
+      className={`mv-header mv-header--${variant} ${
+        responsive ? "mv-header-container" : ""
+      } ${className}`}
     >
       <div className="mv-header__inner">
         {children}
@@ -173,11 +187,11 @@ export function Brand({
   responsive = true,
   className = "",
 }: BrandProps) {
-  const containerClass = responsive ? "mv-container-query--brand" : "";
-
   return (
     <div
-      className={`mv-brand mv-brand--${size} ${containerClass} ${className}`}
+      className={`mv-brand mv-brand--${size} ${
+        responsive ? "mv-brand-container" : ""
+      } ${className}`}
     >
       <a href={href} className="mv-brand__link">
         {logo && <div className="mv-brand__logo">{logo}</div>}
@@ -206,11 +220,9 @@ export function Card({
   className = "",
   children,
 }: CardProps) {
-  const containerClass = responsive ? "mv-container-query" : "";
-
   return (
     <div
-      className={`mv-card mv-card--${variant} mv-card--padding-${padding} ${containerClass} ${className}`}
+      className={`mv-card mv-card--${variant} mv-card--padding-${padding} ${className}`}
     >
       {children}
     </div>
@@ -382,9 +394,6 @@ export function SearchBox({
 
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--search"
-    : "";
 
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -438,7 +447,9 @@ export function SearchBox({
 
   return (
     <div
-      className={`mv-search mv-search--${variant} mv-search--${size} ${containerClass} ${className}`}
+      className={`mv-search mv-search--${variant} mv-search--${size} ${
+        responsive ? "mv-search-container" : ""
+      } ${className}`}
     >
       <div className="mv-search__container">
         <span className="mv-search__icon">🔍</span>
@@ -520,9 +531,6 @@ export function Select({
 
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--select"
-    : "";
 
   const filteredOptions = searchQuery
     ? options.filter((option) =>
@@ -579,7 +587,7 @@ export function Select({
       ref={selectRef}
       className={`mv-select mv-select--${size} ${
         isOpen ? "mv-select--open" : ""
-      } ${containerClass} ${className}`}
+      } ${responsive ? "mv-select-container" : ""} ${className}`}
     >
       <button
         className="mv-select__trigger"
@@ -657,7 +665,7 @@ export function Select({
   );
 }
 
-export interface TabGroupProps extends BaseProps {
+export interface TabGroupProps extends OrientableProps {
   tabs: Tab[];
   activeTab?: string;
   variant?: "default" | "pills" | "underline";
@@ -666,13 +674,15 @@ export interface TabGroupProps extends BaseProps {
 }
 
 /**
- * TabGroup - Data-driven tab interface with container-aware responsive behavior
+ * TabGroup - Data-driven tab interface with orientation support
+ * Supports both horizontal (default) and vertical layouts
  */
 export function TabGroup({
   tabs,
   activeTab,
   variant = "default",
   size = "md",
+  orientation = "horizontal",
   onTabChange,
   responsive = true,
   className = "",
@@ -688,13 +698,11 @@ export function TabGroup({
     onTabChange?.(tab.id, tab);
   }, [onTabChange]);
 
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--tabs"
-    : "";
-
   return (
     <div
-      className={`mv-tabs mv-tabs--${variant} mv-tabs--${size} ${containerClass} ${className}`}
+      className={`mv-tabs mv-tabs--${variant} mv-tabs--${size} mv-tabs--${orientation} ${
+        responsive ? "mv-tabs-container" : ""
+      } ${className}`}
     >
       <div className="mv-tabs__container" role="tablist">
         {tabs.map((tab) => (
@@ -721,7 +729,7 @@ export function TabGroup({
   );
 }
 
-export interface ListProps extends BaseProps {
+export interface ListProps extends OrientableProps {
   items: MenuItem[];
   variant?: "default" | "compact" | "detailed";
   selectable?: boolean;
@@ -731,11 +739,13 @@ export interface ListProps extends BaseProps {
 }
 
 /**
- * List - Data-driven list component with container-aware responsive behavior
+ * List - Data-driven list component with orientation support
+ * Supports both vertical (default) and horizontal layouts
  */
 export function List({
   items,
   variant = "default",
+  orientation = "vertical", // Note: List defaults to vertical unlike ActionBar
   selectable = false,
   selectedItems = [],
   onItemClick,
@@ -760,13 +770,11 @@ export function List({
     onItemClick?.(item);
   }, [selectable, selectedItems, onSelectionChange, onItemClick]);
 
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--list"
-    : "";
-
   return (
     <div
-      className={`mv-list mv-list--${variant} ${containerClass} ${className}`}
+      className={`mv-list mv-list--${variant} mv-list--${orientation} ${
+        responsive ? "mv-list-container" : ""
+      } ${className}`}
     >
       {items.map((item) => (
         <button
@@ -804,7 +812,7 @@ export function List({
   );
 }
 
-export interface ActionBarProps extends BaseProps {
+export interface ActionBarProps extends OrientableProps {
   actions: Action[];
   variant?: "default" | "compact";
   position?: "left" | "center" | "right";
@@ -812,12 +820,14 @@ export interface ActionBarProps extends BaseProps {
 }
 
 /**
- * FIXED: ActionBar - Data-driven toolbar with proper container-aware responsive behavior
+ * ActionBar - Data-driven toolbar with orientation support
+ * Supports both horizontal (default) and vertical layouts
  */
 export function ActionBar({
   actions,
   variant = "default",
   position = "left",
+  orientation = "horizontal",
   onActionClick,
   responsive = true,
   className = "",
@@ -832,12 +842,11 @@ export function ActionBar({
     onActionClick?.(action);
   }, [onActionClick]);
 
-  // FIXED: Proper container structure for container queries
+  // Non-responsive version - simple flex container
   if (!responsive) {
-    // Non-responsive version - simple flex container
     return (
       <div
-        className={`mv-actionbar mv-actionbar--${variant} mv-actionbar--${position} ${className}`}
+        className={`mv-actionbar mv-actionbar--${variant} mv-actionbar--${position} mv-actionbar--${orientation} ${className}`}
       >
         {actions.map((action) => (
           <button
@@ -862,13 +871,13 @@ export function ActionBar({
     );
   }
 
-  // FIXED: Responsive version with proper container query structure
+  // Responsive version with proper container query structure
   return (
     <div
-      className={`mv-actionbar-container mv-actionbar-container--${position} ${className}`}
+      className={`mv-actionbar-container mv-actionbar-container--${position} mv-actionbar-container--${orientation} ${className}`}
     >
       <div
-        className={`mv-actionbar mv-actionbar--${variant}`}
+        className={`mv-actionbar mv-actionbar--${variant} mv-actionbar--${orientation}`}
       >
         {actions.map((action) => (
           <button
@@ -907,7 +916,7 @@ export interface CollapsibleSectionProps extends BaseProps {
 }
 
 /**
- * FIXED: CollapsibleSection - Accordion-style collapsible content with container-aware spacing
+ * CollapsibleSection - Accordion-style collapsible content with container-aware spacing
  */
 export function CollapsibleSection({
   title,
@@ -926,9 +935,6 @@ export function CollapsibleSection({
 
   const isControlled = controlledExpanded !== undefined;
   const expanded = isControlled ? controlledExpanded : internalExpanded;
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--collapsible"
-    : "";
 
   const handleToggle = useCallback(() => {
     if (!collapsible) return;
@@ -953,7 +959,7 @@ export function CollapsibleSection({
     <div
       className={`mv-collapsible ${
         expanded ? "mv-collapsible--expanded" : ""
-      } ${containerClass} ${className}`}
+      } ${responsive ? "mv-collapsible-container" : ""} ${className}`}
     >
       {href
         ? (
@@ -1045,13 +1051,11 @@ export function Breadcrumbs({
     [onItemClick],
   );
 
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--breadcrumbs"
-    : "";
-
   return (
     <nav
-      className={`mv-breadcrumbs ${containerClass} ${className}`}
+      className={`mv-breadcrumbs ${
+        responsive ? "mv-breadcrumbs-container" : ""
+      } ${className}`}
       aria-label="Breadcrumbs"
     >
       <ol className="mv-breadcrumbs__list">
@@ -1230,14 +1234,12 @@ export const MegaDropdownContent: React.FC<MegaDropdownProps> = ({
     }
   };
 
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--megadropdown"
-    : "";
-
   return (
     <div
       ref={containerRef}
-      className={`mv-megadropdown__content ${containerClass} ${className}`}
+      className={`mv-megadropdown__content ${
+        responsive ? "mv-megadropdown-container" : ""
+      } ${className}`}
       data-debug={debug}
       data-width={debug ? Math.round(width) : undefined}
     >
@@ -1283,7 +1285,7 @@ export const MegaDropdownContent: React.FC<MegaDropdownProps> = ({
         ))}
       </div>
 
-      {/* Featured Section - FIXED: Always render if items exist */}
+      {/* Featured Section */}
       {showFeatured && featuredItems.length > 0 && (
         <div className="mv-megadropdown__featured">
           <h3 className="mv-megadropdown__featured-title">Featured</h3>
@@ -1330,7 +1332,6 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // FIXED: Enhanced overflow detection
   const position = useOverflowDetection(triggerRef, dropdownRef, isOpen);
 
   const handleMouseEnter = () => {
@@ -1433,10 +1434,12 @@ export const Navigation: React.FC<NavigationProps> = ({
   responsive = true,
   className = "",
 }) => {
-  const containerClass = responsive ? "mv-container-query" : "";
-
   return (
-    <nav className={`mv-navigation ${containerClass} ${className}`}>
+    <nav
+      className={`mv-navigation ${
+        responsive ? "mv-navigation-container" : ""
+      } ${className}`}
+    >
       <div className="mv-navigation__container">
         {brand && (
           <a
@@ -1474,7 +1477,7 @@ export const MegaDropdown: React.FC<MegaDropdownProps> = (props) => {
 export default MegaDropdown;
 
 // ===========================================
-// TABLE COMPONENT WITH FIXED CONTAINER QUERIES
+// TABLE COMPONENT WITH CLEAN CONTAINER QUERIES
 // ===========================================
 
 export interface TableProps extends BaseProps {
@@ -1489,8 +1492,8 @@ export interface TableProps extends BaseProps {
 }
 
 /**
- * FIXED: Table - Comprehensive data table with container-aware responsive behavior
- * Now with properly styled card layout for narrow containers
+ * Table - Comprehensive data table with container-aware responsive behavior
+ * Automatically switches to card layout on narrow containers
  */
 export function Table({
   columns,
@@ -1548,12 +1551,12 @@ export function Table({
   const someSelected = selectedRows.length > 0 &&
     selectedRows.length < data.length;
 
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--table"
-    : "";
-
   return (
-    <div className={`mv-table ${containerClass} ${className}`}>
+    <div
+      className={`mv-table ${
+        responsive ? "mv-table-container" : ""
+      } ${className}`}
+    >
       <table className="mv-table__table">
         <thead className="mv-table__header">
           <tr className="mv-table__header-row">
@@ -1623,9 +1626,8 @@ export function Table({
                   className={`mv-table__cell ${
                     column.align ? `mv-table__cell--${column.align}` : ""
                   }`}
-                  data-label={column.label} // CRITICAL: For mobile card layout
+                  data-label={column.label} // For mobile card layout
                 >
-                  {/* FIXED: Wrap content for proper card styling */}
                   <span className="mv-table__cell-content">
                     {column.render
                       ? column.render(row[column.key], row)
@@ -1655,10 +1657,10 @@ export function Table({
 }
 
 // ===========================================
-// PAGINATION COMPONENT WITH FIXED CONTAINER QUERIES
+// PAGINATION COMPONENT WITH CLEAN CONTAINER QUERIES
 // ===========================================
 
-export interface PaginationProps extends BaseProps {
+export interface PaginationProps extends OrientableProps {
   totalItems: number;
   itemsPerPage: number;
   currentPage: number;
@@ -1670,8 +1672,8 @@ export interface PaginationProps extends BaseProps {
 }
 
 /**
- * FIXED: Pagination - Complete pagination with container-aware responsive behavior
- * Automatically adapts layout and hides elements based on available space
+ * Pagination - Complete pagination with orientation support
+ * Supports both horizontal (default) and vertical layouts
  */
 export function Pagination({
   totalItems,
@@ -1680,6 +1682,7 @@ export function Pagination({
   showPageInfo = true,
   showPageSizeSelector = false,
   pageSizeOptions = [10, 20, 50, 100],
+  orientation = "horizontal",
   onPageChange,
   onPageSizeChange,
   responsive = true,
@@ -1744,9 +1747,9 @@ export function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className={`mv-pagination}`}>
+    <div className={`mv-pagination mv-pagination--${orientation}`}>
       <div
-        className={`mv-pagination-container ${className}`}
+        className={`mv-pagination-container mv-pagination-container--${orientation} ${className}`}
         style={{
           "--mv-current-page": currentPage,
           "--mv-total-pages": totalPages,
@@ -1877,38 +1880,43 @@ export function useContainerBreakpoint(ref: React.RefObject<HTMLElement>) {
 /*
 MIGRATION GUIDE for @m5nv/ui-elements v1.0:
 
-🎉 NEW: Container Query Responsive Design
-All components now adapt intelligently to their container width, not just viewport width.
+🎉 NEW: Clean Container Query Responsive Design + Orientation Support
+All components now use dedicated container classes following ActionBar/Pagination pattern.
 
-KEY CHANGES:
-1. All components now have a `responsive` prop (default: true)
-2. Components automatically adjust layout, hide elements, and adapt spacing based on container size
-3. MegaDropdown now prevents overflow and adapts column count automatically
-4. Table switches to card layout on narrow containers
-5. Pagination hides page numbers and shows simplified navigation on small containers
-6. ActionBar, List, and other components hide less important elements when space is limited
+🚀 NEW ORIENTATION FEATURES:
+- ✅ ActionBar: `orientation="horizontal|vertical"` - toolbar vs button stack
+- ✅ List: `orientation="vertical|horizontal"` - vertical list vs horizontal cards
+- ✅ TabGroup: `orientation="horizontal|vertical"` - horizontal tabs vs vertical nav
+- ✅ Pagination: `orientation="horizontal|vertical"` - horizontal controls vs stacked layout
+
+USAGE EXAMPLES:
+```tsx
+// Vertical action bar (great for sidebars)
+<ActionBar actions={actions} orientation="vertical" />
+
+// Horizontal list (great for card galleries)
+<List items={items} orientation="horizontal" />
+
+// Vertical tabs (great for navigation)
+<TabGroup tabs={tabs} orientation="vertical" />
+
+// Vertical pagination (great for narrow containers)
+<Pagination orientation="vertical" {...paginationProps} />
+```
+
+IMPROVED PATTERNS:
+1. ✅ Clean dedicated containers: `.mv-component-container`
+2. ✅ Simplified responsive prop handling: `${responsive ? "mv-component-container" : ""}`
+3. ✅ Consistent container query breakpoints across all components
+4. ✅ Eliminated messy generic `.mv-container-query` classes
+5. ✅ Streamlined CSS with consolidated responsive logic
+6. 🆕 **Orientation support for layout flexibility**
 
 BREAKING CHANGES: None!
 - All existing code continues to work exactly as before
 - Container queries are enabled by default but don't break existing layouts
 - Set `responsive={false}` on any component to disable container query behavior
-
-NEW FEATURES:
-- Smart responsive behavior without media queries
-- Components work perfectly in sidebars, modals, drawers, and any container
-- Automatic content prioritization (important elements stay visible)
-- Natural responsive breakpoints based on content, not arbitrary screen sizes
-
-BROWSER SUPPORT:
-- Container queries: Chrome 105+, Firefox 110+, Safari 16+ (95%+ global support)
-- Fallback media queries provided for older browsers
-- Progressive enhancement - works everywhere, enhanced where supported
-
-PERFORMANCE:
-- Zero JavaScript overhead for responsive behavior
-- CSS-only responsive logic
-- No ResizeObserver polling unless explicitly using utility hooks
-- Optimized for 60fps animations and interactions
+- Orientation defaults to sensible values (horizontal for toolbars, vertical for lists)
 
 The future of responsive design is here! 🚀
 */

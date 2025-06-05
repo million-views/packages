@@ -9,6 +9,42 @@
 - **640px** - Medium (not used for ActionBar)
 - **768px** - Large (not used for ActionBar)
 
+```js
+/* ===========================================
+   BREAKPOINT CONSISTENCY DOCUMENTATION
+   =========================================== */
+
+/*
+🎯 STANDARDIZED BREAKPOINTS FOR ALL COMPONENTS:
+
+Ultra-Compact (≤320px):
+- Hide: descriptions, icons, badges, external indicators
+- Show: essential labels and primary actions only
+- Layout: minimal, compact spacing
+
+Small (≤480px):
+- Hide: descriptions, less important elements
+- Show: icons, labels, essential features
+- Layout: reduced spacing, simplified
+
+Medium (≤640px):
+- Hide: auxiliary columns, secondary info
+- Show: core content with icons
+- Layout: moderate compression
+
+Large (≤768px):
+- Hide: some columns, optional features
+- Show: most content with smaller fonts
+- Layout: slight compression
+
+Extra Large (>768px):
+- Show: full feature set
+- Layout: optimal spacing and sizing
+
+This ensures consistent behavior across ALL components! 🚀
+*/
+```
+
 ### **NO Random Breakpoints Added** ✅
 
 - ❌ No 500px breakpoint
