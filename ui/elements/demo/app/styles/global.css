@@ -577,42 +577,143 @@ body {
   margin-bottom: var(--mv-space-xl);
 }
 
-.demo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--mv-space-xl);
-  margin-bottom: var(--mv-space-xl);
-}
 
-.demo-grid--three-col {
-  grid-template-columns: repeat(3, 1fr);
-}
+/* ===========================================
+   DEMO CONTAINERS - ALIGNED WITH STANDARD BREAKPOINTS
+   =========================================== */
 
 .demo-container {
   border: 2px dashed var(--mv-color-border);
   border-radius: var(--mv-radius-md);
   padding: var(--mv-space-md);
   background: var(--mv-color-surface-elevated);
+  box-sizing: border-box;
+  overflow: hidden;
+  /* Prevent children from overflowing */
+  min-width: 0;
+  /* Allow shrinking */
 }
+
+/* ALIGNED: Demo container sizes that work with standardized breakpoints */
 
 .demo-container--wide {
   border-color: var(--mv-color-success);
+  width: 100%;
+  max-width: 550px;
+  /* >480px - Should show labels without overflow */
 }
 
 .demo-container--medium {
   border-color: var(--mv-color-warning);
+  width: 100%;
   max-width: 450px;
+  /* <480px - Should trigger label hiding */
 }
 
 .demo-container--narrow {
   border-color: var(--mv-color-danger);
+  width: 100%;
   max-width: 350px;
+  /* <480px - Should show icons only */
 }
 
 .demo-container--extra-narrow {
   border-color: var(--mv-color-primary);
-  max-width: 250px;
+  width: 100%;
+  max-width: 280px;
+  /* <320px - Should trigger ultra-compact */
 }
+
+/* CONSISTENT: Demo grid respects standard breakpoints */
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--mv-space-xl);
+  margin-bottom: var(--mv-space-xl);
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.demo-grid--three-col {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 100%;
+}
+
+.container-demo-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  /* 2/3 wide, 1/3 narrow */
+  gap: var(--mv-space-lg);
+  margin-bottom: var(--mv-space-lg);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.container-demo-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--mv-space-md);
+  width: 100%;
+  max-width: 100%;
+}
+
+.container-demo-item {
+  padding: var(--mv-space-md);
+  border: 1px solid var(--mv-color-border);
+  border-radius: var(--mv-radius-sm);
+  background: var(--mv-color-surface);
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  /* ALIGNED: These should be around 320px each to trigger ultra-compact */
+  max-width: 300px;
+}
+
+/* Responsive behavior using standard breakpoints */
+@media (max-width: 768px) {
+  .demo-grid--three-col {
+    grid-template-columns: 1fr;
+  }
+
+  .container-demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .container-demo-section {
+    grid-template-columns: 1fr;
+  }
+
+  /* Adjust for mobile while maintaining breakpoint logic */
+  .demo-container--wide {
+    max-width: 100%;
+    /* Still >480px on most mobile devices */
+  }
+
+  .demo-container--medium {
+    max-width: 400px;
+    /* <480px */
+  }
+
+  .demo-container--narrow {
+    max-width: 320px;
+    /* Exactly at 320px boundary */
+  }
+
+  .demo-container--extra-narrow {
+    max-width: 280px;
+    /* <320px */
+  }
+}
+
+.container-demo-item h5 {
+  margin-top: 0;
+  margin-bottom: var(--mv-space-sm);
+  font-size: var(--mv-font-size-sm);
+  color: var(--mv-color-text-primary);
+}
+
 
 .demo-title {
   margin-top: 0;
@@ -627,32 +728,6 @@ body {
   font-size: var(--mv-font-size-sm);
 }
 
-.container-demo-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--mv-space-lg);
-  margin-bottom: var(--mv-space-lg);
-}
-
-.container-demo-section {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--mv-space-md);
-}
-
-.container-demo-item {
-  padding: var(--mv-space-md);
-  border: 1px solid var(--mv-color-border);
-  border-radius: var(--mv-radius-sm);
-  background: var(--mv-color-surface);
-}
-
-.container-demo-item h5 {
-  margin-top: 0;
-  margin-bottom: var(--mv-space-sm);
-  font-size: var(--mv-font-size-sm);
-  color: var(--mv-color-text-primary);
-}
 
 /* ===========================================
    RESPONSIVE DESIGN - MOBILE FIRST
@@ -895,7 +970,6 @@ body {
 .search-filters-container {
   /* CRITICAL: Allow dropdowns to escape */
   overflow: visible !important;
-  z-index: 1;
   position: relative;
 }
 

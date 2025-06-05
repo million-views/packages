@@ -89,13 +89,13 @@
   --mv-transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Z-Index Scale */
-  --mv-z-dropdown: 1000;
-  --mv-z-sticky: 1020;
-  --mv-z-fixed: 1030;
-  --mv-z-modal-backdrop: 1040;
-  --mv-z-modal: 1050;
-  --mv-z-popover: 1060;
-  --mv-z-tooltip: 1070;
+  --mv-z-dropdown: 2000;
+  --mv-z-sticky: 2020;
+  --mv-z-fixed: 2030;
+  --mv-z-modal-backdrop: 2040;
+  --mv-z-modal: 2050;
+  --mv-z-popover: 2060;
+  --mv-z-tooltip: 2070;
 }
 
 /* ===========================================
@@ -383,7 +383,7 @@ body {
 }
 
 .mv-container-query--pagination {
-  container-name: pagination;
+  /* This class is no longer used - Pagination uses .mv-pagination-container */
 }
 
 .mv-container-query--megadropdown {
@@ -481,16 +481,11 @@ body {
 
 /* Actions area - this fixes the ActionBar alignment */
 .header-actions {
+  display: inline-flex;
   grid-area: actions;
   justify-self: end;
   /* CRITICAL: Provide width context for ActionBar container queries */
-  min-width: 200px;
-}
-
-/* Ensure ActionBar container works in header context */
-.header-actions .mv-actionbar-container {
-  /* ActionBar should take available width in actions area */
-  width: 100%;
+  min-width: 200px
 }
 
 @container header (max-width: 768px) {
@@ -507,11 +502,6 @@ body {
     max-width: none;
     min-width: 200px;
   }
-
-  /* Provide smaller width context on mobile */
-  .header-actions {
-    min-width: 150px;
-  }
 }
 
 @container header (max-width: 480px) {
@@ -521,7 +511,7 @@ body {
   }
 
   .header-actions {
-    min-width: 120px;
+    min-width: 150px;
   }
 }
 
@@ -1550,27 +1540,6 @@ body {
   animation: mv-collapse-in var(--mv-transition-normal) ease-out;
 }
 
-@container collapsible (max-width: 400px) {
-  .mv-collapsible__header {
-    padding: var(--mv-space-lg);
-    gap: var(--mv-space-md);
-  }
-
-  .mv-collapsible__content {
-    padding: 0 var(--mv-space-lg) var(--mv-space-lg);
-  }
-}
-
-@container collapsible (max-width: 300px) {
-  .mv-collapsible__icon {
-    display: none;
-  }
-
-  .mv-collapsible__title {
-    font-size: var(--mv-font-size-md);
-  }
-}
-
 @keyframes mv-collapse-in {
   from {
     opacity: 0;
@@ -1663,7 +1632,8 @@ body {
   display: flex;
   container-type: inline-size;
   container-name: actionbar;
-  /* Ensure minimum width for meaningful container queries */
+  /* Ensure minimum width for meaningful container queries and to respect parent width */
+  max-width: 100%;
   min-width: 0;
   flex: 1;
 }
@@ -1683,16 +1653,16 @@ body {
 
 /* ActionBar content - now properly contained */
 .mv-actionbar {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--mv-space-sm);
   padding: var(--mv-space-sm);
   background: var(--mv-color-surface-elevated);
   border-radius: var(--mv-radius-lg);
   box-sizing: border-box;
-  /* Allow shrinking when container is narrow */
+  max-width: 100%;
   min-width: 0;
-  flex-shrink: 1;
 }
 
 /* Non-responsive ActionBar (when responsive=false) */
@@ -1728,9 +1698,7 @@ body {
   position: relative;
   min-height: 2.5rem;
   white-space: nowrap;
-  /* FIXED: Ensure buttons can shrink */
-  min-width: 2.5rem;
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 .mv-actionbar__action:hover:not(:disabled) {
@@ -1755,9 +1723,12 @@ body {
 .mv-actionbar__label {
   font-size: var(--mv-font-size-sm);
   display: inline-block;
-  /* FIXED: Allow labels to be hidden gracefully */
   white-space: nowrap;
   overflow: hidden;
+  /* CRITICAL: Allow labels to be truncated if needed */
+  text-overflow: ellipsis;
+  /* Reasonable character limit for labels */
+  max-width: 24ch;
 }
 
 .mv-actionbar__badge {
@@ -2480,13 +2451,17 @@ body {
 
 .mv-pagination {
   display: flex;
-  justify-content: center;
   margin-top: var(--mv-space-xl);
 }
 
-.mv-pagination__container {
+.mv-pagination-container {
   display: flex;
+  container-type: inline-size;
+  container-name: pagination;
+
   align-items: center;
+  justify-content: center;
+
   gap: var(--mv-space-xl);
   flex-wrap: wrap;
   padding: var(--mv-space-lg);
@@ -2495,7 +2470,8 @@ body {
   border: 1px solid var(--mv-color-border-light);
   box-sizing: border-box;
   width: 100%;
-  overflow: hidden;
+  /* Ensure container can shrink */
+  min-width: 0;
 }
 
 .mv-pagination__info {
@@ -2621,13 +2597,22 @@ body {
     padding: var(--mv-space-sm) var(--mv-space-md);
     gap: var(--mv-space-xs);
   }
+
+  .mv-actionbar__badge {
+    display: none;
+  }
+
+  .mv-actionbar__label {
+    font-size: var(--mv-font-size-xs);
+  }
+
+  .mv-actionbar__icon {
+    font-size: var(--mv-font-size-xs);
+  }
+
 }
 
 @container actionbar (max-width: 320px) {
-  .mv-actionbar__label {
-    display: none !important;
-  }
-
   .mv-actionbar__action {
     padding: var(--mv-space-sm);
     min-height: 2rem;
@@ -2635,8 +2620,12 @@ body {
     gap: 0;
   }
 
+  .mv-actionbar__label {
+    display: none;
+  }
+
   .mv-actionbar__icon {
-    font-size: var(--mv-font-size-md);
+    font-size: var(--mv-font-size-lg);
   }
 }
 
@@ -2852,9 +2841,62 @@ body {
 }
 
 /* ===========================================
+   STANDARDIZED COLLAPSIBLE BREAKPOINTS
+   =========================================== */
+/* Medium screens - reduce spacing */
+@container collapsible (max-width: 480px) {
+  .mv-collapsible__header {
+    padding: var(--mv-space-lg);
+    gap: var(--mv-space-md);
+    font-size: var(--mv-font-size-md);
+  }
+
+  .mv-collapsible__content {
+    padding: 0 var(--mv-space-lg) var(--mv-space-lg);
+  }
+
+  /* Hide badges on medium screens if space is tight */
+  .mv-collapsible__badge {
+    display: none;
+  }
+}
+
+/* Small screens - minimal spacing, hide icons */
+@container collapsible (max-width: 320px) {
+  .mv-collapsible__header {
+    padding: var(--mv-space-md);
+    gap: var(--mv-space-sm);
+    font-size: var(--mv-font-size-sm);
+  }
+
+  .mv-collapsible__content {
+    padding: 0 var(--mv-space-md) var(--mv-space-md);
+  }
+
+  .mv-collapsible__icon {
+    display: none;
+  }
+
+  .mv-collapsible__title {
+    font-size: var(--mv-font-size-sm);
+  }
+}
+
+/* ===========================================
    STANDARDIZED TABS BREAKPOINTS
    =========================================== */
+/* Large screens - reduce spacing slightly */
+@container tabs (max-width: 640px) {
+  .mv-tabs__item {
+    padding: var(--mv-space-md) var(--mv-space-lg);
+  }
 
+  .mv-tabs__label {
+    font-size: var(--mv-font-size-md);
+  }
+}
+
+/* Medium screens - hide badges, smaller text */
 @container tabs (max-width: 480px) {
   .mv-tabs__item {
     padding: var(--mv-space-sm) var(--mv-space-md);
@@ -2863,15 +2905,34 @@ body {
   .mv-tabs__label {
     font-size: var(--mv-font-size-sm);
   }
-}
 
-@container tabs (max-width: 320px) {
-  .mv-tabs__icon {
+  /* Progressive hiding - badges first */
+  .mv-tabs__badge {
     display: none;
   }
+}
+
+/* Small screens - hide labels and external indicators */
+@container tabs (max-width: 320px) {
+  .mv-tabs__container {
+    justify-content: space-around;
+  }
+
+  .mv-tabs__item {
+    padding: var(--mv-space-sm);
+  }
+
+  /* .mv-tabs__icon {
+    display: none;
+  } */
 
   .mv-tabs__external {
     display: none;
+  }
+
+  .mv-tabs__label {
+    display: none;
+    /* font-size: var(--mv-font-size-xs); */
   }
 }
 
@@ -2881,30 +2942,21 @@ body {
 
 @container pagination (max-width: 640px) {
   .mv-pagination__container {
-    flex-direction: column;
     gap: var(--mv-space-md);
-    align-items: center;
-    justify-content: center;
-    place-content: center;
+    padding: var(--mv-space-md);
   }
 
-  .mv-pagination__info {
+  /* .mv-pagination__info {
     order: -1;
-  }
+  } */
 
   .mv-pagination__page-size {
-    order: 1;
+    /* order: 1; */
+    display: none;
   }
 }
 
 @container pagination (max-width: 480px) {
-
-  /* FIXED: Center the controls properly */
-  .mv-pagination__container {
-    justify-content: center;
-    /* Center the entire pagination container */
-  }
-
   .mv-pagination__info {
     display: none;
   }
@@ -2916,13 +2968,6 @@ body {
 
 /* FIXED: Keep pagination horizontal, just show essential controls */
 @container pagination (max-width: 320px) {
-
-  /* FIXED: Center the controls properly */
-  .mv-pagination__container {
-    justify-content: center;
-    /* Center the entire pagination container */
-  }
-
   .mv-pagination__button--page:not(.mv-pagination__button--active) {
     display: none;
   }
@@ -2938,23 +2983,6 @@ body {
     gap: var(--mv-space-md);
     justify-content: center;
     position: relative;
-  }
-
-  .mv-pagination__controls::before {
-    content: "Page " var(--mv-current-page, "1") " of " var(--mv-total-pages, "1");
-    position: absolute;
-    top: -2rem;
-    /* Position above the controls */
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: var(--mv-font-size-xs);
-    color: var(--mv-color-text-secondary);
-    white-space: nowrap;
-  }
-
-  /* Ensure there's space for the indicator */
-  .mv-pagination__container {
-    padding-top: var(--mv-space-xl);
   }
 }
 

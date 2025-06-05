@@ -1743,14 +1743,10 @@ export function Pagination({
 
   if (totalPages <= 1) return null;
 
-  const containerClass = responsive
-    ? "mv-container-query mv-container-query--pagination"
-    : "";
-
   return (
-    <div className={`mv-pagination ${className}`}>
+    <div className={`mv-pagination}`}>
       <div
-        className={`mv-pagination__container ${containerClass}`}
+        className={`mv-pagination-container ${className}`}
         style={{
           "--mv-current-page": currentPage,
           "--mv-total-pages": totalPages,
