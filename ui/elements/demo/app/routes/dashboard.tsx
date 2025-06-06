@@ -1,3 +1,7 @@
+// ===========================================
+// MIGRATED DASHBOARD.TSX - UPDATED FOR V2.0
+// ===========================================
+
 import { useState } from "react";
 import {
   ActionBar,
@@ -23,7 +27,6 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [compactView, setCompactView] = useState(false);
 
-  // Container-aware dashboard actions
   const dashboardActions: Action[] = [
     {
       id: "compact",
@@ -36,7 +39,6 @@ export default function Dashboard() {
     { id: "new", label: "New Report", icon: "➕" },
   ];
 
-  // Enhanced tabs with better mobile support
   const tabs: Tab[] = [
     { id: "overview", label: "Overview", icon: "📊" },
     { id: "analytics", label: "Analytics", icon: "📈", badge: 2 },
@@ -45,7 +47,6 @@ export default function Dashboard() {
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
 
-  // Enhanced metrics with container-aware display
   const metrics = [
     {
       title: "Total Revenue",
@@ -97,7 +98,6 @@ export default function Dashboard() {
     },
   ];
 
-  // Sample data with more realistic content
   const generateSampleData = () => {
     const statuses = ["Active", "Pending", "Completed", "Failed"];
     const names = [
@@ -146,7 +146,6 @@ export default function Dashboard() {
 
   const [tableData] = useState(generateSampleData());
 
-  // FIXED: Enhanced table columns that work with container-aware card layout
   const tableColumns: TableColumn[] = [
     { key: "id", label: "ID", sortable: true, width: "60px", align: "center" },
     { key: "name", label: "Name", sortable: true },
@@ -199,7 +198,6 @@ export default function Dashboard() {
 
   const handleSort = (key: string, direction: "asc" | "desc") => {
     console.log("Sort:", key, direction);
-    // Implement actual sorting logic here
   };
 
   const handleRowClick = (row: any) => {
@@ -224,10 +222,10 @@ export default function Dashboard() {
         </span>
       </div>
 
-      {/* FIXED: Container-aware table with proper data attributes */}
       <Table
         columns={tableColumns}
         data={paginatedData}
+        design={{ variant: "default", density: "comfortable", size: "md" }}
         sortable={true}
         selectable={true}
         onSort={handleSort}
@@ -235,11 +233,15 @@ export default function Dashboard() {
         responsive={true}
       />
 
-      {/* FIXED: Container-aware pagination */}
       <Pagination
         totalItems={tableData.length}
         itemsPerPage={pageSize}
         currentPage={currentPage}
+        design={{
+          orientation: "horizontal",
+          density: "comfortable",
+          size: "md",
+        }}
         showPageInfo={true}
         showPageSizeSelector={true}
         onPageChange={setCurrentPage}
@@ -262,8 +264,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Demo container query behavior */}
-      <Card variant="elevated" padding="lg" responsive={true}>
+      <Card design={{ elevation: "raised", padding: "lg" }} responsive={true}>
         <div className="grid grid--two-col">
           <div>
             <h4>Container Query Demo</h4>
@@ -279,6 +280,12 @@ export default function Dashboard() {
                 { id: "test2", label: "Action 2", icon: "📊" },
                 { id: "test3", label: "Action 3", icon: "⚙️" },
               ]}
+              design={{
+                orientation: "horizontal",
+                position: "left",
+                density: "comfortable",
+                variant: "default",
+              }}
               responsive={true}
               onActionClick={handleActionClick}
             />
@@ -301,9 +308,8 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Multiple container examples */}
       <div className="grid grid--auto-fit">
-        <Card variant="outlined" padding="lg" responsive={true}>
+        <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
           <h4>Main Report Area</h4>
           <p className="text-muted">
             This area has more space, so components show full details.
@@ -311,11 +317,17 @@ export default function Dashboard() {
           <ActionBar
             actions={dashboardActions.slice(0, 4)}
             onActionClick={handleActionClick}
+            design={{
+              orientation: "horizontal",
+              position: "left",
+              density: "comfortable",
+              variant: "default",
+            }}
             responsive={true}
           />
         </Card>
 
-        <Card variant="outlined" padding="md" responsive={true}>
+        <Card design={{ variant: "outlined", padding: "md" }} responsive={true}>
           <h4>Sidebar Reports</h4>
           <p className="text-muted">
             Narrow sidebar - components adapt by hiding labels and descriptions.
@@ -323,6 +335,12 @@ export default function Dashboard() {
           <ActionBar
             actions={dashboardActions.slice(0, 3)}
             onActionClick={handleActionClick}
+            design={{
+              orientation: "horizontal",
+              position: "left",
+              density: "compact",
+              variant: "default",
+            }}
             responsive={true}
           />
         </Card>
@@ -343,10 +361,11 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <Card variant="outlined" padding="lg" responsive={true}>
+      <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
         <Table
-          columns={tableColumns.slice(0, 5)} // Show fewer columns for demo
+          columns={tableColumns.slice(0, 5)}
           data={paginatedData.slice(0, 5)}
+          design={{ variant: "default", density: "comfortable", size: "md" }}
           sortable={true}
           selectable={true}
           responsive={true}
@@ -372,7 +391,11 @@ export default function Dashboard() {
         {Array.from(
           { length: 6 },
           (_, i) => (
-            <Card key={i} variant="outlined" padding="md" responsive={true}>
+            <Card
+              key={i}
+              design={{ variant: "outlined", padding: "md" }}
+              responsive={true}
+            >
               <h4>Setting Group {i + 1}</h4>
               <p className="text-muted">
                 Container-aware setting panel that adapts to available space.
@@ -411,13 +434,18 @@ export default function Dashboard() {
             options={periodOptions}
             value={selectedPeriod}
             onSelect={(value) => setSelectedPeriod(value)}
-            size="sm"
+            design={{ variant: "default", size: "sm" }}
             responsive={true}
           />
           <ActionBar
             actions={dashboardActions}
             onActionClick={handleActionClick}
-            variant="compact"
+            design={{
+              orientation: "horizontal",
+              position: "right",
+              density: "comfortable",
+              variant: "default",
+            }}
             responsive={true}
           />
         </div>
@@ -432,7 +460,11 @@ export default function Dashboard() {
         {metrics
           .filter((metric) => !compactView || metric.priority === "high")
           .map((metric, index) => (
-            <Card key={index} variant="elevated" padding="lg" responsive={true}>
+            <Card
+              key={index}
+              design={{ elevation: "raised", padding: "lg" }}
+              responsive={true}
+            >
               <div
                 style={{
                   display: "flex",
@@ -499,13 +531,17 @@ export default function Dashboard() {
       </div>
 
       {/* Enhanced dashboard with container queries */}
-      <Card variant="outlined" padding="none" responsive={true}>
+      <Card design={{ variant: "outlined", padding: "none" }} responsive={true}>
         <div style={{ padding: "var(--mv-space-lg) var(--mv-space-lg) 0" }}>
           <TabGroup
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            variant="underline"
+            design={{
+              variant: "underline",
+              size: "md",
+              orientation: "horizontal",
+            }}
             responsive={true}
           />
         </div>

@@ -1,3 +1,7 @@
+// ===========================================
+// MIGRATED ECOMMERCE.TSX - UPDATED FOR V2.0
+// ===========================================
+
 import { useState } from "react";
 import {
   ActionBar,
@@ -14,7 +18,7 @@ import type {
   Action,
   BreadcrumbItem,
   MenuItem,
-  NavigationItemProps,
+  NavigationItem,
   SelectOption,
 } from "@m5nv/ui-elements";
 
@@ -70,141 +74,142 @@ export default function Ecommerce() {
     { id: "account", label: "Account", icon: "👤" },
   ];
 
-  const electronicsDropdown = {
-    groups: [
-      {
-        id: "computers",
-        title: "Computers & Tablets",
-        items: [
-          {
-            id: "laptops",
-            label: "Laptops",
-            icon: "💻",
-            description: "Gaming, business, and ultrabooks",
-          },
-          {
-            id: "desktops",
-            label: "Desktop Computers",
-            icon: "🖥️",
-            description: "Powerful workstations and gaming rigs",
-          },
-          {
-            id: "tablets",
-            label: "Tablets",
-            icon: "📱",
-            description: "iPad, Android, and Windows tablets",
-          },
-        ],
-      },
-      {
-        id: "mobile",
-        title: "Mobile & Audio",
-        items: [
-          {
-            id: "smartphones",
-            label: "Smartphones",
-            icon: "📱",
-            description: "Latest iPhone and Android devices",
-          },
-          {
-            id: "headphones",
-            label: "Headphones",
-            icon: "🎧",
-            description: "Wireless and noise-canceling",
-          },
-          {
-            id: "speakers",
-            label: "Speakers",
-            icon: "🔊",
-            description: "Bluetooth and smart speakers",
-          },
-        ],
-      },
-    ],
-    featuredItems: [
-      { id: "iphone", label: "iPhone 15 Pro", icon: "📱" },
-      { id: "macbook", label: "MacBook Pro M3", icon: "💻" },
-      { id: "airpods", label: "AirPods Pro", icon: "🎧" },
-    ],
-    responsive: true,
-  };
-
-  const clothingDropdown = {
-    groups: [
-      {
-        id: "mens",
-        title: "Men's Fashion",
-        items: [
-          {
-            id: "shirts",
-            label: "Shirts & T-Shirts",
-            icon: "👔",
-            description: "Casual and formal wear",
-          },
-          {
-            id: "pants",
-            label: "Pants & Jeans",
-            icon: "👖",
-            description: "Denim, chinos, and dress pants",
-          },
-          {
-            id: "outerwear",
-            label: "Jackets & Coats",
-            icon: "🧥",
-            description: "Winter coats and light jackets",
-          },
-        ],
-      },
-      {
-        id: "womens",
-        title: "Women's Fashion",
-        items: [
-          {
-            id: "dresses",
-            label: "Dresses",
-            icon: "👗",
-            description: "Casual, formal, and party dresses",
-          },
-          {
-            id: "tops",
-            label: "Tops & Blouses",
-            icon: "👚",
-            description: "T-shirts, blouses, and sweaters",
-          },
-          {
-            id: "bottoms",
-            label: "Pants & Skirts",
-            icon: "👖",
-            description: "Jeans, leggings, and skirts",
-          },
-        ],
-      },
-    ],
-    featuredItems: [
-      { id: "summer-dress", label: "Summer Collection", icon: "👗" },
-      { id: "designer-bag", label: "Designer Bags", icon: "👜" },
-      { id: "premium-shoes", label: "Premium Footwear", icon: "👠" },
-    ],
-    responsive: true,
-  };
-
-  const navigationItems: NavigationItemProps[] = [
+  // FIXED: Proper NavigationItem structure (not NavigationItemProps)
+  const navigationItems: NavigationItem[] = [
     {
+      id: "electronics",
       label: "Electronics",
       icon: "⚡",
-      dropdown: electronicsDropdown,
+      dropdown: {
+        groups: [
+          {
+            id: "computers",
+            title: "Computers & Tablets",
+            items: [
+              {
+                id: "laptops",
+                label: "Laptops",
+                icon: "💻",
+                description: "Gaming, business, and ultrabooks",
+              },
+              {
+                id: "desktops",
+                label: "Desktop Computers",
+                icon: "🖥️",
+                description: "Powerful workstations and gaming rigs",
+              },
+              {
+                id: "tablets",
+                label: "Tablets",
+                icon: "📱",
+                description: "iPad, Android, and Windows tablets",
+              },
+            ],
+          },
+          {
+            id: "mobile",
+            title: "Mobile & Audio",
+            items: [
+              {
+                id: "smartphones",
+                label: "Smartphones",
+                icon: "📱",
+                description: "Latest iPhone and Android devices",
+              },
+              {
+                id: "headphones",
+                label: "Headphones",
+                icon: "🎧",
+                description: "Wireless and noise-canceling",
+              },
+              {
+                id: "speakers",
+                label: "Speakers",
+                icon: "🔊",
+                description: "Bluetooth and smart speakers",
+              },
+            ],
+          },
+        ],
+        featuredItems: [
+          { id: "iphone", label: "iPhone 15 Pro", icon: "📱" },
+          { id: "macbook", label: "MacBook Pro M3", icon: "💻" },
+          { id: "airpods", label: "AirPods Pro", icon: "🎧" },
+        ],
+        columns: 2,
+      },
     },
     {
+      id: "clothing",
       label: "Clothing",
       icon: "👕",
-      dropdown: clothingDropdown,
+      dropdown: {
+        groups: [
+          {
+            id: "mens",
+            title: "Men's Fashion",
+            items: [
+              {
+                id: "shirts",
+                label: "Shirts & T-Shirts",
+                icon: "👔",
+                description: "Casual and formal wear",
+              },
+              {
+                id: "pants",
+                label: "Pants & Jeans",
+                icon: "👖",
+                description: "Denim, chinos, and dress pants",
+              },
+              {
+                id: "outerwear",
+                label: "Jackets & Coats",
+                icon: "🧥",
+                description: "Winter coats and light jackets",
+              },
+            ],
+          },
+          {
+            id: "womens",
+            title: "Women's Fashion",
+            items: [
+              {
+                id: "dresses",
+                label: "Dresses",
+                icon: "👗",
+                description: "Casual, formal, and party dresses",
+              },
+              {
+                id: "tops",
+                label: "Tops & Blouses",
+                icon: "👚",
+                description: "T-shirts, blouses, and sweaters",
+              },
+              {
+                id: "bottoms",
+                label: "Pants & Skirts",
+                icon: "👖",
+                description: "Jeans, leggings, and skirts",
+              },
+            ],
+          },
+        ],
+        featuredItems: [
+          { id: "summer-dress", label: "Summer Collection", icon: "👗" },
+          { id: "designer-bag", label: "Designer Bags", icon: "👜" },
+          { id: "premium-shoes", label: "Premium Footwear", icon: "👠" },
+        ],
+        columns: 2,
+      },
     },
     {
+      id: "home-garden",
       label: "Home & Garden",
       icon: "🏠",
       href: "/category/home-garden",
     },
     {
+      id: "books",
       label: "Books",
       icon: "📚",
       href: "/category/books",
@@ -304,7 +309,7 @@ export default function Ecommerce() {
     description: `$${item.price} • Qty: ${item.quantity}`,
   }));
 
-  const handleNavItemClick = (item: any) => {
+  const handleNavItemClick = (item: NavigationItem) => {
     console.log("Navigation item clicked:", item);
 
     if (
@@ -348,31 +353,23 @@ export default function Ecommerce() {
 
   return (
     <div className="page-container">
-      {/* Navigation with MegaDropdown */}
+      {/* FIXED: Navigation with proper design props */}
       <Navigation
         brand={{
           label: "ShopDemo Pro",
           icon: "🛍️",
           href: "/",
         }}
-        items={navigationItems.map((item) => ({
-          ...item,
-          onItemClick: handleNavItemClick,
-        }))}
-        actions={
-          <ActionBar
-            actions={shopActions}
-            onActionClick={handleActionClick}
-            variant="compact"
-            responsive={true}
-          />
-        }
+        items={navigationItems}
+        actions={shopActions}
+        onItemClick={handleNavItemClick}
+        onActionClick={handleActionClick}
         responsive={true}
+        design={{ variant: "default", size: "md" }}
       />
 
       <Breadcrumbs items={breadcrumbs} responsive={true} />
 
-      {/* FIXED: Header with proper overflow handling */}
       <header className="ecommerce-header">
         <div>
           <h1 className="page-title">Shop</h1>
@@ -381,20 +378,20 @@ export default function Ecommerce() {
           </p>
         </div>
         <Button
-          variant="ghost"
+          design={{ variant: "ghost" }}
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
           {sidebarOpen ? "Hide Filters" : "Show Filters"}
         </Button>
       </header>
 
-      {/* FIXED: Search and Filter Controls - No more clipping */}
-      <Card variant="elevated" padding="md" responsive={true}>
+      {/* FIXED: Search and Filter Controls with proper design props */}
+      <Card design={{ elevation: "raised", padding: "md" }} responsive={true}>
         <div className="search-filters-container">
           <div className="search-filters-grid">
             <SearchBox
               placeholder="Search products..."
-              variant="outlined"
+              design={{ variant: "outline" }}
               responsive={true}
             />
             <Select
@@ -402,6 +399,7 @@ export default function Ecommerce() {
               value={selectedCategory}
               onSelect={setSelectedCategory}
               placeholder="Category"
+              design={{ variant: "default" }}
               responsive={true}
             />
             <Select
@@ -409,13 +407,14 @@ export default function Ecommerce() {
               value={sortBy}
               onSelect={setSortBy}
               placeholder="Sort by"
+              design={{ variant: "default" }}
               responsive={true}
             />
           </div>
         </div>
       </Card>
 
-      {/* FIXED: Main layout with smooth sidebar transitions */}
+      {/* Main layout with smooth sidebar transitions */}
       <div
         className={`ecommerce-layout ${
           sidebarOpen
@@ -426,11 +425,14 @@ export default function Ecommerce() {
         {/* Filter Sidebar */}
         {sidebarOpen && (
           <div className="ecommerce-sidebar">
-            <Card variant="outlined" padding="lg" responsive={true}>
+            <Card
+              design={{ variant: "outlined", padding: "lg" }}
+              responsive={true}
+            >
               <h3>Filters</h3>
               <List
                 items={filterItems}
-                variant="detailed"
+                design={{ variant: "detailed" }}
                 onItemClick={handleFilterClick}
                 responsive={true}
               />
@@ -438,14 +440,13 @@ export default function Ecommerce() {
           </div>
         )}
 
-        {/* FIXED: Main Product Area with perfect button alignment */}
+        {/* Main Product Area */}
         <div className="ecommerce-products">
           <p className="products-status">
             Showing {filteredProducts.length} products
             {selectedCategory !== "all" && ` in ${selectedCategory}`}
           </p>
 
-          {/* FIXED: Product Grid with aligned buttons */}
           <div
             className={`products-grid ${
               viewMode === "list"
@@ -455,28 +456,21 @@ export default function Ecommerce() {
           >
             {filteredProducts.map((product) => (
               <div key={product.id} className="product-card">
-                <div className="product-card__image">
-                  {product.image}
-                </div>
-
+                <div className="product-card__image">{product.image}</div>
                 <div className="product-card__content">
-                  <h3 className="product-card__title">
-                    {product.name}
-                  </h3>
-
+                  <h3 className="product-card__title">{product.name}</h3>
                   <p className="product-card__description">
                     {product.description}
                   </p>
                 </div>
-
-                {/* CRITICAL: Footer that aligns all buttons */}
                 <div className="product-card__footer">
-                  <span className="product-card__price">
-                    ${product.price}
-                  </span>
+                  <span className="product-card__price">${product.price}</span>
                   <Button
-                    variant="primary"
-                    size="sm"
+                    design={{
+                      variant: "filled",
+                      intent: "primary",
+                      size: "sm",
+                    }}
                     className="product-card__button"
                     onClick={() =>
                       handleAddToCart(product)}
@@ -489,24 +483,27 @@ export default function Ecommerce() {
           </div>
         </div>
       </div>
-      {/* Shopping Cart Drawer */}
+
+      {/* FIXED: Shopping Cart Drawer with proper design props */}
       <Drawer
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
-        position="right"
-        mode="temporary"
+        design={{ position: "right", mode: "temporary" }}
         responsive={true}
       >
         <h3>Shopping Cart ({cartItems.length})</h3>
 
         {cartItems.length === 0
           ? (
-            <Card variant="elevated" padding="lg" responsive={true}>
+            <Card
+              design={{ elevation: "raised", padding: "lg" }}
+              responsive={true}
+            >
               <div className="text-center">
                 <div className="font-size-4xl">🛒</div>
                 <p>Your cart is empty</p>
                 <Button
-                  variant="primary"
+                  design={{ variant: "filled", intent: "primary" }}
                   onClick={() => setCartOpen(false)}
                 >
                   Continue Shopping
@@ -518,12 +515,15 @@ export default function Ecommerce() {
             <>
               <List
                 items={cartMenuItems}
-                variant="compact"
+                design={{ variant: "compact" }}
                 onItemClick={handleCartItemClick}
                 responsive={true}
               />
 
-              <Card variant="elevated" padding="lg" responsive={true}>
+              <Card
+                design={{ elevation: "raised", padding: "lg" }}
+                responsive={true}
+              >
                 <div className="preview-footer">
                   <span>Total:</span>
                   <span className="text-primary font-weight-bold">
@@ -532,11 +532,17 @@ export default function Ecommerce() {
                 </div>
 
                 <div className="section-spacing">
-                  <Button variant="primary" size="lg">
+                  <Button
+                    design={{
+                      variant: "filled",
+                      intent: "primary",
+                      size: "lg",
+                    }}
+                  >
                     Checkout
                   </Button>
                   <Button
-                    variant="ghost"
+                    design={{ variant: "ghost" }}
                     onClick={() => setCartOpen(false)}
                   >
                     Continue Shopping

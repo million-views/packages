@@ -1,3 +1,7 @@
+// ===========================================
+// MIGRATED HOME.TSX - UPDATED FOR V2.0
+// ===========================================
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ActionBar, Button, Card, List } from "@m5nv/ui-elements";
@@ -13,7 +17,6 @@ export default function Home() {
 
   // Apply theme and palette to document
   useEffect(() => {
-    // Load saved preferences or use defaults
     const savedPalette =
       (localStorage.getItem("ui-elements-palette") as Palette) || "ghibli";
     const savedTheme = (localStorage.getItem("ui-elements-theme") as Theme) ||
@@ -34,26 +37,10 @@ export default function Home() {
   };
 
   const quickActions: Action[] = [
-    {
-      id: "showcase",
-      label: "Container Queries",
-      icon: "🚀",
-    },
-    {
-      id: "dashboard",
-      label: "View Dashboard",
-      icon: "📊",
-    },
-    {
-      id: "ecommerce",
-      label: "Browse Products",
-      icon: "🛍️",
-    },
-    {
-      id: "settings",
-      label: "Configure App",
-      icon: "⚙️",
-    },
+    { id: "showcase", label: "Container Queries", icon: "🚀" },
+    { id: "dashboard", label: "View Dashboard", icon: "📊" },
+    { id: "ecommerce", label: "Browse Products", icon: "🛍️" },
+    { id: "settings", label: "Configure App", icon: "⚙️" },
   ];
 
   const featureItems: MenuItem[] = [
@@ -102,10 +89,21 @@ export default function Home() {
     console.log("Feature clicked:", item.label);
   };
 
+  // COMPOSITION DEMO: Convert palette options to Action[] data with visual feedback
+  const paletteActions: Action[] = paletteOptions.map((option) => ({
+    id: option.id,
+    label: palette === option.id ? `${option.label} ✓` : option.label,
+    icon: option.emoji,
+  }));
+
+  const handlePaletteAction = (action: Action) => {
+    handlePaletteChange(action.id as Palette);
+  };
+
   return (
     <div className="page-container">
-      {/* Theme Showcase */}
-      <Card variant="elevated" padding="lg">
+      {/* Theme Showcase - FIXED: Proper design prop usage */}
+      <Card design={{ variant: "outlined", padding: "lg" }}>
         <header className="page-header">
           <div>
             <h2 className="page-title">🎨 Live Multi-Palette Demo</h2>
@@ -115,8 +113,7 @@ export default function Home() {
             </p>
           </div>
           <Button
-            variant="primary"
-            size="md"
+            design={{ variant: "filled", intent: "primary", size: "md" }}
             onClick={toggleTheme}
           >
             {theme === "light" ? "🌙 Switch to Dark" : "🌅 Switch to Light"}
@@ -128,17 +125,31 @@ export default function Home() {
           {palette} ({theme === "light" ? "🌅" : "🌙"})
         </p>
 
-        {/* Palette Selection */}
-        <div className="grid grid--auto-fit section-spacing">
-          {paletteOptions.map((option) => (
-            <Button
-              key={option.id}
-              variant={palette === option.id ? "primary" : "ghost"}
-              onClick={() => handlePaletteChange(option.id as Palette)}
-            >
-              {option.emoji} {option.label}
-            </Button>
-          ))}
+        {
+          /*
+          COMPOSITION DEMO: Palette Selection using ActionBar + Action data
+          Using ActionBar + Action[] data instead of manual Button
+          mapping.<br />
+          <em>Before:</em> 12 lines of JSX mapping • <em>After:</em>{" "}
+            1 ActionBar component with data
+        */
+        }
+        <div className="section-spacing">
+          <ActionBar
+            actions={paletteActions}
+            onActionClick={handlePaletteAction}
+            design={{
+              orientation: "horizontal",
+              density: "comfortable",
+              variant: "default",
+            }}
+            responsive={true}
+          />
+
+          <p className="text-small text-muted section-spacing">
+            ✨ <strong>Benefits:</strong>{" "}
+            Data-driven • Responsive layout • Consistent styling • Less code
+          </p>
         </div>
 
         {/* Theme Preview Cards */}
@@ -147,17 +158,14 @@ export default function Home() {
             <div className="theme-preview__icon">🎨</div>
             <div className="theme-preview__label">Primary Color</div>
           </div>
-
           <div className="theme-preview__card theme-preview__card--success">
             <div className="theme-preview__icon">🌱</div>
             <div className="theme-preview__label">Success Color</div>
           </div>
-
           <div className="theme-preview__card theme-preview__card--warning">
             <div className="theme-preview__icon">☀️</div>
             <div className="theme-preview__label">Warning Color</div>
           </div>
-
           <div className="theme-preview__card theme-preview__card--danger">
             <div className="theme-preview__icon">🌸</div>
             <div className="theme-preview__label">Danger Color</div>
@@ -167,9 +175,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="hero">
-        <h1 className="hero__title">
-          @m5nv/ui-elements
-        </h1>
+        <h1 className="hero__title">@m5nv/ui-elements</h1>
         <p className="hero__description">
           Multi-palette, data-driven, themeable UI component library built with
           modern CSS. Unlike headless UI libraries, Elements provides complete
@@ -179,22 +185,19 @@ export default function Home() {
 
         <div className="hero__actions">
           <Button
-            variant="primary"
-            size="lg"
+            design={{ variant: "filled", intent: "primary", size: "lg" }}
             onClick={() => navigate("/showcase")}
           >
             🚀 Container Query Demo
           </Button>
           <Button
-            variant="secondary"
-            size="lg"
+            design={{ variant: "outline", intent: "secondary", size: "lg" }}
             onClick={() => navigate("/dashboard")}
           >
             📊 Dashboard Example
           </Button>
           <Button
-            variant="ghost"
-            size="lg"
+            design={{ variant: "ghost", size: "lg" }}
             onClick={() => navigate("/ecommerce")}
           >
             🛍️ E-commerce Demo
@@ -202,37 +205,39 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <Card variant="elevated" padding="lg">
+      {/* FIXED: Quick Actions with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }}>
         <h2>Quick Actions</h2>
         <div className="section-spacing">
           <ActionBar
             actions={quickActions}
             onActionClick={handleQuickAction}
-            position="left"
+            design={{
+              position: "left",
+              orientation: "horizontal",
+              density: "comfortable",
+            }}
             responsive={true}
           />
         </div>
       </Card>
 
-      {/* Feature Showcase */}
-      <Card variant="outlined" padding="lg">
+      {/* FIXED: Feature Showcase with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }}>
         <h2>Component Categories</h2>
         <div className="section-spacing">
           <List
             items={featureItems}
-            variant="detailed"
+            design={{ variant: "detailed" }}
             onItemClick={handleFeatureClick}
             responsive={true}
           />
         </div>
       </Card>
 
-      {/* Benefits Section */}
-      <Card variant="glass" padding="lg">
-        <h2 className="text-center">
-          Why Choose Elements?
-        </h2>
+      {/* FIXED: Benefits Section with proper design props */}
+      <Card design={{ variant: "glass", padding: "lg" }}>
+        <h2 className="text-center">Why Choose Elements?</h2>
 
         <div className="grid grid--three-col section-spacing">
           <div className="text-center">
@@ -242,7 +247,6 @@ export default function Home() {
               5 beautiful color palettes, each with light and dark variants
             </p>
           </div>
-
           <div className="text-center">
             <div className="font-size-4xl">📊</div>
             <h3>Data-Driven</h3>
@@ -250,7 +254,6 @@ export default function Home() {
               Pass data arrays instead of writing complex markup structures
             </p>
           </div>
-
           <div className="text-center">
             <div className="font-size-4xl">🚀</div>
             <h3>Container Queries</h3>
@@ -262,8 +265,7 @@ export default function Home() {
 
         <div className="text-center section-spacing">
           <Button
-            variant="primary"
-            size="lg"
+            design={{ variant: "filled", intent: "primary", size: "lg" }}
             onClick={() => navigate("/showcase")}
           >
             🚀 See Container Queries in Action

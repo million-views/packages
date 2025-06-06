@@ -1,3 +1,7 @@
+// ===========================================
+// MIGRATED LAYOUT.TSX - UPDATED FOR V2.0
+// ===========================================
+
 import { Outlet, useLocation, useNavigate } from "react-router";
 import {
   ActionBar,
@@ -17,7 +21,6 @@ export default function Layout() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // FIXED: Proper navigation items with icon, label, and description
   const navigationItems: MenuItem[] = [
     {
       id: "home",
@@ -52,27 +55,10 @@ export default function Layout() {
   ];
 
   const headerActions: Action[] = [
-    {
-      id: "menu",
-      label: "Menu",
-      icon: "☰",
-    },
-    {
-      id: "notifications",
-      label: "Notifications",
-      icon: "🔔",
-      badge: 3,
-    },
-    {
-      id: "showcase",
-      label: "Container Queries",
-      icon: "🚀",
-    },
-    {
-      id: "profile",
-      label: "Profile",
-      icon: "👤",
-    },
+    { id: "menu", label: "Menu", icon: "☰" },
+    { id: "notifications", label: "Notifications", icon: "🔔", badge: 3 },
+    { id: "showcase", label: "Container Queries", icon: "🚀" },
+    { id: "profile", label: "Profile", icon: "👤" },
   ];
 
   const handleNavigation = (item: MenuItem) => {
@@ -95,14 +81,35 @@ export default function Layout() {
 
   const handleSearch = (query: string) => {
     console.log("Search:", query);
-    // Implement search functionality
   };
 
-  // Get selected navigation items based on current route
+  // COMPOSITION DEMO: Convert theme options to Action[] data for ActionBar
+  const themeActions: Action[] = [
+    { id: "ghibli", label: "Ghibli", icon: "🌿" },
+    { id: "blue", label: "Blue", icon: "💙" },
+    { id: "purple", label: "Purple", icon: "💜" },
+    { id: "green", label: "Green", icon: "💚" },
+    { id: "orange", label: "Orange", icon: "🧡" },
+    { id: "toggle-theme", label: "Toggle Light/Dark", icon: "🌓" },
+  ];
+
+  const handleThemeAction = (action: Action) => {
+    if (action.id === "toggle-theme") {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      const newTheme = currentTheme === "light" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("ui-elements-theme", newTheme);
+    } else {
+      // Handle palette changes
+      document.documentElement.setAttribute("data-palette", action.id);
+      localStorage.setItem("ui-elements-palette", action.id);
+    }
+  };
+
   const getCurrentSelectedItems = () => {
     const currentPath = location.pathname;
     if (currentPath === "/") return ["home"];
-    const pathSegment = currentPath.slice(1); // Remove leading slash
+    const pathSegment = currentPath.slice(1);
     return navigationItems.some((item) => item.id === pathSegment)
       ? [pathSegment]
       : [];
@@ -110,18 +117,20 @@ export default function Layout() {
 
   return (
     <div className="app-layout">
-      <Header variant="elevated" responsive={true}>
+      {/* FIXED: Header with proper design props */}
+      <Header design={{ variant: "raised" }} responsive={true}>
         <Brand
           title="UI Elements"
           subtitle="Container Query Demo"
           logo="🚀"
+          design={{ size: "md" }}
           responsive={true}
           href="/"
         />
 
         <SearchBox
           placeholder="Search demos..."
-          variant="filled"
+          design={{ variant: "filled" }}
           onSearch={handleSearch}
           clearable
           className="layout-search"
@@ -132,25 +141,28 @@ export default function Layout() {
           <ActionBar
             actions={headerActions}
             onActionClick={handleActionClick}
-            position="right"
+            design={{
+              position: "right",
+              orientation: "horizontal",
+              density: "comfortable",
+            }}
             responsive={true}
           />
         </div>
       </Header>
 
+      {/* FIXED: Drawer with proper design props */}
       <Drawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        position="left"
-        mode="temporary"
+        design={{ position: "left", mode: "temporary" }}
         responsive={true}
       >
         <h3>🧭 Navigation</h3>
 
-        {/* FIXED: Use detailed variant to show descriptions */}
         <List
           items={navigationItems}
-          variant="detailed"
+          design={{ variant: "detailed" }}
           selectable={true}
           selectedItems={getCurrentSelectedItems()}
           onItemClick={handleNavigation}
@@ -158,7 +170,7 @@ export default function Layout() {
         />
 
         {/* Quick Theme Switcher in Drawer */}
-        <Card variant="elevated" padding="md" responsive={true}>
+        <Card design={{ variant: "outlined", padding: "md" }} responsive={true}>
           <h4>🎨 Quick Theme Switch</h4>
           <div className="grid grid--auto-fit">
             {[
@@ -170,8 +182,7 @@ export default function Layout() {
             ].map((palette) => (
               <Button
                 key={palette.id}
-                variant="ghost"
-                size="sm"
+                design={{ variant: "ghost", size: "sm" }}
                 onClick={() => {
                   document.documentElement.setAttribute(
                     "data-palette",
@@ -187,8 +198,7 @@ export default function Layout() {
           </div>
           <div className="section-spacing">
             <Button
-              variant="secondary"
-              size="sm"
+              design={{ variant: "outline", intent: "secondary", size: "sm" }}
               onClick={() => {
                 const currentTheme = document.documentElement.getAttribute(
                   "data-theme",

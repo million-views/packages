@@ -1,3 +1,7 @@
+// ===========================================
+// MIGRATED SHOWCASE.TSX - UPDATED FOR V2.0
+// ===========================================
+
 import React, { useState } from "react";
 import {
   ActionBar,
@@ -12,7 +16,7 @@ import {
 import type {
   Action,
   MenuItem,
-  NavigationItemProps,
+  NavigationItem,
   Tab,
   TableColumn,
 } from "@m5nv/ui-elements";
@@ -94,84 +98,85 @@ export default function ContainerQueryShowcase() {
     { key: "startDate", label: "Start Date", sortable: true },
   ];
 
-  const megaDropdownData = {
-    groups: [
-      {
-        id: "products",
-        title: "Products",
-        items: [
-          {
-            id: "analytics",
-            label: "Analytics Suite",
-            description: "Advanced data visualization and reporting tools",
-            icon: "📊",
-          },
-          {
-            id: "dashboard",
-            label: "Dashboard Pro",
-            description: "Real-time monitoring and alerts",
-            icon: "📈",
-          },
-          {
-            id: "crm",
-            label: "CRM Platform",
-            description: "Customer relationship management",
-            icon: "👥",
-          },
-        ],
-      },
-      {
-        id: "tools",
-        title: "Developer Tools",
-        items: [
-          {
-            id: "api",
-            label: "API Gateway",
-            description: "Manage and secure your APIs",
-            icon: "🔌",
-          },
-          {
-            id: "monitoring",
-            label: "System Monitor",
-            description: "Track system performance",
-            icon: "📡",
-          },
-        ],
-      },
-      {
-        id: "resources",
-        title: "Resources",
-        items: [
-          {
-            id: "docs",
-            label: "Documentation",
-            description: "Comprehensive guides and tutorials",
-            icon: "📚",
-          },
-          {
-            id: "support",
-            label: "Support Center",
-            description: "Get help from our team",
-            icon: "🎧",
-          },
-        ],
-      },
-    ],
-    featuredItems: [
-      { id: "new", label: "New Release", icon: "✨" },
-      { id: "popular", label: "Most Popular", icon: "🔥" },
-      { id: "trial", label: "Free Trial", icon: "🎁" },
-    ],
-    responsive: true,
-  };
-
-  const navigationItems: NavigationItemProps[] = [
+  // FIXED: Proper NavigationItem structure
+  const navigationItems: NavigationItem[] = [
     {
+      id: "products",
       label: "Products",
       icon: "📦",
-      dropdown: megaDropdownData,
+      dropdown: {
+        groups: [
+          {
+            id: "products",
+            title: "Products",
+            items: [
+              {
+                id: "analytics",
+                label: "Analytics Suite",
+                description: "Advanced data visualization and reporting tools",
+                icon: "📊",
+              },
+              {
+                id: "dashboard",
+                label: "Dashboard Pro",
+                description: "Real-time monitoring and alerts",
+                icon: "📈",
+              },
+              {
+                id: "crm",
+                label: "CRM Platform",
+                description: "Customer relationship management",
+                icon: "👥",
+              },
+            ],
+          },
+          {
+            id: "tools",
+            title: "Developer Tools",
+            items: [
+              {
+                id: "api",
+                label: "API Gateway",
+                description: "Manage and secure your APIs",
+                icon: "🔌",
+              },
+              {
+                id: "monitoring",
+                label: "System Monitor",
+                description: "Track system performance",
+                icon: "📡",
+              },
+            ],
+          },
+          {
+            id: "resources",
+            title: "Resources",
+            items: [
+              {
+                id: "docs",
+                label: "Documentation",
+                description: "Comprehensive guides and tutorials",
+                icon: "📚",
+              },
+              {
+                id: "support",
+                label: "Support Center",
+                description: "Get help from our team",
+                icon: "🎧",
+              },
+            ],
+          },
+        ],
+        featuredItems: [
+          { id: "new", label: "New Release", icon: "✨" },
+          { id: "popular", label: "Most Popular", icon: "🔥" },
+          { id: "trial", label: "Free Trial", icon: "🎁" },
+        ],
+        columns: 3,
+      },
     },
     {
+      id: "solutions",
       label: "Solutions",
       icon: "🛠️",
       dropdown: {
@@ -195,15 +200,17 @@ export default function ContainerQueryShowcase() {
             ],
           },
         ],
-        responsive: true,
+        columns: 1,
       },
     },
     {
+      id: "pricing",
       label: "Pricing",
       icon: "💰",
       href: "/pricing",
     },
     {
+      id: "resources",
       label: "Resources",
       icon: "📚",
       href: "/resources",
@@ -272,7 +279,7 @@ export default function ContainerQueryShowcase() {
   const [activeTab, setActiveTab] = useState("overview");
   const [expandedSection, setExpandedSection] = useState(true);
 
-  const handleNavItemClick = (item: any) => {
+  const handleNavItemClick = (item: NavigationItem) => {
     console.log("Nav item clicked:", item);
   };
 
@@ -302,8 +309,8 @@ export default function ContainerQueryShowcase() {
         </div>
       </header>
 
-      {/* Navigation with MegaDropdown */}
-      <Card variant="elevated" padding="lg" responsive={true}>
+      {/* FIXED: Navigation with proper design props */}
+      <Card design={{ elevation: "floating", padding: "lg" }} responsive={true}>
         <h2>Navigation with Smart MegaDropdown</h2>
         <p className="text-secondary section-spacing">
           The dropdown adapts its columns and positioning based on available
@@ -312,16 +319,15 @@ export default function ContainerQueryShowcase() {
         </p>
         <Navigation
           brand={{ label: "Container Demo", icon: "🚀" }}
-          items={navigationItems.map((item) => ({
-            ...item,
-            onItemClick: handleNavItemClick,
-          }))}
+          items={navigationItems}
+          onItemClick={handleNavItemClick}
           responsive={true}
+          design={{ variant: "default", size: "md" }}
         />
       </Card>
 
-      {/* Table Component Test */}
-      <Card variant="outlined" padding="lg" responsive={true}>
+      {/* FIXED: Table Component with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
         <h3>Responsive Table - Card Layout on Narrow Screens</h3>
         <p className="text-secondary section-spacing">
           This table switches to card layout when the container is narrow. Each
@@ -331,6 +337,7 @@ export default function ContainerQueryShowcase() {
         <Table
           columns={tableColumns}
           data={paginatedData}
+          design={{ variant: "default", density: "comfortable", size: "md" }}
           sortable={true}
           selectable={true}
           responsive={true}
@@ -340,6 +347,11 @@ export default function ContainerQueryShowcase() {
           totalItems={sampleData.length}
           itemsPerPage={itemsPerPage}
           currentPage={currentPage}
+          design={{
+            orientation: "horizontal",
+            density: "comfortable",
+            size: "md",
+          }}
           showPageInfo={true}
           showPageSizeSelector={true}
           onPageChange={setCurrentPage}
@@ -348,8 +360,8 @@ export default function ContainerQueryShowcase() {
         />
       </Card>
 
-      {/* ActionBar Tests - Container Demos */}
-      <Card variant="outlined" padding="lg" responsive={true}>
+      {/* FIXED: ActionBar Tests with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
         <h3>ActionBar Container Query Demonstration</h3>
         <p className="text-secondary section-spacing">
           These ActionBar components are placed in containers of different
@@ -358,7 +370,6 @@ export default function ContainerQueryShowcase() {
         </p>
 
         <div className="demo-grid">
-          {/* Wide Container */}
           <div className="demo-container demo-container--wide">
             <h4 className="demo-title">Wide Container (600px+)</h4>
             <p className="demo-description">
@@ -367,11 +378,16 @@ export default function ContainerQueryShowcase() {
             <ActionBar
               actions={actionBarActions}
               onActionClick={handleActionClick}
+              design={{
+                orientation: "horizontal",
+                position: "left",
+                density: "comfortable",
+                variant: "default",
+              }}
               responsive={true}
             />
           </div>
 
-          {/* Medium Container */}
           <div className="demo-container demo-container--medium">
             <h4 className="demo-title">Medium Container (350px)</h4>
             <p className="demo-description">
@@ -380,11 +396,16 @@ export default function ContainerQueryShowcase() {
             <ActionBar
               actions={actionBarActions.slice(0, 4)}
               onActionClick={handleActionClick}
+              design={{
+                orientation: "horizontal",
+                position: "left",
+                density: "comfortable",
+                variant: "default",
+              }}
               responsive={true}
             />
           </div>
 
-          {/* Narrow Container */}
           <div className="demo-container demo-container--narrow">
             <h4 className="demo-title">Narrow Container (250px)</h4>
             <p className="demo-description">
@@ -393,14 +414,20 @@ export default function ContainerQueryShowcase() {
             <ActionBar
               actions={actionBarActions.slice(0, 3)}
               onActionClick={handleActionClick}
+              design={{
+                orientation: "horizontal",
+                position: "left",
+                density: "compact",
+                variant: "default",
+              }}
               responsive={true}
             />
           </div>
         </div>
       </Card>
 
-      {/* List Component Tests */}
-      <Card variant="outlined" padding="lg" responsive={true}>
+      {/* FIXED: List Component Tests with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
         <h3>List Component Container Adaptation</h3>
         <p className="text-secondary section-spacing">
           These List components demonstrate how descriptions and icons hide when
@@ -415,7 +442,11 @@ export default function ContainerQueryShowcase() {
             </p>
             <List
               items={listItems.slice(0, 3)}
-              variant="detailed"
+              design={{
+                variant: "detailed",
+                orientation: "vertical",
+                density: "comfortable",
+              }}
               onItemClick={handleListItemClick}
               responsive={true}
             />
@@ -428,7 +459,11 @@ export default function ContainerQueryShowcase() {
             </p>
             <List
               items={listItems.slice(0, 3)}
-              variant="detailed"
+              design={{
+                variant: "detailed",
+                orientation: "vertical",
+                density: "comfortable",
+              }}
               onItemClick={handleListItemClick}
               responsive={true}
             />
@@ -436,8 +471,8 @@ export default function ContainerQueryShowcase() {
         </div>
       </Card>
 
-      {/* Tab Component Test */}
-      <Card variant="outlined" padding="lg" responsive={true}>
+      {/* FIXED: Tab Component with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
         <h3>TabGroup - Container Aware</h3>
         <p className="text-secondary section-spacing">
           Tabs adapt their size and hide icons/external indicators on narrow
@@ -447,6 +482,7 @@ export default function ContainerQueryShowcase() {
           tabs={tabs}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          design={{ variant: "default", size: "md", orientation: "horizontal" }}
           responsive={true}
         />
         <p className="section-spacing">
@@ -454,8 +490,8 @@ export default function ContainerQueryShowcase() {
         </p>
       </Card>
 
-      {/* Collapsible Section Test */}
-      <Card variant="outlined" padding="lg" responsive={true}>
+      {/* FIXED: CollapsibleSection with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
         <h3>CollapsibleSection - Working Toggle</h3>
         <p className="text-secondary section-spacing">
           The toggle functionality works properly and adapts spacing based on
@@ -467,6 +503,7 @@ export default function ContainerQueryShowcase() {
           badge={3}
           expanded={expandedSection}
           onToggle={setExpandedSection}
+          design={{ variant: "default", size: "md" }}
           responsive={true}
         >
           <p className="text-secondary">
@@ -478,7 +515,7 @@ export default function ContainerQueryShowcase() {
       </Card>
 
       {/* Live Container Query Demonstration */}
-      <Card variant="elevated" padding="lg" responsive={true}>
+      <Card design={{ elevation: "flat", padding: "lg" }} responsive={true}>
         <h3>🎯 Live Container Query Demonstration</h3>
         <p className="text-secondary section-spacing">
           These nested containers show how components adapt to their immediate
@@ -491,6 +528,12 @@ export default function ContainerQueryShowcase() {
             <ActionBar
               actions={actionBarActions}
               onActionClick={handleActionClick}
+              design={{
+                orientation: "horizontal",
+                position: "left",
+                density: "comfortable",
+                variant: "default",
+              }}
               responsive={true}
             />
             <p className="text-muted section-spacing">
@@ -503,6 +546,12 @@ export default function ContainerQueryShowcase() {
             <ActionBar
               actions={actionBarActions.slice(0, 4)}
               onActionClick={handleActionClick}
+              design={{
+                orientation: "horizontal",
+                position: "left",
+                density: "compact",
+                variant: "default",
+              }}
               responsive={true}
             />
             <p className="text-muted section-spacing">
@@ -518,6 +567,12 @@ export default function ContainerQueryShowcase() {
               <ActionBar
                 actions={actionBarActions.slice(0, 3)}
                 onActionClick={handleActionClick}
+                design={{
+                  orientation: "horizontal",
+                  position: "left",
+                  density: "compact",
+                  variant: "default",
+                }}
                 responsive={true}
               />
             </div>
@@ -525,8 +580,8 @@ export default function ContainerQueryShowcase() {
         </div>
       </Card>
 
-      {/* Pagination Component Test - Multiple Container Widths */}
-      <Card variant="outlined" padding="lg" responsive={true}>
+      {/* FIXED: Pagination Component with proper design props */}
+      <Card design={{ variant: "outlined", padding: "lg" }} responsive={true}>
         <h3>Pagination - Container Aware Response</h3>
         <p className="text-secondary section-spacing">
           Pagination adapts to different container widths: full → compact →
@@ -540,6 +595,11 @@ export default function ContainerQueryShowcase() {
               totalItems={sampleData.length}
               itemsPerPage={itemsPerPage}
               currentPage={currentPage}
+              design={{
+                orientation: "horizontal",
+                density: "comfortable",
+                size: "md",
+              }}
               showPageInfo={true}
               showPageSizeSelector={true}
               onPageChange={setCurrentPage}
@@ -556,6 +616,11 @@ export default function ContainerQueryShowcase() {
               totalItems={sampleData.length}
               itemsPerPage={itemsPerPage}
               currentPage={currentPage}
+              design={{
+                orientation: "horizontal",
+                density: "comfortable",
+                size: "md",
+              }}
               showPageInfo={false}
               showPageSizeSelector={false}
               onPageChange={setCurrentPage}
@@ -572,6 +637,11 @@ export default function ContainerQueryShowcase() {
               totalItems={sampleData.length}
               itemsPerPage={itemsPerPage}
               currentPage={currentPage}
+              design={{
+                orientation: "horizontal",
+                density: "compact",
+                size: "sm",
+              }}
               showPageInfo={false}
               showPageSizeSelector={false}
               onPageChange={setCurrentPage}
