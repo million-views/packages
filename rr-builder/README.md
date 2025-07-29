@@ -3,25 +3,33 @@
 A tiny, fluent builder API to configure React Router v7 framework mode routes,
 for a seamless, unified route & navigation authoring experience.
 
-> **Single‑source of truth for routes + navigation**
+> **Single‑source of truth for routes + navigation**
 
-## 1 · Why this package exists
+## 1 · Motivation
 
-React‑Router v7’s **framework‑mode** is awesome, but:
+Modern web applications benefit from **colocating navigation metadata with route
+configuration**—keeping icons, labels, permissions, and UI state together with
+the routes that use them. This creates a single source of truth that prevents
+the drift and inconsistencies that can plague growing applications.
 
-- It discards extra route props, making it impossible to keep navigation/UI meta
-  in sync with your route config.
-- As apps grow, maintaining and extending nested RR configs by hand becomes
-  tedious and error‑prone.
+React Router v7's **framework mode** gives us much needed relief from
+handicapped file-system based routing mechanisms. The one downside is that it
+**discards extra route properties**, making colocation impossible. Even if React
+Router preserved extra metadata, storing complex navigation data in optional
+route arguments becomes **brittle and unmanageable** as applications scale.
 
-`@m5nv/rr-builder` lets you **author your routes and all navigation metadata in
-one fluent, type-safe DSL**, and then generates a runtime‑safe module for your
-layout, menus, and navigation UIs.
+`@m5nv/rr-builder` solves this by providing a **fluent, type-safe DSL** for
+authoring augmented routes with colocated navigational metadata. It provides a
+tool to generate both React Router configuration and a runtime navigation API
+that keeps everything perfectly synchronized. Now, you can **author your routes
+and all navigation metadata in one fluent, type-safe DSL**, and use the
+generated runtime‑safe module for your layout, menu, and navigational UI
+components.
 
 ## 2 · Installation & Platform Support
 
 ```bash
-# npm or pnpm (dev-only; nothing leaks to runtime)
+# npm or pnpm (dev-only; nothing leaks to runtime)
 npm install -D @m5nv/rr-builder
 # or
 pnpm add -D @m5nv/rr-builder
@@ -45,28 +53,73 @@ import {
   layout,
   prefix,
   route,
+  section,
 } from "@m5nv/rr-builder";
 
-export default build([
-  layout("project/layout.tsx").children(
-    route("overview", "project/overview.tsx")
-      .nav({
+export default build(
+  [
+    // Main section (default)
+    layout("project/layout.tsx").children(
+      route("overview", "project/overview.tsx").nav({
         label: "Overview",
         iconName: "ClipboardList",
-        section: "project",
       }),
-    route("settings", "project/settings.tsx")
-      .nav({ label: "Settings", iconName: "Settings" }),
-    external("https://docs.acme.dev")
-      .nav({ label: "Docs", iconName: "Book" }),
-    prefix("account", [
-      index("project/account/home.tsx")
-        .nav({ label: "Account Home", iconName: "User" }),
-      route("settings", "project/account/settings.tsx")
-        .nav({ label: "Account Settings", iconName: "Settings" }),
-    ]),
-  ),
-]);
+      route("settings", "project/settings.tsx").nav({
+        label: "Settings",
+        iconName: "Settings",
+        id: "project-settings",
+      })
+    ),
+
+    // Dedicated admin section
+    section("admin").children(
+      layout("admin/layout.tsx").children(
+        index("admin/dashboard.tsx").nav({
+          label: "Admin Dashboard",
+          iconName: "Shield",
+        }),
+        route("users", "admin/users.tsx").nav({
+          label: "User Management",
+          iconName: "Users",
+        }),
+        route("reports", "admin/reports.tsx").nav({
+          label: "Reports",
+          iconName: "BarChart",
+          id: "admin-reports",
+        })
+      )
+    ),
+
+    // Documentation section with external links
+    section("docs").children(
+      external("https://docs.acme.dev").nav({
+        label: "API Docs",
+        iconName: "Book",
+      }),
+      external("https://guides.acme.dev").nav({
+        label: "User Guides",
+        iconName: "HelpCircle",
+      })
+    ),
+  ],
+  {
+    globalActions: [
+      {
+        id: "search",
+        label: "Search",
+        iconName: "Search",
+        sections: ["main", "admin"], // Available in main and admin sections
+      },
+      {
+        id: "feedback",
+        label: "Send Feedback",
+        iconName: "MessageSquare",
+        externalUrl: "https://feedback.acme.dev",
+      },
+    ],
+    badgeTargets: ["project-settings", "admin-reports"],
+  }
+);
 ```
 
 Generate the runtime helper and nav code:
@@ -89,7 +142,7 @@ route/navigation structures are possible:
 
 - `route(...)` and `layout(...)` return builders with `.children()` and
   `.nav()`.
-- `layout(...).nav()` **cannot** set a `section` (type error).
+- Both support all navigation metadata fields.
 - Only `route` and `layout` may have children.
 
 ### Index & External Builders
@@ -100,73 +153,231 @@ route/navigation structures are possible:
   `external: true`).
 - `external(...)` **cannot** be passed to `prefix()`.
 
+### Section Builder
+
+- `section(name)` creates a navigation section for organizing routes into
+  separate trees.
+- **Sections can only be used at the top level** of `build()` - they cannot be
+  nested within other routes or sections.
+- Section builders support `.nav()` (without the `section` field) and
+  `.children()`.
+- A section's `.children()` can accept any non-section builder (`route`,
+  `layout`, `index`, `external`).
+
 ### Prefix Builder
 
 - `prefix(path, [builders...])` nests several builders under a path segment.
-- Only `route`, `layout`, and `index` builders are allowed; `external()` is
-  disallowed by type.
-
-Here’s a more descriptive, context-rich replacement for your **Meta Shape
-(passed to `.nav()`)** section:
+- Only `route`, `layout`, and `index` builders are allowed; `external()` and
+  `section()` are disallowed by type.
 
 #### Meta Shape (passed to `.nav()`)
 
-The `.nav()` method lets you annotate each route with extra navigation/UI
-metadata. These attributes drive how your Navigator, menu, sidebar, or
-breadcrumbs are rendered and allow you to embed business context directly in
-your route config. Here’s what each field means:
+The `.nav()` method lets you attach navigation and UI metadata directly to your
+route definitions—making your navigation menus, sidebars, toolbars, and
+breadcrumbs entirely data-driven, consistent, and easy to extend.
+
+**Each field serves a specific purpose for your navigation or UI layer**:
 
 ```ts
-// For route(), index(), external()
-interface NavMeta {
-  label: string; // **Human‑readable name** for UI elements (menus, tabs, breadcrumbs).
-  iconName?: string; // **Icon key** (typically from lucide-react or your icon set) to show beside the label.
-  order?: number; // **Sorting hint**—lower numbers appear earlier in the section/group.
-  section?: string; // **High-level menu partition** (e.g. "main", "admin", "support"). If omitted, defaults to "main". Used to group unrelated branches.
-  group?: string; // **Cluster key**—for dividing a section into tabs, panels, or submenus (e.g. “Profile” vs “Security” tabs in Account).
-  tags?: string[]; // **Arbitrary search/filter keywords** (for power search, badges, or smart menus).
-  hidden?: boolean; // **Hide from all navigation UIs**—route remains valid, but isn’t shown in menu/sidebar.
-  end?: boolean; // **Exact path match only** for highlighting in nav (like React Router’s “end”). Useful for index/home routes.
-  external?: true; // **Automatically set by external()**. Marks this as an external/off-site link.
-  abac?: Record<string, string>; // **Access control**—attributes for runtime ABAC checks (if your app supports them).
+// Navigation metadata for all builders (external flag is set automatically)
+type NavMeta = {
+  /**
+   * Human‑friendly display name for this route/menu entry.
+   * Always provide a label for anything visible in navigation.
+   */
+  label: string;
+
+  /**
+   * Icon to show beside label in menus and sidebars.
+   * Typically the string name from lucide-react or your icon set.
+   */
+  iconName?: string;
+
+  /**
+   * Used to sort menu items within a group or section.
+   * Lower numbers appear first. Defaults to 0 if omitted.
+   */
+  order?: number;
+
+  /**
+   * Used for grouping related routes into submenus, tab panels,
+   * or logical clusters within a section (e.g. "Settings", "Billing" tabs).
+   */
+  group?: string;
+
+  /**
+   * List of keywords for search/filtering or for applying styles/logic
+   * to groups of routes (e.g. tags: ["admin", "beta"]).
+   */
+  tags?: string[];
+
+  /**
+   * If true, hides this item from all navigation UI,
+   * but leaves the route itself active and linkable.
+   * Useful for "secret"/unlinked pages, or wizard steps.
+   */
+  hidden?: boolean;
+
+  /**
+   * If true, menu highlighting should only occur on an exact path match,
+   * not for descendant routes. Useful for "Home" or main dashboard links.
+   */
+  end?: boolean;
+
+  /**
+   * Arbitrary access control claims for runtime ABAC or RBAC.
+   * Can be used to hide/show nav entries based on permissions.
+   */
+  abac?: string | string[];
+
+  /**
+   * List of per-route/contextual actions. These surface as menu items,
+   * action buttons, or FABs—e.g. "Create", "Export", "Refresh".
+   * UI code can render them as dropdowns, icon buttons, or toolbars.
+   */
   actions?: Array<{ id: string; label: string; iconName?: string }>;
-  // **Route-specific actions** to show as contextual buttons or menus (e.g. “Create”, “Export”).
-}
+
+  /**
+   * Marks this as an external (off-site) link.
+   * This flag is set automatically by `external()` and cannot be set manually.
+   * UI code can use this to render with special icons or open in a new tab.
+   */
+  external?: true; // Set automatically, not manually
+};
+
+// All builders use: Omit<NavMeta, 'external'> for their .nav() method
+// The external flag is only set automatically by the external() builder
 ```
 
-**Best practices for NavMeta:**
+#### Global Actions & Badge Targets
 
-- specify `label` on every route from the start to avoid drift
-- specify `section` if you want to split your product into distinct areas each
-  with its own navigation style; e.g. `docs`, `dashboard`, `shop`, `news`. —
-  remember layouts can set UI meta, but not section partitioning.
-- use `group` for tabs, `order` for sorting, and `tags` for search or
-  context-aware navigation.
-- Actions let you surface per-route commands (like “Create new post” or “Invite
-  user”) right from the navigation model.
+Beyond per-route metadata, you can define **global actions** and **badge
+targets** that apply across your entire application:
 
-Collectively by using `.nav()`, `globalActions` and `badgeTargets`, your
-`routes.[tj]s` file can become not only the single source of truth but also a
-`planning tool`! For example, you could creatively use `tags` to mark in which
-sprint a `route` will be delivered or was introduced.
+```ts
+// In your build() call
+export default build(
+  [
+    // ... your routes
+  ],
+  {
+    globalActions: [
+      {
+        id: "search",
+        label: "Global Search",
+        iconName: "Search",
+        sections: ["main", "admin"], // Only show in these sections
+      },
+      {
+        id: "help",
+        label: "Help Center",
+        iconName: "HelpCircle",
+        externalUrl: "https://help.acme.dev", // External link
+      },
+      {
+        id: "create-project",
+        label: "New Project",
+        iconName: "Plus",
+        // No sections = available everywhere
+      },
+    ],
+    badgeTargets: [
+      "notifications", // Route IDs that can show badges
+      "admin-users",
+      "reports-monthly",
+      "global-search", // Action IDs that can show badges
+    ],
+  }
+);
+```
+
+**Global Actions** are app-wide commands that appear in your navigation UI
+regardless of the current route. They can:
+
+- Be scoped to specific sections via the `sections` array
+- Link to external URLs via `externalUrl`
+- Trigger application logic when clicked (handled by your UI code)
+
+**Badge Targets** are route IDs or action IDs that can display notification
+badges, counters, or status indicators in your navigation UI.
 
 #### Type Safety at a Glance
 
-- `.children(...)` only available on `route()`/`layout()`.
-- `.nav({ section: ... })` disallowed on `layout()`.
-- `prefix()` only accepts `route`, `layout`, `index` builders.
+- `.children(...)` only available on `route()`, `layout()`, and `section()`.
+- `section()` builders can only be used at the **top level** of `build()`.
+- `prefix()` only accepts `route`, `layout`, `index` builders (not `external` or
+  `section`).
 - `.children(...)` on `index()` or `external()` is a compile-time error.
 
-##### Example Misuse (now type errors)
+##### Example Misuse (flagged for type errors)
 
 ```ts
 index("home.tsx").children(route("foo", "foo.tsx")); // ❌ error
 external("http://foo").children(route("foo", "foo.tsx")); // ❌ error
-layout("layout.tsx").nav({ section: "main" }); // ❌ error
+section("admin").children(section("nested")); // ❌ error
 prefix("docs", [external("https://foo.dev")]); // ❌ error
+prefix("api", [section("admin")]); // ❌ error
+
+// This is also an error - sections can only be at top level
+route("admin", "admin.tsx").children(
+  section("users") // ❌ error
+);
 ```
 
-## 5 · CLI & Code Generation (`rr-check`)
+## 5 · Section-Based Navigation Architecture
+
+The `section()` builder enables you to organize your application into distinct
+navigation trees, perfect for:
+
+- **Monorepo applications**: A single repo serving multiple webapps (docs,
+  dashboard, ...)
+- **Role-based interfaces**: Different navigation for different user types
+- **Feature modules**: Isolate documentation, settings, or tool sections
+- **Progressive disclosure**: Show simpler navigation to new users
+
+### Section Examples
+
+```ts
+export default build([
+  // Main application routes
+  layout("app/layout.tsx").children(
+    index("app/dashboard.tsx").nav({ label: "Dashboard" }),
+    route("projects", "app/projects.tsx").nav({ label: "Projects" })
+  ),
+
+  // Admin section with its own navigation tree
+  section("admin")
+    .nav({ label: "Administration", iconName: "Shield" })
+    .children(
+      layout("admin/layout.tsx").children(
+        index("admin/overview.tsx").nav({ label: "Admin Overview" }),
+        route("users", "admin/users.tsx").nav({ label: "Users" }),
+        route("settings", "admin/settings.tsx").nav({ label: "Settings" })
+      )
+    ),
+
+  // Documentation section
+  section("docs")
+    .nav({ label: "Documentation", iconName: "Book" })
+    .children(
+      external("https://api-docs.acme.dev").nav({ label: "API Reference" }),
+      external("https://guides.acme.dev").nav({ label: "User Guides" })
+    ),
+]);
+```
+
+Your generated navigation API will provide section-aware methods:
+
+```tsx
+// Get all available sections
+const sections = nav.sections(); // ["main", "admin", "docs"]
+
+// Get routes for a specific section
+const adminRoutes = nav.routes("admin");
+const mainRoutes = nav.routes("main"); // or nav.routes() for default
+```
+
+## 6 · CLI & Code Generation (`rr-check`)
 
 Check your routes, visualize trees, and generate navigation helpers for runtime.
 
@@ -192,8 +403,8 @@ The generated module exports:
 export function registerRouter(adapter: RouterAdapter): void;
 
 // Data model and utility functions
-export interface NavigationApi {
-  /** list of section names present in the `forest of trees` */
+export type NavigationApi = {
+  /** list of section names present in the forest of trees */
   sections(): string[];
 
   /* pure selectors – NO runtime context */
@@ -210,7 +421,7 @@ export interface NavigationApi {
 
   /* router adapter injected at factory time */
   router: RouterAdapter;
-}
+};
 ```
 
 ### Typescript support
@@ -241,31 +452,93 @@ npx rr-check routes.ts --print:nav-tree,include-id
     └── Annual(!) [id: routes/dashboard/reports/annual]
 ```
 
-## 6 · Using the Generated Navigation Module in Your UI
+## 7 · Using the Generated Navigation Module in Your UI
 
 ### Register the Router Adapter
 
 ```tsx
-import { Link, matchPath, useLocation, useMatches } from "react-router-dom";
+import { Link, matchPath, useLocation, useMatches } from "react-router";
 import nav, { registerRouter } from "@/navigation.generated";
 
 /// one-time registration
 registerRouter({ Link, useLocation, useMatches, matchPath });
 ```
 
-### Rendering navigation/menus
+### Rendering Section-Based Navigation
 
 ```tsx
-function Sidebar({ section }) {
+function AppNavigation() {
+  const sections = nav.sections();
+
+  return (
+    <nav>
+      {sections.map((sectionName) => (
+        <section key={sectionName}>
+          <h3>{sectionName}</h3>
+          <NavigationSection section={sectionName} />
+        </section>
+      ))}
+    </nav>
+  );
+}
+
+function NavigationSection({ section }) {
   const items = nav.routes(section);
   return (
     <ul>
-      {items.map((n) => (
-        <li key={n.id}>
-          <nav.router.Link to={n.path}>{n.label}</nav.router.Link>
+      {items.map((item) => (
+        <li key={item.id}>
+          <nav.router.Link to={item.path}>
+            {item.iconName && <Icon name={item.iconName} />}
+            {item.label}
+          </nav.router.Link>
         </li>
       ))}
     </ul>
+  );
+}
+```
+
+### Global Actions & Badges
+
+```tsx
+function GlobalActionBar() {
+  const actions = nav.globalActions;
+  const currentSection = getCurrentSection(); // Your logic
+
+  const availableActions = actions.filter(
+    (action) => !action.sections || action.sections.includes(currentSection)
+  );
+
+  return (
+    <div className="action-bar">
+      {availableActions.map((action) => (
+        <ActionButton
+          key={action.id}
+          action={action}
+          hasBadge={nav.badgeTargets.includes(action.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ActionButton({ action, hasBadge }) {
+  const handleClick = () => {
+    if (action.externalUrl) {
+      window.open(action.externalUrl, "_blank");
+    } else {
+      // Dispatch your custom action
+      dispatchAction(action.id);
+    }
+  };
+
+  return (
+    <button onClick={handleClick} className="action-button">
+      {action.iconName && <Icon name={action.iconName} />}
+      {action.label}
+      {hasBadge && <Badge />}
+    </button>
   );
 }
 ```
@@ -279,13 +552,29 @@ import { useHydratedMatches } from "./navigation.generated";
 export default function ContentLayout() {
   const matches = useHydratedMatches();
   const match = matches.at(-1);
-  let { label, iconName } = match?.handle ??
-    { label: "Unknown", iconName: "Help" };
+  let { label, iconName, actions } = match?.handle ?? {
+    label: "Unknown",
+    iconName: "Help",
+    actions: [],
+  };
+
   return (
     <article>
-      <h2>
-        <Icon name={iconName} /> {label}
-      </h2>
+      <header>
+        <h2>
+          <Icon name={iconName} /> {label}
+        </h2>
+        {actions && (
+          <div className="route-actions">
+            {actions.map((action) => (
+              <button key={action.id} onClick={() => handleAction(action.id)}>
+                {action.iconName && <Icon name={action.iconName} />}
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </header>
       <section>
         <Outlet />
       </section>
@@ -294,12 +583,13 @@ export default function ContentLayout() {
 }
 ```
 
-## 7 · Concepts & Best Practices
+## 8 · Concepts & Best Practices
 
-### Route vs Layout
+### Route vs Layout vs Section
 
 - **`route()`**: Owns a URL segment (`path`), can render its file and children.
 - **`layout()`**: Pure wrapper with children, no path.
+- **`section()`**: Top-level container that creates separate navigation trees.
 
 ### Index Routes
 
@@ -308,6 +598,53 @@ export default function ContentLayout() {
 ### Prefixing
 
 - Use `prefix(path, builders[])` to DRY up grouped path segments.
+- Cannot include `section()` or `external()` builders.
+
+### Section Organization
+
+- Use sections to create distinct areas of your application
+- Each section gets its own navigation tree
+- Perfect for admin areas, documentation, or feature modules
+- Sections cannot be nested - they're always top-level
+
+### Shared Layouts vs Individual Sections
+
+**Use `sharedLayout()`** when:
+
+- Multiple sections share the same root layout (app shell, navigation, header)
+- You want to eliminate repetitive layout nesting
+- You have a common UI structure across different app areas
+
+**Use individual `section()`** when:
+
+- Each section has completely different layout requirements
+- Sections are truly independent with no shared UI
+- You need maximum flexibility in structure
+
+```ts
+// Shared layout - common app shell
+...sharedLayout("layouts/app-shell.tsx", {
+  "dashboard": dashboardRoutes,
+  "admin": adminRoutes,
+})
+
+// vs Individual sections - different layouts
+section("public").children(
+  layout("layouts/marketing.tsx").children(...)
+),
+section("app").children(
+  layout("layouts/authenticated.tsx").children(...)
+),
+```
+
+### Actions & Global Actions
+
+- **Route actions**: Contextual commands specific to a route (Create, Edit,
+  Delete)
+- **Global actions**: App-wide commands available across sections (Search, Help,
+  New)
+- Actions are defined in metadata but wired up by your UI code
+- Use `badgeTargets` to show notifications on specific routes or actions
 
 ### Unique IDs
 
@@ -320,20 +657,22 @@ route("active", "Page.tsx", { id: "users-active" });
 
 Now you can switch on `match.id` in your component.
 
-## 8 · Troubleshooting & Migration
+## 9 · Troubleshooting & Migration
 
 - **Duplicate IDs**: Only the first is used in navigation trees; fix to avoid
   ambiguity.
 - **Missing files**: Shown by the CLI; check spelling or ensure the file exists.
-- **Type errors in your editor**: Confirm `.children()` and `.nav({ section })`
-  are only used where allowed.
+- **Type errors in your editor**: Confirm `.children()` usage follows the
+  constraints (no sections except at top level).
+- **Section nesting errors**: Remember sections can only be used at the top
+  level of `build()`.
 - **Switching from manual routes**: Replace your raw array with a single
   `build([...])` call and migrate metadata to `.nav()`.
 
-## 9 · Design notes
+## 10 · Design notes
 
-- **Sections vs. Groups** – _section_ splits the full `forest` by `tree`;
-  _group_ clusters within a section.
+- **Sections vs. Groups** – _section_ splits the full forest by tree; _group_
+  clusters within a section.
 - **External links** – Stay in your menu, but are filtered out before hitting RR
   config.
 - **No dev-only deps leak to runtime** – Only the generated module is imported
@@ -341,19 +680,20 @@ Now you can switch on `match.id` in your component.
 - **Type-safety** – The API statically prevents misuse.
 - **First-class codegen** – We do codegen so your runtime bundle is
   tree-shakable and never ships builder helpers.
+- **Actions are declarative** – Define them in route metadata, wire them up in
+  UI code.
 
-## 10 · Roadmap
+## 11 · Roadmap
 
-- **Adapter gallery** – ship `@m5nv/rr-adapter-preact`, `…-solid`, etc.
-- **Schema plug‑ins** – allow custom meta keys via generic parameter.
 - **ID collision auto‑resolve** – suggestion prompt instead of hard error.
-- **VS Code plugin** – live tree preview + jump‑to‑route.
 - **Docs site** – interactive playground, recipes, FAQ.
 - **Validate iconName** - iconName against icon libraries such `lucide‑react` at
   build time and create a `icons.ts` ready for import and use by UI menus and
   layouts.
+- **Action validation** - Validate action IDs and provide TypeScript
+  autocompletion.
 
 ## License
 
-© 2025 Million Views, LLC – Distributed under the MIT License. See
+© 2025 Million Views, LLC – Distributed under the MIT License. See
 [LICENSE](../LICENSE) for details.

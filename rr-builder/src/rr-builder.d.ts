@@ -1,95 +1,82 @@
 // @ts-check
 
 /* ------------------------------------------------------------------
- * @m5nv/rr-builder • Type Declarations • v2 
+ * @m5nv/rr-builder • Type Declarations • v2.1
  * ------------------------------------------------------------------ */
 
 import type { RouteConfigEntry } from "@react-router/dev/routes";
 
 /* ------------------------------------------------------------------
- * 1 · Type spec for augmenting routes with actions and meta data
+ * 1 · Base types for route configuration
  * ------------------------------------------------------------------ */
+
 /** 
- * Augmented metadata will be stashed in a handle for the codegen
- * 
+ * Route configuration entry extended with navigation metadata
  */
 export type ExtendedRouteConfigEntry = RouteConfigEntry & {
-  /** nav metadata is stashed in `handle` */
+  /** Navigation metadata stored in handle */
   handle?: NavMeta;
+  /** Internal: section name for routes within a section */
+  _section?: string;
+  /** Internal: parent id for re-anchoring nav-only nodes */
+  _anchor?: string;
 };
 
 /** 
- * Used to define route level actions in meta data
- * 
- * Note: actions are (to be) wired up at runtime by the application.
+ * Action specification for route-level or global actions
  */
-export interface ActionSpec {
+export type ActionSpec = {
   id: string;
   label: string;
   iconName?: string;
-}
+};
 
 /**
- * Use to define global actions
- * 
- * Note: actions are (to be) wired up at runtime by the application.
+ * Global action specification with optional section scoping
  */
-export interface GlobalActionSpec extends ActionSpec {
-  sections?: string[];      // omit ⇒ visible in all sections
-  externalUrl?: string;     // open link instead of dispatch
-}
+export type GlobalActionSpec = ActionSpec & {
+  /** Sections where this action should appear (omit for all sections) */
+  sections?: string[];
+  /** External URL to open instead of dispatching action */
+  externalUrl?: string;
+};
 
 /* ------------------------------------------------------------------
- * 2 · Route augmenting metadata
+ * 2 · Navigation metadata types
  * ------------------------------------------------------------------ */
 
-export interface NavMeta {
-  /* presentation */
-  label?: string;
-  iconName?: string;
-
-  /**
-   * Build-time **partition key**.
-   * Omit ⇒ `"main"` (for both internal and external).
-   */
-  section?: string;
-
-  /**
-   * Runtime **cluster** inside a section
-   * (e.g. “Clothing” vs “Electronics” vs "Home & Garden" in a mega-menu).
-   */
-  group?: string;
-
-  /** Explicit sort key inside a group (default 0) */
-  order?: number;
-
-  /** Orthogonal labels for A/B flags, footer filters, etc. */
-  tags?: string[];
-
-  /* behaviour */
-  /** Exact-match highlight (default true for index routes) */
-  end?: boolean;
-
-  /** Hide from navigation UIs without deleting the route */
-  hidden?: boolean;
-
-  /** ABAC permission key(s) (evaluated by @m5nv/abac) */
-  abac?: string | string[];
-
-  /** Route-level (context) actions surfaced by Navigator */
-  actions?: ActionSpec[];
-
-  /** set automatically by external() builder (nav-only link) */
-  external?: true;
-}
-
-/* ------------------------------------------------------------------
- * 3 · Navigation node (internal index and for apps at runtime)
- * ------------------------------------------------------------------ */
 /**
- * INTERNAL – structural outline used in code-gen; contains only 
- * id/path/children/external flag. App code should consume hydrated NavTreeNode
- * instead.
+ * Complete navigation metadata for routes, indexes, and external links
+ */
+export type NavMeta = {
+  /** Human-readable display name */
+  label?: string;
+  /** Icon identifier (typically from an icon library) */
+  iconName?: string;
+  /** Grouping identifier for organizing related routes */
+  group?: string;
+  /** Sort order within a group (lower numbers first) */
+  order?: number;
+  /** Tags for filtering, search, or feature flags */
+  tags?: string[];
+  /** Hide from navigation UI while keeping route active */
+  hidden?: boolean;
+  /** Require exact path match for active highlighting */
+  end?: boolean;
+  /** Access control attributes for authorization */
+  abac?: string | string[];
+  /** Route-specific actions available in this context */
+  actions?: ActionSpec[];
+  /** Automatically set for external links (cannot be set manually) */
+  external?: true;
+};
+
+/* ------------------------------------------------------------------
+ * 3 · Navigation tree node types
+ * ------------------------------------------------------------------ */
+
+/**
+ * Structural navigation node used internally by code generation
  */
 export type NavStructNode = {
   id: string;
@@ -99,65 +86,70 @@ export type NavStructNode = {
 };
 
 /**
- * Type for the nodes in the final navigation tree used by UI components
- * to render menu and grand-central type nav bars.
- * 
- * Note: The 'section' property in `nav` is hoisted out and not present in the
- * final nav tree node.
- * 
- * This is hydrated at runtime.
+ * Fully hydrated navigation tree node for runtime use
  */
-export type NavTreeNode = Omit<NavMeta, "section"> & {
+export type NavTreeNode = NavMeta & {
   id?: string;
   path: string;
   children?: NavTreeNode[];
 };
 
+
 /* ------------------------------------------------------------------
- * 4 · Extras passed to build()
+ * 4 · Build configuration types
  * ------------------------------------------------------------------ */
 
-export interface NavExtras {
+/**
+ * Extra configuration passed to build()
+ */
+export type NavExtras = {
+  /** Global actions available across sections */
   globalActions?: GlobalActionSpec[];
+  /** Route or action IDs that can display badges */
   badgeTargets?: string[];
-  /** nav-only nodes (external links); used by code-gen */
-  navOnly?: RouteConfigEntry[];
-}
+  /** Internal: navigation-only nodes (external links) */
+  navOnly?: ExtendedRouteConfigEntry[];
+};
 
 /* ------------------------------------------------------------------
- * 5 · Router-adapter type (no default impl)
+ * 5 · Router adapter type
  * ------------------------------------------------------------------ */
 
-export interface RouterAdapter {
-  Link: any;  // ComponentType<any> – kept as any to avoid react import
+/**
+ * Router adapter for framework integration
+ */
+export type RouterAdapter = {
+  Link: any;  // Component for navigation links
   useLocation: () => { pathname: string };
   useMatches: () => { id: string; handle?: any }[];
   matchPath: (pattern: string, pathname: string) => any | null;
-}
+};
 
 /* ------------------------------------------------------------------
- * 6 · Navigation API (generated module default)
+ * 6 · Navigation API types
  * ------------------------------------------------------------------ */
 
-export interface NavigationApi {
-  /** list of section names present in the `forest of trees` */
+/**
+ * Generated navigation API for runtime use
+ */
+export type NavigationApi = {
+  /** Get all available section names */
   sections(): string[];
-
-  /* pure selectors – NO runtime context */
+  /** Get routes for a section (defaults to "main") */
   routes(section?: string): NavTreeNode[];
+  /** Filter routes by tags within a section */
   routesByTags(section: string, tags: string[]): NavTreeNode[];
+  /** Filter routes by group within a section */
   routesByGroup(section: string, group: string): NavTreeNode[];
-
-  /* convenience hook that hydrates results returned by adapter.useMatches */
+  /** Hook to hydrate router matches with navigation metadata */
   useHydratedMatches: <T = unknown>() => Array<{ handle: NavMeta }>;
-
-  /* static extras */
+  /** Global actions defined in build() */
   globalActions: GlobalActionSpec[];
+  /** Badge target IDs defined in build() */
   badgeTargets: string[];
-
-  /* router adapter injected at factory time */
+  /** Router adapter instance (set by `registerRouter()`) */
   router: RouterAdapter;
-}
+};
 
 /* ------------------------------------------------------------------
  * 7 · One-time adapter registration (singleton)
@@ -180,77 +172,124 @@ export interface NavigationApi {
 export function registerRouter(adapter: RouterAdapter): void;
 
 /* ------------------------------------------------------------------
- * 8 · Fluent Builder API
+ * 8 · Builder types
  * ------------------------------------------------------------------ */
 
-/** 
- * Fluent API wrapper over react-router helper methods
- * 
- * NOTE: we could technically remove RR dependency
+/**
+ * Base builder type with common properties
  */
-export interface RouteBuilder {
-  children(...builders: Builder[]): RouteBuilder;
-  nav(meta: NavMeta): RouteBuilder;
+type BaseBuilder = {
   readonly entry: ExtendedRouteConfigEntry;
-}
+  readonly _type: string;
+};
 
-export interface LayoutBuilder {
-  children(...builders: Builder[]): LayoutBuilder;
-  nav(meta: Omit<NavMeta, "section">): LayoutBuilder; // section not allowed
-  readonly entry: ExtendedRouteConfigEntry;
-}
+/**
+ * Route builder with navigation and children support
+ */
+export type RouteBuilder = BaseBuilder & {
+  readonly _type: 'builder';
+  nav(meta: Omit<NavMeta, 'external'>): RouteBuilder;
+  children(...builders: NonSectionBuilder[]): RouteBuilder;
+};
 
-export interface IndexBuilder {
-  nav(meta: NavMeta): IndexBuilder;
-  readonly entry: ExtendedRouteConfigEntry;
-  // NO children()
-}
+/**
+ * Layout builder with navigation and children support
+ */
+export type LayoutBuilder = BaseBuilder & {
+  readonly _type: 'builder';
+  nav(meta: Omit<NavMeta, 'external'>): LayoutBuilder;
+  children(...builders: NonSectionBuilder[]): LayoutBuilder;
+};
 
-export interface ExternalBuilder {
-  nav(meta: NavMeta): ExternalBuilder;
-  readonly entry: ExtendedRouteConfigEntry;
-  // NO children()
-}
+/**
+ * Index builder with navigation support only
+ */
+export type IndexBuilder = BaseBuilder & {
+  readonly _type: 'builder';
+  nav(meta: Omit<NavMeta, 'external'>): IndexBuilder;
+  // NO children() method
+};
 
-// Union for anything that is a builder
-export type Builder = RouteBuilder | LayoutBuilder | IndexBuilder | ExternalBuilder;
+/**
+ * External link builder with navigation support only
+ */
+export type ExternalBuilder = BaseBuilder & {
+  readonly _type: 'builder';
+  nav(meta: Omit<NavMeta, 'external'>): ExternalBuilder;
+  // NO children() method
+};
 
-// For prefixing, exclude external
+/**
+ * Section builder for top-level organization of application's route 
+ * configuration into a `forest of trees`.
+ */
+export type SectionBuilder = BaseBuilder & {
+  readonly _type: 'section';
+  readonly name: string;
+  nav(meta: Omit<NavMeta, 'external'>): SectionBuilder;
+  children(...builders: NonSectionBuilder[]): SectionBuilder;
+};
+
+/**
+ * Union of all non-section builders
+ */
+export type NonSectionBuilder = RouteBuilder | LayoutBuilder | IndexBuilder | ExternalBuilder;
+
+/**
+ * Union of builders that can be prefixed
+ */
 export type PrefixableBuilder = RouteBuilder | LayoutBuilder | IndexBuilder;
 
-/* ---------- factory helpers ------------------------------------ */
-/** Wraps RR's route helper */
+/**
+ * Union of all possible builders
+ */
+export type Builder = NonSectionBuilder | SectionBuilder;
+
+/* ------------------------------------------------------------------
+ * 9 · RR utility function wrappers + section and external for DX 
+ * ------------------------------------------------------------------ */
+
+/** Create a route builder */
 export function route(
-  path: string | null | undefined,
+  path: string,
   file: string,
   options?: Parameters<typeof import("@react-router/dev/routes").route>[2],
 ): RouteBuilder;
 
-/** Wraps RR's index helper */
+/** Create an index route builder */
 export function index(
   file: string,
   options?: Parameters<typeof import("@react-router/dev/routes").index>[1],
 ): IndexBuilder;
 
-/** Wraps RR's layout helper */
+/** Create a layout builder */
 export function layout(
   file: string,
   options?: Parameters<typeof import("@react-router/dev/routes").layout>[1],
 ): LayoutBuilder;
 
-/** Wraps RR's `prefix` helper; input is builders instead of routes */
+/** Create prefixed route builders */
 export function prefix(
   prefixPath: string,
-  builders: Builder[],
+  builders: PrefixableBuilder[],
 ): PrefixableBuilder[];
 
-/** Create navigation only external links that are not handled by RR */
+/** Create an external link builder */
 export function external(
   url: string,
   opts?: { id?: string },
 ): ExternalBuilder;
 
-/** build() produces routable array **and** attaches non-enumerable `.nav` payload */
+/** Create a section builder */
+export function section(name: string): SectionBuilder;
+
+/** Create shared layout with multiple sections */
+export function sharedLayout(
+  layoutFile: string,
+  sections: Record<string, NonSectionBuilder[]>
+): SectionBuilder[];
+
+/** Build the final route configuration */
 export function build(
   builders: Builder[],
   extras?: NavExtras,

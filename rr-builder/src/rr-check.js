@@ -120,13 +120,28 @@ function Node2String(node) {
 
   const mark = getMarker(id);
   const info = [];
+
   if (state.show.path && path) {
     info.push(`path: ${path}`);
     if (index) {
       info.push(`index`);
     }
   }
-  if (state.show.id && id) info.push(`id: ${id}`);
+
+  if (state.show.id && id) {
+    info.push(`id: ${id}`);
+  }
+
+  // Show section information if available
+  if (node._section && node._section !== "main") {
+    info.push(`section: ${node._section}`);
+  }
+
+  // Show if it's an external link
+  if (node.handle?.external) {
+    info.push(`external`);
+  }
+
   const xtra = info.length ? ` [${info.join(", ")}]` : "";
   return `${label}${mark}${xtra}`;
 }

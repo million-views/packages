@@ -1,8 +1,92 @@
 # [Changelog](https://github.com/million-views/packages/commits/main/rr-builder)
 
-## v2.0.1 - 25MAY2025
+## v2.2.0 - 28MAY2025
 
-- Doc fix
+### 🚨 BREAKING CHANGES
+
+- **Section API Redesign**: Replaced `section` attribute in navigation metadata
+  with explicit `section()` builder
+  ```ts
+  // Before (v2.0.1)
+  route("admin", "admin/page.tsx").nav({ section: "admin", label: "Admin" });
+
+  // After (v2.2.0)
+  section("admin").children(
+    route("admin", "admin/page.tsx").nav({ label: "Admin" }),
+  );
+  ```
+
+- **Unified Navigation Metadata**: all builders now use
+  `Omit<NavMeta, 'external'>`
+- **External Flag Enforcement**: The `external` flag can no longer be set
+  manually and will throw runtime errors if attempted
+
+### ✨ NEW FEATURES
+
+- **`section()` Builder**: Create explicit navigation sections for organizing
+  routes into separate trees
+  ```ts
+  section("admin").children(
+    layout("admin/layout.tsx").children(...)
+  )
+  ```
+
+- **`sharedLayout()` Helper**: Convenient function for multiple sections sharing
+  the same root layout
+  ```ts
+  ...sharedLayout("layouts/root.tsx", {
+    "dashboard": [dashboardRoutes],
+    "admin": [adminRoutes],
+    "docs": [docsRoutes],
+  })
+  ```
+
+- **Enhanced Type Safety**: All `.nav()` methods now prevent manual `external`
+  flag setting at compile time
+
+- **Section-Aware Code Generation**: Navigation trees are now properly organized
+  by section with improved tree building
+
+### 🐛 FIXES
+
+- **TypeScript Compatibility**: Resolved `_section` property recognition issues
+  in code generation
+- **External Link Handling**: Proper section inheritance for external links
+  during tree building
+- **Navigation Tree Building**: Fixed section boundary enforcement and duplicate
+  route handling
+
+### 🔄 MIGRATION GUIDE
+
+1. **Replace section attributes with section builders:**
+   ```ts
+   // Old
+   build([
+     route("home", "home.tsx").nav({ section: "main", label: "Home" }),
+     route("admin", "admin.tsx").nav({ section: "admin", label: "Admin" }),
+   ]);
+
+   // New
+   build([
+     route("home", "home.tsx").nav({ label: "Home" }), // defaults to "main" section
+     section("admin").children(
+       route("admin", "admin.tsx").nav({ label: "Admin" }),
+     ),
+   ]);
+   ```
+
+2. **Use sharedLayout for repeated patterns:**
+   ```ts
+   // Old - repetitive
+   section("admin").children(layout("root.tsx").children(...adminRoutes)),
+   section("docs").children(layout("root.tsx").children(...docsRoutes)),
+
+   // New - DRY
+   ...sharedLayout("root.tsx", {
+     "admin": adminRoutes,
+     "docs": docsRoutes,
+   })
+   ```
 
 ## v2.0.0 - 25MAY2025
 

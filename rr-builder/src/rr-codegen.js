@@ -8,6 +8,7 @@ import { flatMap, walk } from "@m5nv/rr-builder/tree-utils";
 /**
  * @typedef {import('./rr-builder').NavMeta} NavMeta
  * @typedef {import('./rr-builder').NavStructNode} NavStructNode
+ * @typedef {import("@m5nv/rr-builder").ExtendedRouteConfigEntry} ExtendedRouteConfigEntry
  */
 
 function toPascalCase(str) {
@@ -59,6 +60,129 @@ export function NodeNormalize(node) {
   return { handle, path, id, index, label };
 }
 
+// function format(data, maxLineLength = 80) {
+//   // return JSON.stringify(data, null, 2);
+//   return JSON.stringify(data);
+// }
+
+/**
+ * Format arrays or objects for code generation with readable line breaks
+ * @param {any} data Array or object to format
+ * @param {number} maxLineLength Maximum length before breaking to new line
+ * @returns {string} Formatted data string
+ */
+function format(data, maxLineLength = 80) {
+  if (data === null || data === undefined) {
+    return JSON.stringify(data);
+  }
+
+  // Handle arrays
+  if (Array.isArray(data)) {
+    if (data.length === 0) {
+      return "[]";
+    }
+
+    // For simple arrays (strings, numbers, booleans)
+    if (data.every((item) => typeof item !== "object" || item === null)) {
+      const items = data.map((item) => JSON.stringify(item));
+
+      // Try single line first
+      const singleLine = `[${items.join(", ")}]`;
+      if (singleLine.length <= maxLineLength) {
+        return singleLine;
+      }
+
+      // Multi-line format for simple arrays
+      let result = "[\n";
+      let currentLine = "";
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const separator = i < items.length - 1 ? ", " : "";
+
+        if (currentLine === "") {
+          currentLine = `  ${item}${separator}`;
+        } else if (
+          (currentLine + item + separator).length <= maxLineLength - 2
+        ) {
+          currentLine += item + separator;
+        } else {
+          result += currentLine + "\n";
+          currentLine = `  ${item}${separator}`;
+        }
+      }
+
+      if (currentLine) {
+        result += currentLine + "\n";
+      }
+
+      result += "]";
+      return result;
+    }
+
+    // For complex arrays (objects/arrays)
+    const items = data.map((item) => JSON.stringify(item, null, 2));
+
+    // Always multi-line for complex arrays
+    let result = "[\n";
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const separator = i < items.length - 1 ? "," : "";
+
+      // Indent each line of the item
+      const indentedItem = item.split("\n").map((line) => `  ${line}`).join(
+        "\n",
+      );
+      result += indentedItem + separator + "\n";
+    }
+    result += "]";
+
+    return result;
+  }
+
+  // Handle objects
+  if (typeof data === "object") {
+    const keys = Object.keys(data);
+    if (keys.length === 0) {
+      return "{}";
+    }
+
+    // Try single line for simple objects
+    const singleLine = JSON.stringify(data);
+    if (singleLine.length <= maxLineLength) {
+      return singleLine;
+    }
+
+    // Multi-line format for objects
+    let result = "{\n";
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const value = data[key];
+      const separator = i < keys.length - 1 ? "," : "";
+
+      // Recursively format nested values
+      const formattedValue = typeof value === "object" && value !== null
+        ? format(value, maxLineLength - 4) // Reduce line length for nested indentation
+        : JSON.stringify(value);
+
+      // Indent nested multi-line values
+      const indentedValue = formattedValue.includes("\n")
+        ? formattedValue.split("\n").map((line, idx) =>
+          idx === 0 ? line : `  ${line}`
+        ).join("\n")
+        : formattedValue;
+
+      result += `  ${JSON.stringify(key)}: ${indentedValue}${separator}\n`;
+    }
+    result += "}";
+
+    return result;
+  }
+
+  // For primitive types, just use JSON.stringify
+  return JSON.stringify(data);
+}
+
 // rewrite tree to exclude layout routes and pull up the children
 export function pruneLayouts(nodes) {
   // no path (so not a page) AND not an index route
@@ -99,13 +223,11 @@ export function codegen(dest, routes, extras) {
 // ⚠ AUTO-GENERATED — ${new Date().toISOString()} — do not edit by hand!
 // Consult @m5nv/rr-builder docs to keep this file in sync with your routes. 
 `;
-  const meta = [...metaMap.entries()].map(
-    ([id, m]) => `  [${JSON.stringify(id)}, ${JSON.stringify(m)}],`,
-  ).join("\n");
-  const navi = JSON.stringify(navTree, null, 2);
+  const meta = format([...metaMap.entries()]);
+  const navi = format(navTree);
   const ext = path.extname(dest).toLocaleLowerCase();
-  const gactions = JSON.stringify(extras.globalActions ?? []);
-  const btargets = JSON.stringify(extras.badgeTargets ?? []);
+  const gactions = format(extras.globalActions ?? []);
+  const btargets = format(extras.badgeTargets ?? []);
   let code = undefined;
   if (ext === ".ts") {
     code = codegenTsContent(header, meta, navi, gactions, btargets);
@@ -138,56 +260,108 @@ function createMetaMap(routes) {
 }
 
 /**
- * Section-anywhere build: splits into multiple section-keyed sub-trees.
+ * Build navigation trees organized by section.
+ * Sections are now explicit and _section is pre-populated during build().
+ * @param {ExtendedRouteConfigEntry[]} routes
  * @return {Record<string, NavStructNode[]>}
  */
 function buildNavigationTree(routes) {
   /** @type {Record<string, NavStructNode[]>} */
   const navigationTree = {};
   const pruned = pruneLayouts(routes);
-  const stack = [];
 
-  function emit(section, node) {
-    if (!navigationTree[section]) navigationTree[section] = [];
-    navigationTree[section].push(node);
+  // Group routes by their _section property (set during build)
+  const routesBySection = new Map();
+
+  // First pass: collect all routes and group by section
+  walk(pruned, (node) => {
+    const section = node._section || "main";
+    if (!routesBySection.has(section)) {
+      routesBySection.set(section, []);
+    }
+    routesBySection.get(section).push(node);
+  });
+
+  // Second pass: build navigation tree for each section
+  for (const [sectionName, sectionRoutes] of routesBySection) {
+    navigationTree[sectionName] = buildSectionTree(sectionRoutes);
   }
 
-  walk(pruned, (node, depth) => {
-    // 1) figure out which section this node belongs to
-    const parentCtx = depth > 0 ? stack[depth - 1].activeSection : "main";
-    const activeSection = node.handle?.section ?? parentCtx;
+  return navigationTree;
+}
 
-    // 2) build our NavTreeNode
-    //    Only add properties that exist and are of interest to the UI component
-    const { handle, id, path } = NodeNormalize(node);
+/**
+ * Build a navigation tree for routes within a single section
+ * @param {ExtendedRouteConfigEntry[]} routes Routes belonging to one section
+ * @return {NavStructNode[]}
+ */
+function buildSectionTree(routes) {
+  if (!routes || routes.length === 0) return [];
+
+  const processedRoutes = new Set();
+  const sectionName = routes[0]._section || "main"; // All routes should have same section
+
+  /** @param {ExtendedRouteConfigEntry} route */
+  function buildNodeTree(route) {
+    if (processedRoutes.has(route)) return null;
+    processedRoutes.add(route);
+
+    const { handle, id, path } = NodeNormalize(route);
+
+    /** @type {NavStructNode} */
     const navNode = {
       id,
       path,
       ...(handle?.external && { external: true }),
     };
 
-    // 3) attach to the right place
-    // const isNewSectionRoot = depth === 0 || handle?.section !== undefined;
-    const isNewSectionRoot = depth === 0 ||
-      (handle?.section !== undefined && handle.section !== parentCtx);
-    if (isNewSectionRoot) {
-      // root of “main” (depth=0) or root of a deeper section
-      emit(activeSection, navNode);
-    } else {
-      // plain descendant of the same section
-      const dnode = stack[depth - 1];
-      if (dnode.navNode.children) {
-        dnode.navNode.children.push(navNode);
-      } else {
-        dnode.navNode.children = [navNode];
+    // Process children, but only include children from the same section
+    if (route.children && route.children.length > 0) {
+      const childNodes = [];
+      for (const child of route.children) {
+        // Only include children that belong to the same section
+        // @ts-ignore - _section is added by our build process
+        const childSection = child._section || "main";
+        if (childSection === sectionName) {
+          const childNode = buildNodeTree(child);
+          if (childNode) {
+            childNodes.push(childNode);
+          }
+        }
       }
-      // stack[depth - 1].navNode.children.push(navNode);
+      if (childNodes.length > 0) {
+        navNode.children = childNodes;
+      }
     }
-    // 4) push our own context for any children
-    stack[depth] = { activeSection, navNode };
-  });
 
-  return navigationTree;
+    return navNode;
+  }
+
+  // Find root routes (routes that are not children of other routes in this section)
+  const childRouteIds = new Set();
+
+  for (const route of routes) {
+    for (const child of route.children ?? []) {
+      // @ts-ignore - _section is added by our build process
+      const childSection = child._section || "main";
+      if (childSection === sectionName) {
+        childRouteIds.add(child.id);
+      }
+    }
+  }
+
+  const rootRoutes = routes.filter((route) => !childRouteIds.has(route.id));
+
+  // Build tree starting from root routes
+  const treeNodes = [];
+  for (const rootRoute of rootRoutes) {
+    const treeNode = buildNodeTree(rootRoute);
+    if (treeNode) {
+      treeNodes.push(treeNode);
+    }
+  }
+
+  return treeNodes;
 }
 
 function codegenTsContent(header, meta, navi, gactions, btargets) {
@@ -202,9 +376,7 @@ import type {
 } from "@m5nv/rr-builder";
 
 /* 1 ─ raw data ─────────────────────────────────────────────── */
-const metaMap = new Map<string, NavMeta>([
-${meta}
-]);
+const metaMap = new Map<string, NavMeta>(${meta});
 
 /* thin structural forest */
 const navStructure: Record<string, NavStructNode[]> = ${navi};
@@ -323,9 +495,7 @@ function codegenJsContent(header, meta, navi, gactions, btargets) {
 /** @typedef {import('@m5nv/rr-builder').GlobalActionSpec} GlobalActionSpec */
 
 /* 1 ─ raw data ─────────────────────────────────────────────── */
-const metaMap = new Map([
-${meta}
-]);
+const metaMap = new Map(${meta});
 
 /** @type {Record<string, NavStructNode[]>} */
 const navStructure = ${navi};

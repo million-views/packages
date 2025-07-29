@@ -10,51 +10,51 @@ import { build, index, layout, prefix, route } from "@m5nv/rr-builder";
 // 1) Dashboard feature routes
 // —————————————————————————————————————————————————————————————
 const overview = route("overview", "layouts/content.tsx", { id: "overview" })
-  // .meta({ label: "Overview", iconName: "BarChart", section: "main" })
+  // .nav({ label: "Overview", iconName: "BarChart", section: "main" })
   .children(
     index("routes/dashboard/overview/summary.tsx")
-      .meta({ label: "Overview", iconName: "CircleDot", end: true }),
+      .nav({ label: "Overview", iconName: "CircleDot", end: true }),
     route("performance", "routes/dashboard/overview/performance.tsx")
-      .meta({ label: "Performance", iconName: "TrendingUp" }),
+      .nav({ label: "Performance", iconName: "TrendingUp" }),
     route("metrics", "routes/dashboard/overview/metrics.tsx")
-      .meta({ label: "Metrics", iconName: "Clock" }),
+      .nav({ label: "Metrics", iconName: "Clock" }),
   );
 
 const analytics = route("analytics", "layouts/content.tsx", { id: "analytics" })
-  // .meta({ label: "Analytics", iconName: "FileText", section: "main" })
+  // .nav({ label: "Analytics", iconName: "FileText", section: "main" })
   .children(
     index("routes/dashboard/analytics/summary.tsx")
-      .meta({ label: "Analytics", iconName: "BarChart", end: true }),
+      .nav({ label: "Analytics", iconName: "BarChart", end: true }),
     route("traffic", "routes/dashboard/analytics/traffic.tsx")
-      .meta({ label: "Traffic", iconName: "Activity" }),
+      .nav({ label: "Traffic", iconName: "Activity" }),
     route("conversion", "routes/dashboard/analytics/conversion.tsx")
-      .meta({ label: "Conversion", iconName: "PieChart" }),
+      .nav({ label: "Conversion", iconName: "PieChart" }),
   );
 
 const reports = route("reports", "layouts/content.tsx", { id: "reports" })
-  // .meta({ label: "Reports", iconName: "PieChart", section: "main" })
+  // .nav({ label: "Reports", iconName: "PieChart", section: "main" })
   .children(
     index("routes/dashboard/reports/summary.tsx")
-      .meta({ label: "Reports", iconName: "FileText", end: true }),
+      .nav({ label: "Reports", iconName: "FileText", end: true }),
     route("monthly", "routes/dashboard/reports/monthly.tsx", {
       id: "reports-monthly",
     })
-      .meta({ label: "Monthly", iconName: "Calendar" }),
+      .nav({ label: "Monthly", iconName: "Calendar" }),
     route("quarterly", "routes/dashboard/reports/quarterly.tsx", {
       id: "reports-quarterly",
     })
-      .meta({ label: "Quarterly", iconName: "CalendarDays" }),
+      .nav({ label: "Quarterly", iconName: "CalendarDays" }),
     route("annual", "routes/dashboard/reports/annual.tsx", {
       id: "reports-annual",
     })
-      .meta({ label: "Annual", iconName: "CalendarRange" }),
+      .nav({ label: "Annual", iconName: "CalendarRange" }),
   );
 
 const dashboard = route("dashboard", "layouts/content.tsx", { id: "main" })
-  // .meta({ label: "Dashboard", iconName: "LayoutDashboard", section: "main" })
+  // .nav({ label: "Dashboard", iconName: "LayoutDashboard", section: "main" })
   .children(
     index("routes/dashboard/page.tsx")
-      .meta({ label: "Dashboard", iconName: "LayoutDashboard", end: true }),
+      .nav({ label: "Dashboard", iconName: "LayoutDashboard", end: true }),
     overview,
     analytics,
     reports,
@@ -64,27 +64,27 @@ const dashboard = route("dashboard", "layouts/content.tsx", { id: "main" })
 // 2) User‑management feature routes
 // —————————————————————————————————————————————————————————————
 const roles = route("roles", "routes/users/layout.tsx", { id: "roles" })
-  // .meta({ label: "Roles", section: "users" })
+  // .nav({ label: "Roles", section: "users" })
   .children(
     index("routes/users/roles/page.tsx", { id: "users-roles-index" })
-      .meta({ label: "All Roles", iconName: "Shield", end: true }),
+      .nav({ label: "All Roles", iconName: "Shield", end: true }),
     route("admin", "routes/users/roles/page.tsx", { id: "users-roles-admin" })
-      .meta({ label: "Administrators", iconName: "ShieldAlert" }),
+      .nav({ label: "Administrators", iconName: "ShieldAlert" }),
     route("editor", "routes/users/roles/page.tsx", { id: "users-roles-editor" })
-      .meta({ label: "Editors", iconName: "Edit" }),
+      .nav({ label: "Editors", iconName: "Edit" }),
     route("viewer", "routes/users/roles/page.tsx", { id: "users-roles-viewer" })
-      .meta({ label: "Viewers", iconName: "Eye" }),
+      .nav({ label: "Viewers", iconName: "Eye" }),
   );
 
 const users = route("users", "routes/users/layout.tsx", { id: "users" })
-  // .meta({ label: "Users", iconName: "Users", section: "main" })
+  // .nav({ label: "Users", iconName: "Users", section: "main" })
   .children(
     index("routes/users/page.tsx", { id: "users-index" })
-      .meta({ label: "All Users", iconName: "Users", end: true }),
+      .nav({ label: "All Users", iconName: "Users", end: true }),
     route("active", "routes/users/page.tsx", { id: "users-active" })
-      .meta({ label: "Active Users", iconName: "UserCheck" }),
+      .nav({ label: "Active Users", iconName: "UserCheck" }),
     route("inactive", "routes/users/page.tsx", { id: "users-inactive" })
-      .meta({ label: "Inactive Users", iconName: "UserMinus" }),
+      .nav({ label: "Inactive Users", iconName: "UserMinus" }),
     roles,
   );
 
@@ -94,9 +94,9 @@ const users = route("users", "routes/users/layout.tsx", { id: "users" })
 const appShell = layout("routes/layout.tsx")
   .children(
     index("routes/page.tsx"),
-    // .meta({ label: "Home", iconName: "Home", end: true, section: "main" }),
+    // .nav({ label: "Home", iconName: "Home", end: true, section: "main" }),
     route("settings", "routes/settings/page.tsx"),
-    // .meta({ label: "Settings", iconName: "Settings", section: "main" }),
+    // .nav({ label: "Settings", iconName: "Settings", section: "main" }),
     dashboard,
     users,
   );

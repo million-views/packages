@@ -1,6 +1,6 @@
 {
   "name": "@m5nv/rr-builder",
-  "version": "2.0.1",
+  "version": "2.2.0",
   "description": "Fluent API for seamless route & navigation authoring experience in React Router v7 framework mode",
   "type": "module",
   "main": "src/rr-builder.js",
@@ -77,5 +77,9 @@
   "devDependencies": {
     "@react-router/dev": ">=7.6.0 <8.0.0",
     "@types/node": "^22.15.21"
+  },
+  "engines": {
+    "node": ">=24.1.0 <25.0.0",
+    "npm": ">=11.3.0"
   }
 }
