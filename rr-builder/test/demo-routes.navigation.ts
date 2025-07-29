@@ -1,5 +1,5 @@
 
-// ⚠ AUTO-GENERATED — 2025-05-26T01:08:35.714Z — do not edit by hand!
+// ⚠ AUTO-GENERATED — 2025-07-29T23:54:31.614Z — do not edit by hand!
 // Consult @m5nv/rr-builder docs to keep this file in sync with your routes. 
 
 import type {
@@ -13,47 +13,209 @@ import type {
 
 /* 1 ─ raw data ─────────────────────────────────────────────── */
 const metaMap = new Map<string, NavMeta>([
-  ["project/overview", {"section":"project","label":"Overview","iconName":"ClipboardList","order":1}],
-  ["project/integrations", {"section":"main","label":"Integrations","iconName":"Plug","order":2}],
-  ["project/deployments", {"section":"main","label":"Deployments","iconName":"Truck","order":3}],
-  ["project/activity", {"section":"main","label":"Activity","iconName":"Activity","order":4}],
-  ["project/domains", {"section":"main","label":"Domains","iconName":"Globe","order":5}],
-  ["project/usage", {"section":"main","label":"Usage","iconName":"BarChart2","order":6}],
-  ["project/monitoring", {"section":"main","label":"Monitoring","iconName":"Monitor","order":7,"actions":[{"id":"create-query","label":"Create New Query","iconName":"PlusCircle"}]}],
-  ["project/observability", {"section":"main","label":"Observability","iconName":"Eye","order":8}],
-  ["project/storage", {"section":"main","label":"Storage","iconName":"Database","order":9}],
-  ["project/flags", {"section":"main","label":"Flags","iconName":"Flag","order":10}],
-  ["project/ai", {"section":"main","label":"AI","iconName":"BrainCircuit","order":11}],
-  ["fubar", {"section":"main","label":"Support","iconName":"LifeBuoy","order":12}],
-  ["docs-foo-dev", {"external":true,"section":"main","label":"Docs","iconName":"Book","tags":["help"]}],
-  ["help-foo-dev", {"external":true,"section":"main","label":"Help","iconName":"Help","tags":["help"]}],
-  ["foo-dev-changelog", {"external":true,"section":"main","label":"Changelog","iconName":"ChangeLog","tags":["help"]}],
-  ["project/settings", {"section":"main","label":"Settings","iconName":"Settings","order":13}],
-  ["wildy-external-acme-dev", {"external":true,"section":"project","label":"Go wild","iconName":"Wild"}],
-  ["project/resources", {"section":"project","label":"Resources","iconName":"List","group":"resources","hidden":true}],
-  ["docs-acme-dev", {"external":true,"section":"main","label":"Docs","iconName":"Book","tags":["help"]}],
-  ["help-acme-dev", {"external":true,"section":"main","label":"Help","iconName":"Help","tags":["help"]}],
-  ["acme-dev-changelog", {"external":true,"section":"main","label":"Changelog","iconName":"ChangeLog","tags":["help"]}],
+  [
+    "project/overview",
+    {
+      "label": "Overview",
+      "iconName": "ClipboardList",
+      "order": 1
+    }
+  ],
+  [
+    "project/integrations",
+    {
+      "label": "Integrations",
+      "iconName": "Plug",
+      "order": 2
+    }
+  ],
+  [
+    "project/deployments",
+    {
+      "label": "Deployments",
+      "iconName": "Truck",
+      "order": 3
+    }
+  ],
+  [
+    "project/activity",
+    {
+      "label": "Activity",
+      "iconName": "Activity",
+      "order": 4
+    }
+  ],
+  [
+    "project/domains",
+    {
+      "label": "Domains",
+      "iconName": "Globe",
+      "order": 5
+    }
+  ],
+  [
+    "project/usage",
+    {
+      "label": "Usage",
+      "iconName": "BarChart2",
+      "order": 6
+    }
+  ],
+  [
+    "project/monitoring",
+    {
+      "label": "Monitoring",
+      "iconName": "Monitor",
+      "order": 7,
+      "actions": [
+        {
+          "id": "create-query",
+          "label": "Create New Query",
+          "iconName": "PlusCircle"
+        }
+      ]
+    }
+  ],
+  [
+    "project/observability",
+    {
+      "label": "Observability",
+      "iconName": "Eye",
+      "order": 8
+    }
+  ],
+  [
+    "project/storage",
+    {
+      "label": "Storage",
+      "iconName": "Database",
+      "order": 9
+    }
+  ],
+  [
+    "project/flags",
+    {
+      "label": "Flags",
+      "iconName": "Flag",
+      "order": 10
+    }
+  ],
+  [
+    "project/ai",
+    {
+      "label": "AI",
+      "iconName": "BrainCircuit",
+      "order": 11
+    }
+  ],
+  [
+    "fubar",
+    {
+      "label": "Support",
+      "iconName": "LifeBuoy",
+      "order": 12
+    }
+  ],
+  [
+    "docs-foo-dev",
+    {
+      "external": true,
+      "label": "Docs",
+      "iconName": "Book",
+      "tags": [
+        "help"
+      ]
+    }
+  ],
+  [
+    "help-foo-dev",
+    {
+      "external": true,
+      "label": "Help",
+      "iconName": "Help",
+      "tags": [
+        "help"
+      ]
+    }
+  ],
+  [
+    "foo-dev-changelog",
+    {
+      "external": true,
+      "label": "Changelog",
+      "iconName": "ChangeLog",
+      "tags": [
+        "help"
+      ]
+    }
+  ],
+  [
+    "project/settings",
+    {
+      "label": "Settings",
+      "iconName": "Settings",
+      "order": 13
+    }
+  ],
+  [
+    "wildy-external-acme-dev",
+    {
+      "external": true,
+      "label": "Go wild",
+      "iconName": "Wild"
+    }
+  ],
+  [
+    "project/resources",
+    {
+      "label": "Resources",
+      "iconName": "List",
+      "group": "resources",
+      "hidden": true
+    }
+  ],
+  [
+    "docs-acme-dev",
+    {
+      "external": true,
+      "label": "Docs",
+      "iconName": "Book",
+      "tags": [
+        "help"
+      ]
+    }
+  ],
+  [
+    "help-acme-dev",
+    {
+      "external": true,
+      "label": "Help",
+      "iconName": "Help",
+      "tags": [
+        "help"
+      ]
+    }
+  ],
+  [
+    "acme-dev-changelog",
+    {
+      "external": true,
+      "label": "Changelog",
+      "iconName": "ChangeLog",
+      "tags": [
+        "help"
+      ]
+    }
+  ]
 ]);
 
 /* thin structural forest */
 const navStructure: Record<string, NavStructNode[]> = {
-  "project": [
+  "main": [
     {
       "id": "project/overview",
       "path": "/overview"
     },
-    {
-      "id": "wildy-external-acme-dev",
-      "path": "https://wildy-external.acme.dev",
-      "external": true
-    },
-    {
-      "id": "project/resources",
-      "path": "/resources"
-    }
-  ],
-  "main": [
     {
       "id": "project/integrations",
       "path": "/integrations"
@@ -120,34 +282,30 @@ const navStructure: Record<string, NavStructNode[]> = {
       "path": "/settings"
     },
     {
-      "id": "docs-acme-dev",
-      "path": "https://docs.acme.dev",
+      "id": "wildy-external-acme-dev",
+      "path": "https://wildy-external.acme.dev",
       "external": true
     },
     {
-      "id": "help-acme-dev",
-      "path": "https://help.acme.dev",
-      "external": true
-    },
-    {
-      "id": "acme-dev-changelog",
-      "path": "https://acme.dev/changelog",
-      "external": true
-    },
-    {
-      "id": "docs-acme-dev",
-      "path": "https://docs.acme.dev",
-      "external": true
-    },
-    {
-      "id": "help-acme-dev",
-      "path": "https://help.acme.dev",
-      "external": true
-    },
-    {
-      "id": "acme-dev-changelog",
-      "path": "https://acme.dev/changelog",
-      "external": true
+      "id": "project/resources",
+      "path": "/resources",
+      "children": [
+        {
+          "id": "docs-acme-dev",
+          "path": "https://docs.acme.dev",
+          "external": true
+        },
+        {
+          "id": "help-acme-dev",
+          "path": "https://help.acme.dev",
+          "external": true
+        },
+        {
+          "id": "acme-dev-changelog",
+          "path": "https://acme.dev/changelog",
+          "external": true
+        }
+      ]
     }
   ]
 };
@@ -155,12 +313,31 @@ const navStructure: Record<string, NavStructNode[]> = {
 /**
  * Global actions, if any; the application should wire these up.
  */
-const globalActions: GlobalActionSpec[] = [{"id":"ship-tickets","label":"Ship Tickets","iconName":"Truck","sections":["project"]},{"id":"feedback","label":"Feedback","iconName":"MessageSquare"},{"id":"notifications","label":"Notifications","iconName":"Bell"}];
+const globalActions: GlobalActionSpec[] = [
+  {
+    "id": "ship-tickets",
+    "label": "Ship Tickets",
+    "iconName": "Truck",
+    "sections": [
+      "project"
+    ]
+  },
+  {
+    "id": "feedback",
+    "label": "Feedback",
+    "iconName": "MessageSquare"
+  },
+  {
+    "id": "notifications",
+    "label": "Notifications",
+    "iconName": "Bell"
+  }
+];
 
 /**
  * Badge targets, if any; the application should wire these up.
  */
-const badgeTargets: string[] = ["ship-tickets","notifications"];
+const badgeTargets: string[] = ["ship-tickets", "notifications"];
 
 /* 2 ─ pure helpers (no adapter) ─────────────────────────────── */
 const cache = new Map<string, NavTreeNode[]>();

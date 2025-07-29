@@ -16,13 +16,12 @@ import { build, external, layout, route } from "@m5nv/rr-builder";
 const projectRoot = layout("project/layout.tsx")
   .children(
     external("https://wildy-external.acme.dev")
-      .nav({ label: "Go wild", iconName: "Wild", section: "project" }),
+      .nav({ label: "Go wild", iconName: "Wild" }),
     route("overview", "project/overview.tsx")
       .nav({
         label: "Overview",
         iconName: "ClipboardList",
         order: 1,
-        section: "project",
       }),
     route("integrations", "project/integrations.tsx")
       .nav({ label: "Integrations", iconName: "Plug", order: 2 }),
@@ -77,7 +76,6 @@ const resources = route("resources", "project/resources.tsx")
   .nav({
     label: "Resources",
     iconName: "List",
-    section: "project", // inherits project menu
     group: "resources",
     hidden: true,
   })
