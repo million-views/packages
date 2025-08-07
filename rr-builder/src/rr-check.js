@@ -1,31 +1,11 @@
 #!/usr/bin/env node
 
-/// @ts-check
-/// <reference types="./tree-utils" />
-/// <reference types="./rr-builder" />
-
-/**
- * @typedef {import('./rr-builder').NavTreeNode} NavTreeNode
- */
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
-import { pathToFileURL } from "url";
 
-import { flatMap, walk, workflow } from "@m5nv/rr-builder/tree-utils";
-
-// state + options
 const state = {
-  /** Input routes file path
-   * @type {string | null}
-   */
   file: null,
-
   routesFilePath: "",
-
-  /** Output file path for code generation
-   * @type {string | null}
-   */
   out: null,
   forcegen: false,
   watch: false,
@@ -33,117 +13,35 @@ const state = {
   base: "",
   hasErrors: false,
   irrecoverableError: false,
-  /** @type {Map<string, number> | null} */
   duplicateIds: null,
-  /** @type {string[] | null} */
   missingFiles: null,
-  /** @type {Set<string> | null} */
   missingFileIds: null,
-  /**
-   * Path to meta JSON file for route generation
-   * @type {string | null}
-   */
-  metaJson: null
+  metaJson: null,
+  apiStubFile: null,
+  cruddyOutFile: null
 };
 
-// simple arg parsing and bootstrap state
-function parseArgs() {
-  const args = process.argv.slice(2);
-  let sawInput = false;
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (!arg.startsWith("-")) {
-      // treat first non-flag as input file if not already set
-      if (!sawInput && !state.file && !state.metaJson && !state.apiStubFile) {
-        state.file = arg;
-        state.routesFilePath = path.resolve(process.cwd(), state.file);
-        state.base = path.dirname(state.routesFilePath);
-        sawInput = true;
-      }
-      continue;
-    }
-    if (arg === "--meta-json" && args[i + 1]) {
-      state.metaJson = args[++i];
-      continue;
-    }
-    if (arg === "--extract-cruddy" && args[i + 1]) {
-      state.apiStubFile = args[++i];
-      continue;
-    }
-    if (arg === "--out-cruddy" && args[i + 1]) {
-      state.cruddyOutFile = args[++i];
-      continue;
-    }
-    if (arg.startsWith("--print:")) {
-      const opts = arg
-        .slice("--print:".length)
-        .split(",")
-        .map((s) => s.trim());
-      for (const o of opts) {
-        switch (o) {
-          case "route-tree":
-            state.show.route = true;
-            break;
-          case "nav-tree":
-            state.show.nav = true;
-            break;
-          case "include-id":
-            state.show.id = true;
-            break;
-          case "include-path":
-            state.show.path = true;
-            break;
-        }
-      }
-      continue;
-    }
-    switch (arg) {
-      case "--out":
-        if (args[i + 1]) state.out = args[++i];
-        break;
-      case "--watch":
-        state.watch = true;
-        break;
-      case "--force":
-        state.forcegen = true;
-        break;
-    }
-  }
-  // Must have either a file, metaJson, or apiStubFile
-  if (!state.file && !state.metaJson && !state.apiStubFile) return false;
-  return true;
-}
-/**
- * Extracts @cruddy JSDoc comments from an API file and outputs them as JSON.
- * @param {string} apiFilePath
- * @param {string} outFilePath
- */
 function extractCruddyAnnotations(apiFilePath, outFilePath) {
   const src = fs.readFileSync(apiFilePath, "utf8");
   // Match JSDoc blocks containing @cruddy tags
   const jsdocBlocks = src.match(/\/\*\*([\s\S]*?)\*\//g) || [];
-  const entries = [];
+  const rawEntries = [];
   for (const block of jsdocBlocks) {
-    // Only process blocks with @cruddy
     if (!block.includes("@cruddy")) continue;
-    // Extract all @cruddy.* lines
     const lines = block.split("\n").map(l => l.trim().replace(/^\* ?/, ""));
     const annotations = {};
     const navObj = {};
     for (const line of lines) {
-      // Match @cruddy.nav.*
       const navMatch = line.match(/^@cruddy\.nav\.(\w+)(?:\s+(.*))?/);
       if (navMatch) {
         const navKey = navMatch[1];
         let navValue = navMatch[2] || "";
-        // Try to parse value as JSON if possible
         try {
           navValue = JSON.parse(navValue);
         } catch {}
         navObj[navKey] = navValue;
         continue;
       }
-      // Match @cruddy.* (not nav)
       const m = line.match(/^@cruddy\.(\w+)(?:\s+(.*))?/);
       if (m && m[1] !== "nav") {
         const key = m[1];
@@ -157,17 +55,37 @@ function extractCruddyAnnotations(apiFilePath, outFilePath) {
     if (Object.keys(navObj).length > 0) {
       annotations["nav"] = navObj;
     }
-    // Try to extract function/method name after the JSDoc block
     const afterBlock = src.slice(src.indexOf(block) + block.length);
     const fnMatch = afterBlock.match(/(?:async\s+)?(?:function\s+)?([a-zA-Z0-9_]+)\s*\(/);
     const methodName = fnMatch ? fnMatch[1] : null;
     if (Object.keys(annotations).length > 0) {
-      entries.push({ method: methodName, annotations });
+      rawEntries.push({ method: methodName, annotations });
     }
   }
-  fs.writeFileSync(outFilePath, JSON.stringify({ metadata: entries }, null, 2), "utf8");
+
+  // Domain-agnostic section rollup: group by first segment of resource name
+  function getSectionName(annotations) {
+    if (annotations.resource) {
+      let res = String(annotations.resource);
+      // Split by dash, underscore, or camelCase boundary
+      let match = res.match(/^([a-zA-Z0-9]+)(?=[-_A-Z]|$)/);
+      return match ? match[1].toLowerCase() : res.toLowerCase();
+    } else if (annotations.type) {
+      return String(annotations.type).toLowerCase();
+    }
+    return "other";
+  }
+
+  const sectioned = {};
+  for (const entry of rawEntries) {
+    const section = getSectionName(entry.annotations);
+    if (!sectioned[section]) sectioned[section] = [];
+    sectioned[section].push(entry);
+  }
+  fs.writeFileSync(outFilePath, JSON.stringify(sectioned, null, 2), "utf8");
   console.log(`✏️  Extracted @cruddy annotations to: ${outFilePath}`);
 }
+
 // --- CRUDDY ROUTE GENERATION FROM META JSON ---
 import { route, index, layout, prefix, build } from "./rr-builder.js";
 
@@ -724,6 +642,73 @@ function createLoader(filePath) {
     lastHash = hash;
     return { routes: arr, changed, error };
   };
+}
+
+function parseArgs() {
+  const args = process.argv.slice(2);
+  let sawInput = false;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg.startsWith("-")) {
+      // treat first non-flag as input file if not already set
+      if (!sawInput && !state.file && !state.metaJson && !state.apiStubFile) {
+        state.file = arg;
+        state.routesFilePath = path.resolve(process.cwd(), state.file);
+        state.base = path.dirname(state.routesFilePath);
+        sawInput = true;
+      }
+      continue;
+    }
+    if (arg === "--meta-json" && args[i + 1]) {
+      state.metaJson = args[++i];
+      continue;
+    }
+    if (arg === "--extract-cruddy" && args[i + 1]) {
+      state.apiStubFile = args[++i];
+      continue;
+    }
+    if (arg === "--out-cruddy" && args[i + 1]) {
+      state.cruddyOutFile = args[++i];
+      continue;
+    }
+    if (arg.startsWith("--print:")) {
+      const opts = arg
+        .slice("--print:".length)
+        .split(",")
+        .map((s) => s.trim());
+      for (const o of opts) {
+        switch (o) {
+          case "route-tree":
+            state.show.route = true;
+            break;
+          case "nav-tree":
+            state.show.nav = true;
+            break;
+          case "include-id":
+            state.show.id = true;
+            break;
+          case "include-path":
+            state.show.path = true;
+            break;
+        }
+      }
+      continue;
+    }
+    switch (arg) {
+      case "--out":
+        if (args[i + 1]) state.out = args[++i];
+        break;
+      case "--watch":
+        state.watch = true;
+        break;
+      case "--force":
+        state.forcegen = true;
+        break;
+    }
+  }
+  // Must have either a file, metaJson, or apiStubFile
+  if (!state.file && !state.metaJson && !state.apiStubFile) return false;
+  return true;
 }
 
 async function main() {
