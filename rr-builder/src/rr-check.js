@@ -5,15 +5,14 @@
 /// <reference types="./rr-builder" />
 
 /**
- * @typedef {import('./rr-builder').NavStructNode}
+ * @typedef {import('./rr-builder').NavTreeNode} NavTreeNode
  */
-import fs from "node:fs";
-import path from "node:path";
+import fs from "fs";
+import path from "path";
 import crypto from "crypto";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL } from "url";
 
-import { walk, workflow } from "@m5nv/rr-builder/tree-utils";
-import { codegen, makeId, NodeNormalize, pruneLayouts } from "./rr-codegen.js";
+import { flatMap, walk, workflow } from "@m5nv/rr-builder/tree-utils";
 
 // state + options
 const state = {
@@ -40,24 +39,42 @@ const state = {
   missingFiles: null,
   /** @type {Set<string> | null} */
   missingFileIds: null,
+  /**
+   * Path to meta JSON file for route generation
+   * @type {string | null}
+   */
+  metaJson: null
 };
 
 // simple arg parsing and bootstrap state
 function parseArgs() {
   const args = process.argv.slice(2);
-  if (args.length < 1 || args[0].startsWith("-")) {
-    return false;
-  }
-  // first positional arg is the input file
-  state.file = args[0];
-  state.routesFilePath = path.resolve(process.cwd(), state.file);
-  state.base = path.dirname(state.routesFilePath);
-
-  for (let i = 1; i < args.length; i++) {
+  let sawInput = false;
+  for (let i = 0; i < args.length; i++) {
     const arg = args[i];
+    if (!arg.startsWith("-")) {
+      // treat first non-flag as input file if not already set
+      if (!sawInput && !state.file && !state.metaJson && !state.apiStubFile) {
+        state.file = arg;
+        state.routesFilePath = path.resolve(process.cwd(), state.file);
+        state.base = path.dirname(state.routesFilePath);
+        sawInput = true;
+      }
+      continue;
+    }
+    if (arg === "--meta-json" && args[i + 1]) {
+      state.metaJson = args[++i];
+      continue;
+    }
+    if (arg === "--extract-cruddy" && args[i + 1]) {
+      state.apiStubFile = args[++i];
+      continue;
+    }
+    if (arg === "--out-cruddy" && args[i + 1]) {
+      state.cruddyOutFile = args[++i];
+      continue;
+    }
     if (arg.startsWith("--print:")) {
-      // e.g. --print:route-tree,include-id,include-path
-      // or   "--print: route-tree, include-id, include-path"
       const opts = arg
         .slice("--print:".length)
         .split(",")
@@ -78,22 +95,164 @@ function parseArgs() {
             break;
         }
       }
-    } else {
-      switch (arg) {
-        case "--out":
-          if (args[i + 1]) state.out = args[++i];
-          break;
-        case "--watch":
-          state.watch = true;
-          break;
-        case "--force":
-          state.forcegen = true;
-          break;
-      }
+      continue;
+    }
+    switch (arg) {
+      case "--out":
+        if (args[i + 1]) state.out = args[++i];
+        break;
+      case "--watch":
+        state.watch = true;
+        break;
+      case "--force":
+        state.forcegen = true;
+        break;
     }
   }
-
+  // Must have either a file, metaJson, or apiStubFile
+  if (!state.file && !state.metaJson && !state.apiStubFile) return false;
   return true;
+}
+/**
+ * Extracts @cruddy JSDoc comments from an API file and outputs them as JSON.
+ * @param {string} apiFilePath
+ * @param {string} outFilePath
+ */
+function extractCruddyAnnotations(apiFilePath, outFilePath) {
+  const src = fs.readFileSync(apiFilePath, "utf8");
+  // Match JSDoc blocks containing @cruddy tags
+  const jsdocBlocks = src.match(/\/\*\*([\s\S]*?)\*\//g) || [];
+  const entries = [];
+  for (const block of jsdocBlocks) {
+    // Only process blocks with @cruddy
+    if (!block.includes("@cruddy")) continue;
+    // Extract all @cruddy.* lines
+    const lines = block.split("\n").map(l => l.trim().replace(/^\* ?/, ""));
+    const annotations = {};
+    const navObj = {};
+    for (const line of lines) {
+      // Match @cruddy.nav.*
+      const navMatch = line.match(/^@cruddy\.nav\.(\w+)(?:\s+(.*))?/);
+      if (navMatch) {
+        const navKey = navMatch[1];
+        let navValue = navMatch[2] || "";
+        // Try to parse value as JSON if possible
+        try {
+          navValue = JSON.parse(navValue);
+        } catch {}
+        navObj[navKey] = navValue;
+        continue;
+      }
+      // Match @cruddy.* (not nav)
+      const m = line.match(/^@cruddy\.(\w+)(?:\s+(.*))?/);
+      if (m && m[1] !== "nav") {
+        const key = m[1];
+        let value = m[2] || "";
+        try {
+          value = JSON.parse(value);
+        } catch {}
+        annotations[key] = value;
+      }
+    }
+    if (Object.keys(navObj).length > 0) {
+      annotations["nav"] = navObj;
+    }
+    // Try to extract function/method name after the JSDoc block
+    const afterBlock = src.slice(src.indexOf(block) + block.length);
+    const fnMatch = afterBlock.match(/(?:async\s+)?(?:function\s+)?([a-zA-Z0-9_]+)\s*\(/);
+    const methodName = fnMatch ? fnMatch[1] : null;
+    if (Object.keys(annotations).length > 0) {
+      entries.push({ method: methodName, annotations });
+    }
+  }
+  fs.writeFileSync(outFilePath, JSON.stringify({ metadata: entries }, null, 2), "utf8");
+  console.log(`✏️  Extracted @cruddy annotations to: ${outFilePath}`);
+}
+// --- CRUDDY ROUTE GENERATION FROM META JSON ---
+import { route, index, layout, prefix, build } from "./rr-builder.js";
+
+/**
+ * Generate routes from meta JSON using CRUDdy by Design principles.
+ * @param {object} metaJson
+ * @returns {Array}
+ */
+function generateCruddyRoutes(metaJson) {
+  // metaJson is expected to be an object with resources array or similar
+  // Example structure:
+  // {
+  //   "resources": [
+  //     { "name": "photos", "actions": ["index", "show", ...], "meta": {...} }, ...
+  //   ]
+  // }
+  if (!metaJson || !Array.isArray(metaJson.resources)) {
+    throw new Error("Invalid meta JSON: missing 'resources' array");
+  }
+  const routes = [];
+  for (const resource of metaJson.resources) {
+    const { name, actions, meta } = resource;
+    if (!name || !Array.isArray(actions)) continue;
+    // Standard CRUDdy action to file mapping
+    const actionToFile = {
+      index: "index.ts",
+      create: "create.ts",
+      store: "store.ts",
+      show: "show.ts",
+      edit: "edit.ts",
+      update: "update.ts",
+      destroy: "destroy.ts",
+    };
+    for (const action of actions) {
+      const file = `${name}/${actionToFile[action] || (action + ".ts")}`;
+      let pathStr = null;
+      // Path conventions per CRUDdy by Design
+      switch (action) {
+        case "index":
+          pathStr = `${name}`;
+          break;
+        case "create":
+          pathStr = `${name}/create`;
+          break;
+        case "store":
+          pathStr = `${name}`;
+          break;
+        case "show":
+          pathStr = `${name}/:id`;
+          break;
+        case "edit":
+          pathStr = `${name}/:id/edit`;
+          break;
+        case "update":
+          pathStr = `${name}/:id`;
+          break;
+        case "destroy":
+          pathStr = `${name}/:id`;
+          break;
+        default:
+          pathStr = `${name}/${action}`;
+      }
+      // Use Builder API to create route
+      // Attach meta using .meta() if meta is a plain object
+      let builder = route(pathStr, file);
+      if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+        builder = builder.meta(meta);
+      }
+      routes.push(builder);
+    }
+  }
+  return build(routes);
+}
+
+function toPascalCase(str) {
+  if (!str) return "";
+  return str
+    .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : "")) // Remove hyphens/underscores and capitalize next char
+    .replace(/^(.)/, (_, c) => c.toUpperCase()); // Capitalize the first character
+}
+
+function makeId(filepath) {
+  return filepath
+    ?.replace(/^app[\\/]/, "") // drop the leading “app/” or “app\”
+    .replace(/\.[^/.]+$/, ""); // drop the extension
 }
 
 function getMarker(node_id) {
@@ -115,33 +274,51 @@ function getMarker(node_id) {
   return mark;
 }
 
+function NodeNormalize(node) {
+  let { handle, path, id, index, file } = node || {};
+  let label = handle?.label;
+  if (!path && index) {
+    // Special case for root path "/"
+    path = "/";
+  } else if (path?.startsWith("/") === false) {
+    path = "/" + path;
+  }
+
+  if (!id) {
+    id = makeId(file);
+  }
+
+  if (!label) {
+    label = id;
+    if (!label) {
+      if (path) {
+        // Derive label from path segment for non-root paths
+        const segments = path.split("/").filter(Boolean);
+        if (segments.length > 0) {
+          const lastSegment = segments[segments.length - 1];
+          label = toPascalCase(lastSegment);
+        } else {
+          label = "(no label)";
+        }
+      }
+    }
+  }
+
+  return { handle, path, id, index, label };
+}
+
 function Node2String(node) {
   let { path, id, index, label } = NodeNormalize(node);
 
   const mark = getMarker(id);
   const info = [];
-
   if (state.show.path && path) {
     info.push(`path: ${path}`);
     if (index) {
       info.push(`index`);
     }
   }
-
-  if (state.show.id && id) {
-    info.push(`id: ${id}`);
-  }
-
-  // Show section information if available
-  if (node._section && node._section !== "main") {
-    info.push(`section: ${node._section}`);
-  }
-
-  // Show if it's an external link
-  if (node.handle?.external) {
-    info.push(`external`);
-  }
-
+  if (state.show.id && id) info.push(`id: ${id}`);
   const xtra = info.length ? ` [${info.join(", ")}]` : "";
   return `${label}${mark}${xtra}`;
 }
@@ -163,6 +340,38 @@ function printTree(nodes) {
 
   // return nodes so we can use this function in `pipe`
   return nodes;
+}
+
+// rewrite tree to exclude layout routes and pull up the children
+function pruneLayouts(nodes) {
+  // no path (so not a page) AND not an index route
+  function isLayoutRoute(n) {
+    return n.path === undefined && n.index !== true;
+  }
+
+  function groupUnderIndex(kids) {
+    const idx = kids.findIndex((n) => n.index);
+    if (idx < 0) return kids;
+    const [parent] = kids.splice(idx, 1);
+    parent.children = [...(parent.children || []), ...kids];
+    return [parent];
+  }
+
+  function recurse(list, isRoot) {
+    return flatMap(list, (node) => {
+      if (!isLayoutRoute(node)) {
+        return [{
+          ...node,
+          children: node.children ? recurse(node.children, false) : undefined,
+        }];
+      }
+      const kids = recurse(node.children, false);
+      return isRoot ? kids : groupUnderIndex(kids);
+    });
+  }
+
+  // kickoff
+  return recurse(nodes, true);
 }
 
 function printErrorReport() {
@@ -299,7 +508,168 @@ export function createMetaMap(routes) {
   return meta;
 }
 
-async function processRoutes(routes, extras) {
+/**
+ * Section-anywhere build: splits into multiple section-keyed sub-trees.
+ * @return {Record<string, NavTreeNode[]>}
+ */
+export function buildNavigationTree(routes) {
+  /** @type {Record<string, NavTreeNode[]>} */
+  const navigationTree = {};
+  const pruned = pruneLayouts(routes);
+  const stack = [];
+
+  function emit(section, node) {
+    if (!navigationTree[section]) navigationTree[section] = [];
+    navigationTree[section].push(node);
+  }
+
+  walk(pruned, (node, depth) => {
+    // 1) figure out which section this node belongs to
+    const parentCtx = depth > 0 ? stack[depth - 1].activeSection : "main";
+    const activeSection = node.handle?.section ?? parentCtx;
+
+    // 2) build our NavTreeNode
+    //    Only add properties that exist and are of interest to the UI component
+    const { handle, id, path } = NodeNormalize(node);
+    const navNode = {
+      id,
+      path,
+      ...(handle?.label && { label: handle.label }),
+      ...(handle?.iconName && { iconName: handle.iconName }),
+      ...(handle?.group && { group: handle.group }),
+      ...(handle?.end && { end: handle.end }),
+    };
+
+    // 3) attach to the right place
+    const isNewSectionRoot = depth === 0 || handle?.section !== undefined;
+    if (isNewSectionRoot) {
+      // root of “main” (depth=0) or root of a deeper section
+      emit(activeSection, navNode);
+    } else {
+      // plain descendant of the same section
+      const dnode = stack[depth - 1];
+      if (dnode.navNode.children) {
+        dnode.navNode.children.push(navNode);
+      } else {
+        dnode.navNode.children = [navNode];
+      }
+      // stack[depth - 1].navNode.children.push(navNode);
+    }
+    // 4) push our own context for any children
+    stack[depth] = { activeSection, navNode };
+  });
+
+  return navigationTree;
+}
+
+function codegenJsContent(header, meta, navi) {
+  const content = `${header}
+// @ts-check
+import { useMatches } from 'react-router';
+/** @typedef {import('@m5nv/rr-builder').NavMeta} NavMeta */
+/** @typedef {import('@m5nv/rr-builder').NavTreeNode} NavTreeNode */
+/** @typedef {import("react-router").UIMatch<unknown, NavMeta|unknown>} UIMatch */
+
+
+/** @type {Map<string, NavMeta>} */
+export const metaMap = new Map([
+${meta}
+]);
+
+/**
+ * Processed navigation tree grouped by section.
+ * Keys are section names, values are arrays of tree nodes.
+ * Any route node without a 'section' prop defaults to the 'main' section.
+ * @type {Record<string, NavTreeNode[]>}
+ */
+export const navigationTree = ${navi};
+
+/**
+ * Hook to hydrate matches with your navigation metadata
+ * @returns {Array<UIMatch>}>}
+ */
+export function useHydratedMatches() {
+  const matches = useMatches();
+  return matches.map(match => {
+    // If match.handle is already populated (e.g. from module handle exports), keep it
+    if (match.handle) return match;
+    const meta = metaMap.get(match.id);
+    // Return a new object if handle is added to avoid mutating the original match
+    return meta ? { ...match, handle: meta } : match;
+  });
+}
+`;
+  return content;
+}
+
+function codegenTsContent(header, meta, navi) {
+  const content = `${header}
+import { useMatches, type UIMatch } from 'react-router';
+import type { NavMeta, NavTreeNode } from "@m5nv/rr-builder";
+
+export const metaMap = new Map<string, NavMeta>([
+${meta}
+]);
+
+/**
+ * Processed navigation tree grouped by section.
+ * Keys are section names, values are arrays of tree nodes.
+ * Any route node without a 'section' prop defaults to the 'main' section.
+ */
+export const navigationTree: Record<string, NavTreeNode[]> = ${navi};
+
+/**
+ * Hook to hydrate matches with your navigation metadata
+ */
+export function useHydratedMatches(): Array<UIMatch<unknown, NavMeta>> {
+  const matches = useMatches();
+  return matches.map(match => {
+    // If match.handle is already populated (e.g. from module handle exports), keep it
+    if (match.handle) return match as UIMatch<unknown, NavMeta>;
+    const meta = metaMap.get(match.id);
+    // Return a new object if handle is added to avoid mutating the original match
+    return meta ? { ...match, handle: meta } : match as UIMatch<unknown, NavMeta>;
+  });
+}
+`;
+  return content;
+}
+
+function codegen(routes) {
+  if (!state.out) {
+    return;
+  }
+
+  const metaMap = createMetaMap(routes);
+  const navTree = buildNavigationTree(routes);
+  const header = `
+// ⚠ AUTO-GENERATED — ${new Date().toISOString()} — do not edit by hand!
+// Consult @m5nv/rr-builder docs to keep this file in sync with your routes. 
+`;
+  const meta = [...metaMap.entries()].map(
+    ([id, m]) => `  [${JSON.stringify(id)}, ${JSON.stringify(m)}],`,
+  ).join("\n");
+  const navi = JSON.stringify(navTree, null, 2);
+  const ext = path.extname(state.out).toLocaleLowerCase();
+
+  let code = undefined;
+  if (ext === ".ts") {
+    code = codegenTsContent(header, meta, navi);
+  } else {
+    code = codegenJsContent(header, meta, navi);
+  }
+
+  try {
+    // 4. Write the code to the output file
+    fs.writeFileSync(state.out, code, "utf8");
+    console.log(`✏️  Generated navigation module: ${state.out}`);
+  } catch (error) {
+    console.error("Error during code generation:", error.message);
+    // Don't exit here, allow watch mode to continue if possible
+  }
+}
+
+async function processRoutes(routes) {
   // reset run state
   state.hasErrors = false;
   state.irrecoverableError = false;
@@ -307,22 +677,6 @@ async function processRoutes(routes, extras) {
   state.missingFiles = null;
   state.missingFileIds = null;
   state.multiIdxs = null;
-
-  // re-anchor externals back to their place in the route tree
-  const byId = new Map();
-  walk(routes, (n) => byId.set(n.id, n));
-
-  for (const ext of extras.navOnly ?? []) {
-    const parent = ext._anchor ? byId.get(ext._anchor) : null;
-    if (parent) {
-      (parent.children ??= []).push(ext);
-    } else {
-      routes.push(ext);
-    }
-    // ← cleanup to keep the `navigation` free of private fields
-    delete ext._anchor;
-  }
-
   checkForErrors(routes);
   if (state.hasErrors) {
     printErrorReport();
@@ -336,9 +690,7 @@ async function processRoutes(routes, extras) {
   }
 
   if (!state.hasErrors || state.forcegen) {
-    if (state.out) {
-      codegen(state.out, routes, extras);
-    }
+    codegen(routes);
   }
 
   if (state.show.route || state.irrecoverableError) {
@@ -351,29 +703,26 @@ async function processRoutes(routes, extras) {
 }
 
 // build a loader that remembers its own lastHash
-// patched to pull `routes.nav` out of `build()` output.
 function createLoader(filePath) {
   let lastHash = "";
   return async function loadRoutes() {
     const url = pathToFileURL(filePath).href + `?t=${Date.now()}`;
-    let arr = [],
-      extras = {},
-      error = false;
+    let arr = [], error = false;
     try {
       const m = await import(url);
       if (Array.isArray(m.default)) arr = m.default;
-      if (arr && typeof arr.nav === "object") extras = arr.nav;
     } catch (e) {
-      console.error(`❌  ${e.message}`);
+      console.error(
+        `❌  ${e.message}`,
+      );
       error = true;
     }
-    const hash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify({ arr, extras }))
+    const hash = crypto.createHash("sha256")
+      .update(JSON.stringify(arr))
       .digest("hex");
     const changed = hash !== lastHash;
     lastHash = hash;
-    return { routes: arr, extras, changed, error };
+    return { routes: arr, changed, error };
   };
 }
 
@@ -381,10 +730,15 @@ async function main() {
   if (!parseArgs()) {
     console.error(
       `
-Usage: node rr-check <routes-file> [--print:<FLAGS>] [--out <file>] [--watch]
+Usage: node rr-check <routes-file> [--print:<FLAGS>] [--out <file>] [--watch]\n
+       node rr-check --meta-json <meta.json> [--out <file>]
+       node rr-check --extract-cruddy <api-file> --out-cruddy <output.json>
 
 Arguments:
   <routes-file>             Path to your routes config file (e.g. routes.js or routes.ts).
+  --meta-json <meta.json>   Path to meta JSON file for CRUDdy route generation.
+  --extract-cruddy <api-file>  Path to API file with JSDoc @cruddy comments to extract.
+  --out-cruddy <output.json>   Output JSON filename for extracted metadata.
 
 Options:
   --print:<FLAGS>           Comma-separated list of output types (no spaces). Available flags:
@@ -398,20 +752,81 @@ Options:
 Examples:
   npx rr-check routes.js --print:route-tree
   npx rr-check src/routes.js --print:nav-tree,include-path --out=app/lib/navigation.js
+  npx rr-check --meta-json meta.json --out=routes.js
+  npx rr-check --extract-cruddy docs/business-api.ts --out-cruddy cruddy-metadata.json
   deno rr-check src/routes.ts --print:route-tree,include-id --watch 
 `,
     );
     return process.exit(1);
   }
 
+  // If --extract-cruddy is provided, extract @cruddy JSDoc comments
+  if (state.apiStubFile && state.cruddyOutFile) {
+    try {
+      extractCruddyAnnotations(path.resolve(process.cwd(), state.apiStubFile), path.resolve(process.cwd(), state.cruddyOutFile));
+    } catch (e) {
+      console.error(`❌  Failed to extract @cruddy annotations: ${e.message}`);
+      process.exit(1);
+    }
+    return;
+  }
+
+  // If --meta-json is provided, generate routes from meta JSON
+  if (state.metaJson) {
+    let metaJsonObj;
+    try {
+      const metaRaw = fs.readFileSync(path.resolve(process.cwd(), state.metaJson), "utf8");
+      metaJsonObj = JSON.parse(metaRaw);
+    } catch (e) {
+      console.error(`❌  Failed to read or parse meta JSON: ${e.message}`);
+      process.exit(1);
+    }
+    // Support both { resources: [...] } and { metadata: [...] } formats
+    let normalized;
+    if (Array.isArray(metaJsonObj.resources)) {
+      normalized = metaJsonObj;
+    } else if (Array.isArray(metaJsonObj.metadata)) {
+      // Group by resource, collect unique action types
+      const resourceMap = new Map();
+      for (const entry of metaJsonObj.metadata) {
+        const res = entry.annotations && entry.annotations.resource;
+        const type = entry.annotations && entry.annotations.type;
+        if (!res || !type) continue;
+        if (!resourceMap.has(res)) resourceMap.set(res, new Set());
+        resourceMap.get(res).add(type);
+      }
+      normalized = {
+        resources: Array.from(resourceMap.entries()).map(([name, actionsSet]) => ({
+          name,
+          actions: Array.from(actionsSet)
+        }))
+      };
+    } else {
+      console.error("❌  Invalid meta JSON: missing 'resources' or 'metadata' array");
+      process.exit(1);
+    }
+    let routes;
+    try {
+      routes = generateCruddyRoutes(normalized);
+    } catch (e) {
+      console.error(`❌  Failed to generate routes from meta JSON: ${e.message}`);
+      process.exit(1);
+    }
+    // For meta-json input, skip missing file checks and always codegen
+    state.hasErrors = false;
+    state.irrecoverableError = false;
+    codegen(routes);
+    return;
+  }
+
   const load = createLoader(state.routesFilePath);
 
   const run = async (watching = false) => {
-    const { routes, extras, changed, error } = await load();
+    const { routes, changed, error } = await load();
     if (error) process.exit(1);
     if (routes.length === 0 || (watching && !changed)) return;
     if (watching) console.log("🔄  Change detected, regenerating…");
-    await processRoutes(routes, extras);
+    await processRoutes(routes);
   };
 
   // run once first
