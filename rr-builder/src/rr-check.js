@@ -1,67 +1,367 @@
-#!/usr/bin/env node
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { pathToFileURL } from "node:url";
+import { flatMap, walk, workflow } from "./tree-utils.js";
 
-import fs from "fs";
-import path from "path";
-
-const state = {
-  file: null,
-  routesFilePath: "",
-  out: null,
-  forcegen: false,
+// Global CLI state object
+let state = {
+  file: undefined,
+  metaJson: undefined,
+  apiStubFile: undefined,
+  cruddyOutFile: undefined,
+  out: undefined,
   watch: false,
-  show: { route: false, nav: false, id: false, path: false },
-  base: "",
-  hasErrors: false,
-  irrecoverableError: false,
-  duplicateIds: null,
-  missingFiles: null,
-  missingFileIds: null,
-  metaJson: null,
-  apiStubFile: null,
-  cruddyOutFile: null
+  forcegen: false,
+  show: {
+    route: false,
+    nav: false,
+    id: false,
+    path: false,
+  },
+  routesFilePath: undefined,
+  base: undefined,
 };
 
-function extractCruddyAnnotations(apiFilePath, outFilePath) {
-  const src = fs.readFileSync(apiFilePath, "utf8");
-  // Match JSDoc blocks containing @cruddy tags
-  const jsdocBlocks = src.match(/\/\*\*([\s\S]*?)\*\//g) || [];
-  const rawEntries = [];
-  for (const block of jsdocBlocks) {
-    if (!block.includes("@cruddy")) continue;
-    const lines = block.split("\n").map(l => l.trim().replace(/^\* ?/, ""));
-    const annotations = {};
-    const navObj = {};
-    for (const line of lines) {
-      const navMatch = line.match(/^@cruddy\.nav\.(\w+)(?:\s+(.*))?/);
-      if (navMatch) {
-        const navKey = navMatch[1];
-        let navValue = navMatch[2] || "";
-        try {
-          navValue = JSON.parse(navValue);
-        } catch {}
-        navObj[navKey] = navValue;
-        continue;
-      }
-      const m = line.match(/^@cruddy\.(\w+)(?:\s+(.*))?/);
-      if (m && m[1] !== "nav") {
-        const key = m[1];
-        let value = m[2] || "";
-        try {
-          value = JSON.parse(value);
-        } catch {}
-        annotations[key] = value;
+
+// --- Builder DSL Codegen for Section-Based Navigation ---
+// --- Builder DSL Codegen for Section-Based Navigation ---
+
+// --- CRUDDY ROUTE GENERATION FROM META JSON ---
+import { route, index, layout, prefix, build, section } from "./rr-builder.js";
+
+// --- CRUDDY ROUTE GENERATION FROM META JSON ---
+
+/**
+ * Generate routes from meta JSON using CRUDdy by Design principles.
+ * @param {object} metaJson
+ * @returns {Array}
+ */
+function generateCruddyRoutes(metaJson) {
+  // Accepts { resources: [...] }, { metadata: [...] }, or top-level keys mapping to arrays
+  let entries = [];
+  if (Array.isArray(metaJson.resources)) {
+    // Legacy format
+    for (const resource of metaJson.resources) {
+      const { name, actions, meta } = resource;
+      if (!name || !Array.isArray(actions)) continue;
+      for (const action of actions) {
+        entries.push({
+          resource: name,
+          type: action,
+          meta: meta || {},
+        });
       }
     }
-    if (Object.keys(navObj).length > 0) {
-      annotations["nav"] = navObj;
+  } else if (Array.isArray(metaJson.metadata)) {
+    // New format: flatten metadata
+    for (const entry of metaJson.metadata) {
+      const ann = entry.annotations || {};
+      entries.push({
+        resource: ann.resource,
+        type: ann.type,
+        parent: ann.parent,
+        meta: ann.nav || {},
+      });
     }
-    const afterBlock = src.slice(src.indexOf(block) + block.length);
-    const fnMatch = afterBlock.match(/(?:async\s+)?(?:function\s+)?([a-zA-Z0-9_]+)\s*\(/);
-    const methodName = fnMatch ? fnMatch[1] : null;
-    if (Object.keys(annotations).length > 0) {
-      rawEntries.push({ method: methodName, annotations });
+  } else {
+    // Top-level keys mapping to arrays (e.g., { photos: [...], albums: [...] })
+    for (const [key, arr] of Object.entries(metaJson)) {
+      if (!Array.isArray(arr)) continue;
+      for (const entry of arr) {
+        // Always check for annotations.resource and annotations.type
+        if (entry.annotations && typeof entry.annotations === "object") {
+          const resource = entry.annotations.resource;
+          const type = entry.annotations.type;
+          const parent = entry.annotations.parent;
+          const meta = entry.annotations.nav || {};
+          if (resource && type) {
+            entries.push({ resource, type, parent, meta });
+          }
+        } else {
+          // Fallback for legacy formats
+          const resource = key;
+          const type = entry.type || entry.action || entry.method;
+          const parent = entry.parent;
+          const meta = entry.meta || entry.nav || {};
+          if (resource && type) {
+            entries.push({ resource, type, parent, meta });
+          }
+        }
+      }
     }
   }
+  
+  // If no entries were found, throw an error
+  if (entries.length === 0) {
+    throw new Error("Invalid meta JSON: no valid route entries found");
+  }
+  // Group by resource
+  const resourceMap = new Map();
+  for (const e of entries) {
+    if (!e.resource || !e.type) continue;
+    if (!resourceMap.has(e.resource)) resourceMap.set(e.resource, []);
+    resourceMap.get(e.resource).push(e);
+  }
+
+  // Generate routes with proper hierarchical structure
+  const routes = [];
+  const sections = new Map(); // Group resources into sections
+  
+  // First, organize resources into logical sections
+  for (const [resourceName, actions] of resourceMap.entries()) {
+    // Infer section from resource name (e.g., "specialist-metrics" -> "specialist")
+    const sectionName = resourceName.split('-')[0];
+    if (!sections.has(sectionName)) sections.set(sectionName, new Map());
+    sections.get(sectionName).set(resourceName, actions);
+  }
+
+  // Generate section-based structure
+  for (const [sectionName, sectionResources] of sections.entries()) {
+    const sectionRoutes = [];
+    
+    for (const [resourceName, actions] of sectionResources.entries()) {
+      const resourceRoutes = [];
+      
+      const actionToFile = {
+        index: "index.tsx",
+        create: "create.tsx", 
+        store: "store.tsx",
+        show: "show.tsx",
+        edit: "edit.tsx",
+        update: "update.tsx",
+        destroy: "destroy.tsx",
+      };
+
+      for (const act of actions) {
+        const file = `${resourceName}/${actionToFile[act.type] || (act.type + ".tsx")}`;
+        let pathStr = null;
+        
+        switch (act.type) {
+          case "index":
+            pathStr = `${resourceName}`;
+            break;
+          case "create":
+            pathStr = `${resourceName}/create`;
+            break;
+          case "store":
+            pathStr = `${resourceName}`;
+            break;
+          case "show":
+            pathStr = `${resourceName}/:id`;
+            break;
+          case "edit":
+            pathStr = `${resourceName}/:id/edit`;
+            break;
+          case "update":
+            pathStr = `${resourceName}/:id`;
+            break;
+          case "destroy":
+            pathStr = `${resourceName}/:id`;
+            break;
+          default:
+            pathStr = `${resourceName}/${act.type}`;
+        }
+        
+        let builder = route(pathStr, file);
+        if (act.meta && typeof act.meta === "object" && Object.keys(act.meta).length) {
+          builder = builder.nav(act.meta);
+        }
+        resourceRoutes.push(builder);
+      }
+      
+      // If there are multiple routes for this resource, wrap in a prefix
+      if (resourceRoutes.length > 1) {
+        const prefixedRoutes = prefix(resourceName, resourceRoutes);
+        sectionRoutes.push(...prefixedRoutes);
+      } else if (resourceRoutes.length === 1) {
+        sectionRoutes.push(...resourceRoutes);
+      }
+    }
+    
+    // Create a section with layout if there are multiple resources
+    if (sectionResources.size > 1) {
+      const sectionBuilder = section(sectionName).children(...sectionRoutes);
+      // Add section navigation if we can infer it
+      const firstResource = Array.from(sectionResources.values())[0];
+      const firstAction = firstResource.find(a => a.meta && a.meta.label);
+      if (firstAction && firstAction.meta) {
+        sectionBuilder.nav({
+          label: `${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}`,
+          iconName: firstAction.meta.icon || firstAction.meta.iconName
+        });
+      }
+      routes.push(sectionBuilder);
+    } else {
+      // Single resource - add directly or with layout
+      routes.push(...sectionRoutes);
+    }
+  }
+
+  return build(routes);
+}
+
+function codegenBuilderDSL(metadata, outFile = null) {
+  // Group by resource
+  const resourceMap = new Map();
+  for (const entry of metadata) {
+    const res = entry.annotations && entry.annotations.resource;
+    const type = entry.annotations && entry.annotations.type;
+    const parent = entry.annotations && entry.annotations.parent;
+    if (!res || !type) continue;
+    if (!resourceMap.has(res)) resourceMap.set(res, []);
+    resourceMap.get(res).push({ type, parent, entry });
+  }
+
+  // Generate builder DSL code with hierarchical structure
+  let code = `// Generated builder DSL routes from metadata
+import { route, index, layout, prefix, build, section } from "@m5nv/rr-builder";
+
+export default build([
+`;
+
+  // Organize resources into logical sections
+  const sections = new Map();
+  for (const [resourceName, entries] of resourceMap.entries()) {
+    // Improved section naming logic
+    let sectionName;
+    if (resourceName.includes('-')) {
+      sectionName = resourceName.split('-')[0];
+    } else {
+      sectionName = resourceName;
+    }
+    
+    // Handle plurals - group "specialists" with "specialist" section
+    if (sectionName.endsWith('s') && sectionName.length > 1) {
+      const singular = sectionName.slice(0, -1);
+      // Check if there are any resources that start with the singular form
+      const hasRelatedResources = Array.from(resourceMap.keys()).some(r => 
+        r.startsWith(singular + '-') || r === singular
+      );
+      if (hasRelatedResources) {
+        sectionName = singular;
+      }
+    }
+    
+    if (!sections.has(sectionName)) sections.set(sectionName, new Map());
+    sections.get(sectionName).set(resourceName, entries);
+  }
+
+  // Generate section-based structure with layouts
+  for (const [sectionName, sectionResources] of sections.entries()) {
+    if (sectionResources.size > 1) {
+      // Multiple resources - create a section with layout
+      code += `  section("${sectionName}")`;
+      
+      // Add section navigation if we can infer it
+      const firstResource = Array.from(sectionResources.values())[0];
+      const firstAction = firstResource.find(a => a.entry.annotations.nav && a.entry.annotations.nav.label);
+      if (firstAction && firstAction.entry.annotations.nav) {
+        const nav = firstAction.entry.annotations.nav;
+        code += `.nav({
+    label: "${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}",
+    iconName: "${nav.icon || nav.iconName || 'Folder'}"
+  })`;
+      }
+      
+      code += `.children(
+    layout("${sectionName}/layout.tsx").children(
+`;
+
+      // Generate routes for each resource in the section
+      for (const [resourceName, entries] of sectionResources.entries()) {
+        if (entries.length > 1) {
+          // Multiple routes for this resource - use prefix
+          code += `      ...prefix("${resourceName}", [
+`;
+          for (const { type, entry } of entries) {
+            code += generateRouteCode(resourceName, type, entry, "        ");
+          }
+          code += `      ]),
+`;
+        } else {
+          // Single route
+          const { type, entry } = entries[0];
+          code += generateRouteCode(resourceName, type, entry, "      ");
+        }
+      }
+      
+      code += `    )
+  ),
+`;
+    } else {
+      // Single resource - add directly with layout if it has multiple routes
+      const [resourceName, entries] = Array.from(sectionResources.entries())[0];
+      if (entries.length > 1) {
+        code += `  layout("${resourceName}/layout.tsx").children(
+`;
+        for (const { type, entry } of entries) {
+          code += generateRouteCode(resourceName, type, entry, "    ");
+        }
+        code += `  ),
+`;
+      } else {
+        // Single route - add directly
+        const { type, entry } = entries[0];
+        code += generateRouteCode(resourceName, type, entry, "  ");
+      }
+    }
+  }
+
+  code += `]);
+`;
+
+  // Write to file or return string
+  if (outFile) {
+    fs.writeFileSync(outFile, code, "utf8");
+    console.log(`✏️  Generated builder DSL routes: ${outFile}`);
+  } else {
+    return code;
+  }
+}
+
+function generateRouteCode(resourceName, type, entry, indent) {
+  const nav = entry.annotations.nav || {};
+  const file = `${resourceName}/${type}.tsx`;
+  let pathStr = null;
+  
+  // Standard CRUDdy path conventions
+  switch (type) {
+    case "index":
+      pathStr = `${resourceName}`;
+      break;
+    case "create":
+      pathStr = `${resourceName}/create`;
+      break;
+    case "store":
+      pathStr = `${resourceName}`;
+      break;
+    case "show":
+      pathStr = `${resourceName}/:id`;
+      break;
+    case "edit":
+      pathStr = `${resourceName}/:id/edit`;
+      break;
+    case "update":
+      pathStr = `${resourceName}/:id`;
+      break;
+    case "destroy":
+      pathStr = `${resourceName}/:id`;
+      break;
+    default:
+      pathStr = `${resourceName}/${type}`;
+  }
+
+  let routeCode = `${indent}route("${pathStr}", "${file}")`;
+  if (nav && typeof nav === "object" && Object.keys(nav).length > 0) {
+    routeCode += `.nav(${JSON.stringify(nav, null, 2).replace(/\n/g, '\n' + indent + '  ')})`;
+  }
+  routeCode += `,
+`;
+  return routeCode;
+}
+
+function extractCruddyAnnotations(apiFilePath, outFilePath) {
 
   // Domain-agnostic section rollup: group by first segment of resource name
   function getSectionName(annotations) {
@@ -87,78 +387,7 @@ function extractCruddyAnnotations(apiFilePath, outFilePath) {
 }
 
 // --- CRUDDY ROUTE GENERATION FROM META JSON ---
-import { route, index, layout, prefix, build } from "./rr-builder.js";
 
-/**
- * Generate routes from meta JSON using CRUDdy by Design principles.
- * @param {object} metaJson
- * @returns {Array}
- */
-function generateCruddyRoutes(metaJson) {
-  // metaJson is expected to be an object with resources array or similar
-  // Example structure:
-  // {
-  //   "resources": [
-  //     { "name": "photos", "actions": ["index", "show", ...], "meta": {...} }, ...
-  //   ]
-  // }
-  if (!metaJson || !Array.isArray(metaJson.resources)) {
-    throw new Error("Invalid meta JSON: missing 'resources' array");
-  }
-  const routes = [];
-  for (const resource of metaJson.resources) {
-    const { name, actions, meta } = resource;
-    if (!name || !Array.isArray(actions)) continue;
-    // Standard CRUDdy action to file mapping
-    const actionToFile = {
-      index: "index.ts",
-      create: "create.ts",
-      store: "store.ts",
-      show: "show.ts",
-      edit: "edit.ts",
-      update: "update.ts",
-      destroy: "destroy.ts",
-    };
-    for (const action of actions) {
-      const file = `${name}/${actionToFile[action] || (action + ".ts")}`;
-      let pathStr = null;
-      // Path conventions per CRUDdy by Design
-      switch (action) {
-        case "index":
-          pathStr = `${name}`;
-          break;
-        case "create":
-          pathStr = `${name}/create`;
-          break;
-        case "store":
-          pathStr = `${name}`;
-          break;
-        case "show":
-          pathStr = `${name}/:id`;
-          break;
-        case "edit":
-          pathStr = `${name}/:id/edit`;
-          break;
-        case "update":
-          pathStr = `${name}/:id`;
-          break;
-        case "destroy":
-          pathStr = `${name}/:id`;
-          break;
-        default:
-          pathStr = `${name}/${action}`;
-      }
-      // Use Builder API to create route
-      // Attach meta using .meta() if meta is a plain object
-      let builder = route(pathStr, file);
-      if (meta && typeof meta === "object" && !Array.isArray(meta)) {
-        builder = builder.meta(meta);
-      }
-      routes.push(builder);
-    }
-  }
-  return build(routes);
-}
 
 function toPascalCase(str) {
   if (!str) return "";
@@ -745,6 +974,8 @@ Examples:
     return process.exit(1);
   }
 
+  // For meta-json mode, don't set a default output file
+
   // If --extract-cruddy is provided, extract @cruddy JSDoc comments
   if (state.apiStubFile && state.cruddyOutFile) {
     try {
@@ -766,29 +997,25 @@ Examples:
       console.error(`❌  Failed to read or parse meta JSON: ${e.message}`);
       process.exit(1);
     }
-    // Support both { resources: [...] } and { metadata: [...] } formats
+    // Support { resources: [...] }, { metadata: [...] }, or top-level keys mapping to arrays
     let normalized;
     if (Array.isArray(metaJsonObj.resources)) {
       normalized = metaJsonObj;
     } else if (Array.isArray(metaJsonObj.metadata)) {
-      // Group by resource, collect unique action types
-      const resourceMap = new Map();
-      for (const entry of metaJsonObj.metadata) {
-        const res = entry.annotations && entry.annotations.resource;
-        const type = entry.annotations && entry.annotations.type;
-        if (!res || !type) continue;
-        if (!resourceMap.has(res)) resourceMap.set(res, new Set());
-        resourceMap.get(res).add(type);
-      }
-      normalized = {
-        resources: Array.from(resourceMap.entries()).map(([name, actionsSet]) => ({
-          name,
-          actions: Array.from(actionsSet)
-        }))
-      };
+      normalized = { metadata: metaJsonObj.metadata };
     } else {
-      console.error("❌  Invalid meta JSON: missing 'resources' or 'metadata' array");
-      process.exit(1);
+      // Flatten all arrays under top-level keys into a single array
+      const allEntries = [];
+      for (const key of Object.keys(metaJsonObj)) {
+        if (Array.isArray(metaJsonObj[key])) {
+          allEntries.push(...metaJsonObj[key]);
+        }
+      }
+      if (allEntries.length === 0) {
+        console.error("❌  Invalid meta JSON: no route metadata found");
+        process.exit(1);
+      }
+      normalized = { metadata: allEntries };
     }
     let routes;
     try {
@@ -801,6 +1028,71 @@ Examples:
     state.hasErrors = false;
     state.irrecoverableError = false;
     codegen(routes);
+    // Also generate builder DSL file if requested
+    if (state.out) {
+      // Extract the actual metadata array to pass to codegenBuilderDSL
+      let metadataArray = [];
+      if (Array.isArray(metaJsonObj.metadata)) {
+        metadataArray = metaJsonObj.metadata;
+      } else if (Array.isArray(metaJsonObj.resources)) {
+        // Convert resources to metadata format
+        for (const resource of metaJsonObj.resources) {
+          const { name, actions, meta } = resource;
+          if (name && Array.isArray(actions)) {
+            for (const action of actions) {
+              metadataArray.push({
+                method: `${action}${name}`,
+                annotations: {
+                  resource: name,
+                  type: action,
+                  nav: meta || {}
+                }
+              });
+            }
+          }
+        }
+      } else {
+        // Flatten top-level keys into metadata format
+        for (const [key, arr] of Object.entries(metaJsonObj)) {
+          if (Array.isArray(arr)) {
+            metadataArray.push(...arr);
+          }
+        }
+      }
+      codegenBuilderDSL(metadataArray, state.out);
+    } else {
+      // Print to console when no --out is specified
+      let metadataArray = [];
+      if (Array.isArray(metaJsonObj.metadata)) {
+        metadataArray = metaJsonObj.metadata;
+      } else if (Array.isArray(metaJsonObj.resources)) {
+        // Convert resources to metadata format
+        for (const resource of metaJsonObj.resources) {
+          const { name, actions, meta } = resource;
+          if (name && Array.isArray(actions)) {
+            for (const action of actions) {
+              metadataArray.push({
+                method: `${action}${name}`,
+                annotations: {
+                  resource: name,
+                  type: action,
+                  nav: meta || {}
+                }
+              });
+            }
+          }
+        }
+      } else {
+        // Flatten top-level keys into metadata format
+        for (const [key, arr] of Object.entries(metaJsonObj)) {
+          if (Array.isArray(arr)) {
+            metadataArray.push(...arr);
+          }
+        }
+      }
+      const generatedCode = codegenBuilderDSL(metadataArray);
+      console.log(generatedCode);
+    }
     return;
   }
 
