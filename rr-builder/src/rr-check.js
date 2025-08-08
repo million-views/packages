@@ -1,8 +1,123 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { createInterface } from "node:readline";
 import { pathToFileURL } from "node:url";
 import { flatMap, walk, workflow } from "./tree-utils.js";
+
+// --- FILE TOUCHING UTILITIES ---
+
+/**
+ * Ask user for confirmation with a yes/no prompt
+ * @param {string} question
+ * @returns {Promise<boolean>}
+ */
+function confirm(question) {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(`${question} [y/N]: `, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+    });
+  });
+}
+
+/**
+ * Touch missing component files
+ * @param {string[]} missingFiles - Array of missing file paths
+ * @param {object} options - Touch options
+ * @returns {Promise<{created: string[], skipped: string[]}>}
+ */
+async function touchMissingFiles(missingFiles, options = {}) {
+  const { dryRun = false, force = false, baseDir = process.cwd() } = options;
+  const created = [];
+  const skipped = [];
+
+  if (missingFiles.length === 0) {
+    return { created, skipped };
+  }
+
+  // Check which files already exist
+  const existingFiles = [];
+  const nonExistingFiles = [];
+  
+  for (const file of missingFiles) {
+    const fullPath = path.resolve(baseDir, file);
+    if (fs.existsSync(fullPath)) {
+      existingFiles.push(file);
+    } else {
+      nonExistingFiles.push(file);
+    }
+  }
+
+  // Handle force overwrite confirmation
+  if (force && existingFiles.length > 0) {
+    console.log(`⚠️  The following files will be OVERWRITTEN:`);
+    for (const file of existingFiles) {
+      console.log(`  - ${file}`);
+    }
+    console.log('');
+    
+    if (!dryRun) {
+      const shouldContinue = await confirm('Continue?');
+      if (!shouldContinue) {
+        console.log('❌  Operation cancelled by user');
+        return { created, skipped: missingFiles };
+      }
+    }
+  }
+
+  // Files to actually create
+  const filesToCreate = force ? missingFiles : nonExistingFiles;
+  const filesToSkip = force ? [] : existingFiles;
+
+  if (dryRun) {
+    console.log(`📋  DRY RUN - Would create ${filesToCreate.length} files:`);
+    for (const file of filesToCreate) {
+      console.log(`  + ${file}`);
+    }
+    if (filesToSkip.length > 0) {
+      console.log(`📋  Would skip ${filesToSkip.length} existing files:`);
+      for (const file of filesToSkip) {
+        console.log(`  - ${file} (already exists)`);
+      }
+    }
+    return { created: filesToCreate, skipped: filesToSkip };
+  }
+
+  // Actually create the files
+  for (const file of filesToCreate) {
+    try {
+      const fullPath = path.resolve(baseDir, file);
+      const dir = path.dirname(fullPath);
+      
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Create empty file
+      fs.writeFileSync(fullPath, '', 'utf8');
+      created.push(file);
+    } catch (err) {
+      console.error(`❌  Failed to create ${file}: ${err.message}`);
+      skipped.push(file);
+    }
+  }
+
+  // Report skipped existing files
+  for (const file of existingFiles) {
+    if (!force) {
+      skipped.push(file);
+    }
+  }
+
+  return { created, skipped };
+}
 
 // Global CLI state object
 let state = {
@@ -13,6 +128,11 @@ let state = {
   out: undefined,
   watch: false,
   forcegen: false,
+  touch: false,
+  force: false,
+  dryRun: false,
+  base: undefined,
+  touchBaseDir: undefined, // Separate base directory for touch operations
   show: {
     route: false,
     nav: false,
@@ -20,7 +140,6 @@ let state = {
     path: false,
   },
   routesFilePath: undefined,
-  base: undefined,
 };
 
 
@@ -825,6 +944,38 @@ async function processRoutes(routes) {
   state.missingFileIds = null;
   state.multiIdxs = null;
   checkForErrors(routes);
+  
+  // Handle file touching before validation
+  if (state.touch && state.missingFiles && state.missingFiles.length > 0) {
+    // For touch operations, default to app/routes unless --base was specified
+    const touchBaseDir = state.touchBaseDir || 'app/routes';
+    
+    const touchOptions = {
+      dryRun: state.dryRun,
+      force: state.force,
+      baseDir: touchBaseDir,
+    };
+    
+    const { created, skipped } = await touchMissingFiles(state.missingFiles, touchOptions);
+    
+    if (state.dryRun) {
+      console.log(''); // Empty line after dry-run output
+      // Don't proceed with regular validation for dry runs
+      return;
+    } else if (created.length > 0) {
+      console.log(`✅  Created ${created.length} missing file${created.length > 1 ? 's' : ''}`);
+      if (skipped.length > 0) {
+        console.log(`⏭️  Skipped ${skipped.length} existing file${skipped.length > 1 ? 's' : ''}`);
+      }
+      
+      // Re-check for errors after creating files
+      state.hasErrors = false;
+      state.missingFiles = null;
+      state.missingFileIds = null;
+      checkForErrors(routes);
+    }
+  }
+  
   if (state.hasErrors) {
     printErrorReport();
     if (state.out && !state.forcegen) {
@@ -931,7 +1082,22 @@ function parseArgs() {
         state.watch = true;
         break;
       case "--force":
+        // Changed from forcegen to force for touching files
         state.forcegen = true;
+        break;
+      case "--touch":
+        state.touch = true;
+        break;
+      case "--force-touch":
+        state.force = true;
+        break;
+      case "--dry-run":
+        state.dryRun = true;
+        break;
+      case "--base":
+        if (args[i + 1]) {
+          state.touchBaseDir = args[++i];
+        }
         break;
     }
   }
@@ -944,8 +1110,8 @@ async function main() {
   if (!parseArgs()) {
     console.error(
       `
-Usage: node rr-check <routes-file> [--print:<FLAGS>] [--out <file>] [--watch]\n
-       node rr-check --meta-json <meta.json> [--out <file>]
+Usage: node rr-check <routes-file> [OPTIONS]
+       node rr-check --meta-json <meta.json> [OPTIONS]
        node rr-check --extract-cruddy <api-file> --out-cruddy <output.json>
 
 Arguments:
@@ -962,10 +1128,17 @@ Options:
                               include-path   Append each node’s URL path in the tree leaves.
   --watch                   Watch the routes-file for changes and rerun automatically.
   --out=<file>              Write code (navigationTree, useHydratedMatches()) to <file>.
+  --touch                   Create missing component files as empty files.
+  --force-touch             Force overwrite existing files when touching (requires confirmation).
+  --dry-run                 Preview what files would be created without actually creating them.
+  --base=<dir>              Base directory for touching files (defaults to app/routes).
 
 Examples:
   npx rr-check routes.js --print:route-tree
   npx rr-check src/routes.js --print:nav-tree,include-path --out=app/lib/navigation.js
+  npx rr-check routes.js --touch --out=navigation.js
+  npx rr-check routes.js --touch --dry-run
+  npx rr-check routes.js --touch --force-touch --base=src/routes
   npx rr-check --meta-json meta.json --out=routes.js
   npx rr-check --extract-cruddy docs/business-api.ts --out-cruddy cruddy-metadata.json
   deno rr-check src/routes.ts --print:route-tree,include-id --watch 
